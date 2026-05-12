@@ -73,9 +73,6 @@ function Dashboard({ setView }) {
           <button onClick={() => setActiveTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
-          <button onClick={() => setActiveTab('emergencias')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'emergencias' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.AlertTriangle /> <span className="hidden lg:inline">Emergencias</span>
-          </button>
         </nav>
 
         {/* Right: User Profile & Actions */}
