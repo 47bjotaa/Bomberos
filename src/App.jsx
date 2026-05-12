@@ -318,7 +318,7 @@ function AuthView({ setView }) {
         if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Las contraseñas no coinciden";
       }
     } else {
-      if (!formData.correo) newErrors.correo = "Obligatorio";
+      if (!formData.rut) newErrors.rut = "Obligatorio";
       if (!formData.password) newErrors.password = "Obligatorio";
     }
 
@@ -339,11 +339,11 @@ function AuthView({ setView }) {
     if (validate()) {
       if (mode === 'login') {
         try {
-          const res = await authService.login(formData.correo, formData.password);
+          const res = await authService.login(formData.rut, formData.password);
           console.log("Login exitoso", res);
           setView('dashboard');
         } catch (error) {
-          setErrors({ ...errors, api: "Error de credenciales o de conexión. Verifica los datos." });
+          setErrors(prev => ({ ...prev, api: "Error de credenciales o de conexión. Verifica los datos." }));
           console.error("Error API Login:", error);
         }
       } else {
@@ -364,10 +364,10 @@ function AuthView({ setView }) {
           console.log("Registro exitoso en BD");
           
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
-          await authService.login(formData.correo, formData.password);
+          await authService.login(formData.rut, formData.password);
           setView('dashboard');
         } catch (error) {
-          setErrors({ ...errors, api: "Error al intentar crear la cuenta en la base de datos." });
+          setErrors(prev => ({ ...prev, api: "Error al intentar crear la cuenta en la base de datos." }));
           console.error("Error API Registro:", error);
         }
       }
@@ -392,9 +392,9 @@ function AuthView({ setView }) {
           {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-text-main mb-1">Correo Electrónico</label>
-              <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="correo@ejemplo.com" />
-              {errors.correo && <p className="text-brand-red text-xs mt-1">{errors.correo}</p>}
+              <label className="block text-sm font-medium text-text-main mb-1">RUT</label>
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12.345.678-9" />
+              {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-text-main mb-1">Contraseña</label>
