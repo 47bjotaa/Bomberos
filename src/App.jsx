@@ -343,7 +343,7 @@ function AuthView({ setView }) {
           console.log("Login exitoso", res);
           setView('dashboard');
         } catch (error) {
-          setErrors(prev => ({ ...prev, api: "Error de credenciales o de conexión. Verifica los datos." }));
+          setErrors(prev => ({ ...prev, api: error.message || "Error al iniciar sesión." }));
           console.error("Error API Login:", error);
         }
       } else {
@@ -367,7 +367,7 @@ function AuthView({ setView }) {
           await authService.login(formData.rut, formData.password);
           setView('dashboard');
         } catch (error) {
-          setErrors(prev => ({ ...prev, api: "Error al intentar crear la cuenta en la base de datos." }));
+          setErrors(prev => ({ ...prev, api: error.message || "Error al intentar crear la cuenta en la base de datos." }));
           console.error("Error API Registro:", error);
         }
       }

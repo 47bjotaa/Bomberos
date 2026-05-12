@@ -17,8 +17,17 @@ export const apiFetch = async (endpoint, options = {}) => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Error API: ${response.status}`);
+    let errorMessage = `Error API: ${response.status}`;
+    const errorText = await response.text().catch(() => "");
+    if (errorText) {
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
+      } catch (e) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   const text = await response.text();
