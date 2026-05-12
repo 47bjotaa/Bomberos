@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../services/api';
 import { cuerposBomberos } from '../utils/constants';
+import { useTheme } from '../context/ThemeContext';
+import { Icons } from '../components/ui/Icons';
 
 function AuthView({ setView }) {
+  const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState('register'); // Default to register based on screenshots
   const [step, setStep] = useState(1);
   const [cuerpoSearch, setCuerpoSearch] = useState('');
@@ -119,7 +122,16 @@ function AuthView({ setView }) {
 
   if (mode === 'login') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-bg p-4">
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg p-4 relative">
+        <div className="absolute top-8 right-8">
+          <button 
+            onClick={toggleTheme} 
+            className="theme-toggle" 
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+        </div>
         <div className="bg-dark-surface rounded-xl shadow-lg border border-dark-border p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-white mb-2 rajdhani">Iniciar Sesión</h2>
@@ -167,27 +179,37 @@ function AuthView({ setView }) {
 
       {/* Right Panel */}
       <div className="w-full lg:w-[60%] xl:w-[65%] flex flex-col justify-center items-center p-8 bg-dark-bg relative overflow-x-hidden">
+        {/* Theme Toggle */}
+        <div className="absolute top-8 right-8 z-50">
+          <button 
+            onClick={toggleTheme} 
+            className="theme-toggle" 
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+        </div>
         <div className="w-full max-w-5xl flex justify-center">
           <div className={`grid gap-8 items-start w-full ${step === 1 ? 'xl:grid-cols-[320px_minmax(0,512px)] justify-center' : 'grid-cols-[minmax(0,512px)] justify-center'}`}>
             
             {/* Info Card Column */}
             {step === 1 && (
               <div className="hidden xl:block w-full mt-[208px]">
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 text-left font-sans shadow-lg">
-                  <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] mb-4">
+                <div className="bg-dark-bg2 border border-dark-border rounded-2xl p-6 text-left font-sans shadow-lg">
+                  <div className="w-10 h-10 rounded-full bg-brand-cyan/10 flex items-center justify-center text-brand-cyan mb-4">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                       <line x1="12" y1="8" x2="12" y2="12"></line>
                       <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
                   </div>
-                  <h3 className="text-[#2563EB] text-[1.1rem] font-semibold mb-3">Registro de Compañía</h3>
-                  <div className="text-[#64748B] text-[0.95rem] leading-relaxed">
-                    <p className="pb-4 border-b border-[#E2E8F0]">
-                      Para registrar una nueva compañía en la plataforma debes ser el <strong className="text-[#0F172A] font-semibold">administrador</strong> o tener autorización.
+                  <h3 className="text-brand-cyan text-[1.1rem] font-semibold mb-3">Registro de Compañía</h3>
+                  <div className="text-text-muted text-[0.95rem] leading-relaxed">
+                    <p className="pb-4 border-b border-dark-border">
+                      Para registrar una nueva compañía en la plataforma debes ser el <strong className="text-white font-semibold">administrador</strong> o tener autorización.
                     </p>
                     <p className="pt-4">
-                      Si eres voluntario y tu compañía aún no utiliza el sistema, <strong className="text-[#0F172A] font-semibold">comunica a tu superior</strong> sobre CuartelAmigo para que puedan unirse.
+                      Si eres voluntario y tu compañía aún no utiliza el sistema, <strong className="text-white font-semibold">comunica a tu superior</strong> sobre CuartelAmigo para que puedan unirse.
                     </p>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ function DashboardPreview() {
     <section id="plataforma" className="section container">
       <div className="section-header reveal">
         <h2 className="section-title">Control Total a un Clic</h2>
-        <p className="section-subtitle">Una interfaz intuitiva y oscura, optimizada para reducir la fatiga visual y resaltar lo crítico.</p>
+        <p className="section-subtitle">Una interfaz intuitiva y moderna, optimizada para la eficiencia y resaltar lo crítico.</p>
       </div>
       <div className="dash-preview reveal delay-100">
         <div className="dash-header">

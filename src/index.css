@@ -16,12 +16,32 @@
   --color-brand-green: #22C55E;
   --color-text-main: #EEF2FF;
   --color-text-muted: #6B7FA8;
+
+  /* Theme-specific overrides */
+  --bg-primary: var(--color-dark-bg);
+  --text-primary: var(--color-text-main);
+  --grid-color: rgba(232, 55, 42, 0.03);
+}
+
+.light {
+  --color-dark-bg: #F8FAFC;
+  --color-dark-bg2: #F1F5F9;
+  --color-dark-bg3: #E2E8F0;
+  --color-dark-surface: #FFFFFF;
+  --color-dark-border: rgba(0, 0, 0, 0.1);
+  --color-text-main: #0F172A;
+  --color-text-muted: #475569;
+  
+  --bg-primary: #F8FAFC;
+  --text-primary: #0F172A;
+  --grid-color: rgba(232, 55, 42, 0.05);
 }
 
 body {
   background-color: var(--color-dark-bg);
   color: var(--color-text-main);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body::before {
@@ -29,8 +49,8 @@ body::before {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background-image: 
-    linear-gradient(rgba(232, 55, 42, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(232, 55, 42, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
   background-size: 60px 60px;
   z-index: -1;
   pointer-events: none;

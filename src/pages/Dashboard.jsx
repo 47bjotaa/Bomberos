@@ -4,19 +4,17 @@ import BodegaCard from '../components/dashboard/BodegaCard';
 import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
+import { useTheme } from '../context/ThemeContext';
+import { apiFetch } from '../services/api';
+import { useEffect } from 'react';
 
 function Dashboard({ setView }) {
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('bodegas');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const [ubicaciones, setUbicaciones] = useState([
-    { id: 1, name: 'Cuartel Central', items: 12 },
-    { id: 2, name: 'Bodega de Materiales', items: 8 },
-    { id: 3, name: 'Carro Bomba (B-1)', items: 6 },
-    { id: 4, name: 'Carro Rescate (R-1)', items: 5 },
-    { id: 5, name: 'Oficina Guardia', items: 2 },
-    { id: 6, name: 'Casino', items: 1 }
-  ]);
+  const [ubicaciones, setUbicaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [catalogo, setCatalogo] = useState([
     { id: 1, nombre: 'Manguera 50mm', tipo: 'Extinción', valor: '$120.000', desechable: false, serializado: true, mantencion: true },
     { id: 2, nombre: 'Guantes de Rescate', tipo: 'EPP', valor: '$25.000', desechable: true, serializado: false, mantencion: false },
@@ -43,6 +41,29 @@ function Dashboard({ setView }) {
     { id: 4, equipo: 'Guantes Estructurales Seiz', codigo: 'EPP-GUA-088', asignadoA: 'Ana Rojas', inicial: 'A', fecha: '22 Feb 2024', estado: 'Operativo' },
     { id: 5, equipo: 'Esclavina (Monja)', codigo: 'EPP-ESC-102', asignadoA: 'Luis Méndez', inicial: 'L', fecha: '01 Mar 2024', estado: 'Operativo' }
   ]);
+
+  useEffect(() => {
+    if (activeTab === 'bodegas') {
+      fetchUbicaciones();
+    }
+  }, [activeTab]);
+
+  const fetchUbicaciones = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/ubicaciones');
+      const mappedData = data.map(u => ({
+        id: u.idUbicacion || u.id,
+        name: u.nombre || u.name,
+        items: u.totalItems || u.items || 0
+      }));
+      setUbicaciones(mappedData);
+    } catch (error) {
+      console.error("Error al cargar ubicaciones:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
@@ -77,6 +98,14 @@ function Dashboard({ setView }) {
 
         {/* Right: User Profile & Actions */}
         <div className="flex items-center gap-4 ml-4 md:ml-8 relative">
+          <button 
+            onClick={toggleTheme} 
+            className="theme-toggle" 
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+          
           <div
             className="flex items-center gap-3 cursor-pointer hover:bg-dark-bg3 p-1.5 rounded-lg transition-colors"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -163,24 +192,37 @@ function Dashboard({ setView }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {ubicaciones.map(ubi => (
-                    <BodegaCard
-                      key={ubi.id}
-                      name={ubi.name}
-                      items={ubi.items}
-                      active={activeUbicacion === ubi.id}
-                      onClick={() => setActiveUbicacion(ubi.id)}
-                      onNameChange={(newName) => {
-                        setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
-                      }}
-                      onDelete={() => {
-                        if (window.confirm(`¿Estás seguro que deseas eliminar la ubicación "${ubi.name}"?`)) {
-                          setUbicaciones(ubicaciones.filter(u => u.id !== ubi.id));
-                          if (activeUbicacion === ubi.id) setActiveUbicacion(null);
-                        }
-                      }}
-                    />
-                  ))}
+                  {loading ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20">
+                      <div className="w-12 h-12 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin mb-4"></div>
+                      <p className="text-text-muted rajdhani text-lg">Cargando ubicaciones desde el servidor...</p>
+                    </div>
+                  ) : ubicaciones.length > 0 ? (
+                    ubicaciones.map(ubi => (
+                      <BodegaCard
+                        key={ubi.id}
+                        name={ubi.name}
+                        items={ubi.items}
+                        active={activeUbicacion === ubi.id}
+                        onClick={() => setActiveUbicacion(ubi.id)}
+                        onNameChange={(newName) => {
+                          setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
+                        }}
+                        onDelete={() => {
+                          if (window.confirm(`¿Estás seguro que deseas eliminar la ubicación "${ubi.name}"?`)) {
+                            setUbicaciones(ubicaciones.filter(u => u.id !== ubi.id));
+                            if (activeUbicacion === ubi.id) setActiveUbicacion(null);
+                          }
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-dark-border rounded-2xl">
+                      <Icons.Inventory size={48} className="text-text-muted mb-4 opacity-20" />
+                      <p className="text-text-muted rajdhani text-lg">No se encontraron ubicaciones registradas.</p>
+                      <button onClick={() => setShowAddUbicacionModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar la primera ubicación</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
