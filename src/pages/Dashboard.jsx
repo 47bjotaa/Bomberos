@@ -25,6 +25,7 @@ function Dashboard({ setView }) {
   const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
   const [itemsUbicacion, setItemsUbicacion] = useState([]);
+  const [subUbicaciones, setSubUbicaciones] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [showAddUbicacionModal, setShowAddUbicacionModal] = useState(false);
@@ -57,21 +58,38 @@ function Dashboard({ setView }) {
   const fetchItemsUbicacion = async (id) => {
     setLoadingItems(true);
     try {
-      const data = await apiFetch(`/api/materiales?idUbicacion=${id}`);
-      // Mapear los datos según lo visto en el diseño
-      const mappedData = data.map(item => ({
-        id: item.idMaterial || item.id,
-        nombre: item.nombre || 'Material sin nombre',
-        categoria: item.tipoMaterial || 'General',
-        cantidad: item.stock || item.cantidad || 1,
-        // Íconos predefinidos según categoría
-        icon: item.tipoMaterial?.toLowerCase().includes('comunic') ? 'radio' : 
-              item.tipoMaterial?.toLowerCase().includes('medic') ? 'medical' :
-              item.tipoMaterial?.toLowerCase().includes('extin') ? 'fire' : 'package'
+      // Realizamos ambas llamadas en paralelo usando el ID dinámico
+      const [dataHijas, dataMateriales] = await Promise.all([
+        apiFetch(`/api/ubicaciones/${id}/hijas`),
+        apiFetch(`/api/materiales?idUbicacion=${id}`)
+      ]);
+
+      // 1. Procesar Subdivisiones (Hijas)
+      const mappedHijas = (dataHijas || []).map(h => ({
+        id: h.idUbicacion || h.id,
+        nombre: h.nombre || 'Gaveta/Espacio',
+        tipo: h.nombreTipo || 'Subdivisión'
       }));
-      setItemsUbicacion(mappedData);
+      setSubUbicaciones(mappedHijas);
+
+      // 2. Procesar Materiales e Items combinados
+      const allItems = [
+        ...(dataMateriales?.materiales || []),
+        ...(dataMateriales?.items || [])
+      ].map(item => ({
+        id: item.idMaterial || item.idItem || item.idInventario || item.id,
+        nombre: item.nombreMaterial || item.nombre || 'Material',
+        categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
+        cantidad: item.cantidad || 1,
+        codigo: item.codigoUnico || null,
+        icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' : 
+              (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
+              (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
+      }));
+      setItemsUbicacion(allItems);
+
     } catch (error) {
-      console.error("Error al cargar materiales de la ubicación:", error);
+      console.error("Error al cargar detalles de la ubicación:", error);
     } finally {
       setLoadingItems(false);
     }
@@ -285,6 +303,7 @@ function Dashboard({ setView }) {
                 <LocationItemsView 
                   locationName={ubicaciones.find(u => u.id === activeUbicacion)?.name || 'Ubicación'}
                   items={itemsUbicacion}
+                  subUbicaciones={subUbicaciones}
                   loading={loadingItems}
                   onClose={() => setActiveUbicacion(null)}
                 />
