@@ -1,4 +1,4 @@
-import React from 'react';
+import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
 
 function Footer() {
   return (
@@ -6,7 +6,7 @@ function Footer() {
       <div className="container footer-content">
         <div className="footer-brand">
           <a href="#" className="logo" onClick={(e) => { e.preventDefault(); }}>
-            <img src="/images/logo.png" className="brand-logo" alt="SYNETIX" style={{ height: '32px' }} />
+            <LogoCuartelAmigo size={220} />
           </a>
           <p className="footer-slogan">Transformando la infraestructura digital para un futuro escalable.</p>
         </div>

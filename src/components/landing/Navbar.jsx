@@ -7,9 +7,8 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen, setView }) {
   return (
     <nav className="navbar">
       <div className="container flex items-center justify-between" style={{ width: '100%' }}>
-        <a href="#" className="logo" onClick={(e) => { e.preventDefault(); setView('landing'); }}>
-          <img src="/images/logo.png" className="brand-logo" alt="SYNETIX" />
-        </a>
+        <div className="flex items-center">
+        </div>
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
           <a href="#problema" onClick={() => setMobileMenuOpen(false)}>Problema</a>
           <a href="#solucion" onClick={() => setMobileMenuOpen(false)}>Solución</a>

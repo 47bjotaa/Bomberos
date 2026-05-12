@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/ui/Icons';
 import BodegaCard from '../components/dashboard/BodegaCard';
+import LocationItemsView from '../components/dashboard/LocationItemsView';
 import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
@@ -23,6 +24,8 @@ function Dashboard({ setView }) {
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
+  const [itemsUbicacion, setItemsUbicacion] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [showAddUbicacionModal, setShowAddUbicacionModal] = useState(false);
   const [newUbicacionName, setNewUbicacionName] = useState("");
@@ -42,6 +45,37 @@ function Dashboard({ setView }) {
       fetchCatalogo();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeUbicacion) {
+      fetchItemsUbicacion(activeUbicacion);
+    } else {
+      setItemsUbicacion([]);
+    }
+  }, [activeUbicacion]);
+
+  const fetchItemsUbicacion = async (id) => {
+    setLoadingItems(true);
+    try {
+      const data = await apiFetch(`/api/materiales?idUbicacion=${id}`);
+      // Mapear los datos según lo visto en el diseño
+      const mappedData = data.map(item => ({
+        id: item.idMaterial || item.id,
+        nombre: item.nombre || 'Material sin nombre',
+        categoria: item.tipoMaterial || 'General',
+        cantidad: item.stock || item.cantidad || 1,
+        // Íconos predefinidos según categoría
+        icon: item.tipoMaterial?.toLowerCase().includes('comunic') ? 'radio' : 
+              item.tipoMaterial?.toLowerCase().includes('medic') ? 'medical' :
+              item.tipoMaterial?.toLowerCase().includes('extin') ? 'fire' : 'package'
+      }));
+      setItemsUbicacion(mappedData);
+    } catch (error) {
+      console.error("Error al cargar materiales de la ubicación:", error);
+    } finally {
+      setLoadingItems(false);
+    }
+  };
 
   const fetchCatalogo = async () => {
     setLoading(true);
@@ -203,15 +237,15 @@ function Dashboard({ setView }) {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'bodegas' && (
-            <div className="flex h-full">
+            <div className="flex h-full overflow-hidden">
               {/* Main Grid area */}
-              <div className="flex-1 p-8 bg-dark-bg">
+              <div className={`flex-1 p-8 bg-dark-bg overflow-y-auto transition-all duration-300 ${activeUbicacion ? 'mr-0' : ''}`}>
                 <div className="mb-6">
                   <h3 className="text-2xl font-semibold text-white mb-1 rajdhani tracking-wide">Ubicaciones Principales</h3>
                   <p className="text-sm text-text-muted">Selecciona una ubicación principal para ver sus subdivisiones o asignar items directamente.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className={`grid gap-6 ${activeUbicacion ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
                   {loading ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-20">
                       <div className="w-12 h-12 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin mb-4"></div>
@@ -224,7 +258,7 @@ function Dashboard({ setView }) {
                         name={ubi.name}
                         items={ubi.items}
                         active={activeUbicacion === ubi.id}
-                        onClick={() => setActiveUbicacion(ubi.id)}
+                        onClick={() => setActiveUbicacion(ubi.id === activeUbicacion ? null : ubi.id)}
                         onNameChange={(newName) => {
                           setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
                         }}
@@ -245,6 +279,16 @@ function Dashboard({ setView }) {
                   )}
                 </div>
               </div>
+
+              {/* Side Panel for Items */}
+              {activeUbicacion && (
+                <LocationItemsView 
+                  locationName={ubicaciones.find(u => u.id === activeUbicacion)?.name || 'Ubicación'}
+                  items={itemsUbicacion}
+                  loading={loadingItems}
+                  onClose={() => setActiveUbicacion(null)}
+                />
+              )}
             </div>
           )}
 
