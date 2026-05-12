@@ -290,10 +290,328 @@ const Icons = {
   Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
   Truck: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
 };
+const cuerposBomberos = [
+  { "idCuerpoBomberos": 44, "nombre": "Cuerpo de Bomberos Cartagena", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 269, "nombre": "Cuerpo de Bomberos de Achao", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 42, "nombre": "Cuerpo de Bomberos de Algarrobo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 3, "nombre": "Cuerpo de Bomberos de Alto Hospicio", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 270, "nombre": "Cuerpo de Bomberos de Ancud", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 27, "nombre": "Cuerpo de Bomberos de Andacollo", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 213, "nombre": "Cuerpo de Bomberos de Angol", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 249, "nombre": "Cuerpo de Bomberos de Antilhue", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 10, "nombre": "Cuerpo de Bomberos de Antofagasta", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 181, "nombre": "Cuerpo de Bomberos de Antuco", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 182, "nombre": "Cuerpo de Bomberos de Arauco", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 1, "nombre": "Cuerpo de Bomberos de Arica", "region": "Region de Arica y Parinacota" },
+  { "idCuerpoBomberos": 2, "nombre": "Cuerpo de Bomberos de Arica", "region": "Region de Arica y Parinacota" },
+  { "idCuerpoBomberos": 75, "nombre": "Cuerpo de Bomberos de Buin", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 162, "nombre": "Cuerpo de Bomberos de Bulnes", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 43, "nombre": "Cuerpo de Bomberos de Cabildo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 183, "nombre": "Cuerpo de Bomberos de Cabrero", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 11, "nombre": "Cuerpo de Bomberos de Calama", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 271, "nombre": "Cuerpo de Bomberos de Calbuco", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 18, "nombre": "Cuerpo de Bomberos de Caldera", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 5, "nombre": "Cuerpo de Bomberos de Camina", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 28, "nombre": "Cuerpo de Bomberos de Candela", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 184, "nombre": "Cuerpo de Bomberos de Canete", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 214, "nombre": "Cuerpo de Bomberos de Capitan Pastene", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 215, "nombre": "Cuerpo de Bomberos de Carahue", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 272, "nombre": "Cuerpo de Bomberos de Carretera Austral", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 45, "nombre": "Cuerpo de Bomberos de Casablanca", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 273, "nombre": "Cuerpo de Bomberos de Castro", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 46, "nombre": "Cuerpo de Bomberos de Catemu", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 132, "nombre": "Cuerpo de Bomberos de Cauquenes", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 275, "nombre": "Cuerpo de Bomberos de Chacao", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 274, "nombre": "Cuerpo de Bomberos de Chaiten", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 19, "nombre": "Cuerpo de Bomberos de Chanaral", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 133, "nombre": "Cuerpo de Bomberos de Chanco", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 99, "nombre": "Cuerpo de Bomberos de Chepica", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 216, "nombre": "Cuerpo de Bomberos de Cherquenco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 185, "nombre": "Cuerpo de Bomberos de Chiguayante", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 304, "nombre": "Cuerpo de Bomberos de Chile Chico", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 163, "nombre": "Cuerpo de Bomberos de Chillan", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 100, "nombre": "Cuerpo de Bomberos de Chimbargongo", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 217, "nombre": "Cuerpo de Bomberos de Chol Chol", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 276, "nombre": "Cuerpo de Bomberos de Chonchi", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 250, "nombre": "Cuerpo de Bomberos de Choshuenco", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 164, "nombre": "Cuerpo de Bomberos de Cobquecura", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 277, "nombre": "Cuerpo de Bomberos de Cochamo", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 305, "nombre": "Cuerpo de Bomberos de Cochrane", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 101, "nombre": "Cuerpo de Bomberos de Codegua", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 165, "nombre": "Cuerpo de Bomberos de Coelemu", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 166, "nombre": "Cuerpo de Bomberos de Coihueco", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 102, "nombre": "Cuerpo de Bomberos de Coinco", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 134, "nombre": "Cuerpo de Bomberos de Colbun", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 76, "nombre": "Cuerpo de Bomberos de Colina", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 218, "nombre": "Cuerpo de Bomberos de Collipulli", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 103, "nombre": "Cuerpo de Bomberos de Coltauco", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 29, "nombre": "Cuerpo de Bomberos de Combarbala", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 186, "nombre": "Cuerpo de Bomberos de Concepcion", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 77, "nombre": "Cuerpo de Bomberos de Conchali-Huechuraba", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 135, "nombre": "Cuerpo de Bomberos de Constitucion", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 187, "nombre": "Cuerpo de Bomberos de Contulmo", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 20, "nombre": "Cuerpo de Bomberos de Copiapo", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 30, "nombre": "Cuerpo de Bomberos de Coquimbo", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 188, "nombre": "Cuerpo de Bomberos de Coronel", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 251, "nombre": "Cuerpo de Bomberos de Corral", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 278, "nombre": "Cuerpo de Bomberos de Corte Alto", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 306, "nombre": "Cuerpo de Bomberos de Coyhaique", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 252, "nombre": "Cuerpo de Bomberos de Crucero", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 136, "nombre": "Cuerpo de Bomberos de Cumpeo", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 219, "nombre": "Cuerpo de Bomberos de Cunco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 220, "nombre": "Cuerpo de Bomberos de Curacautin", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 78, "nombre": "Cuerpo de Bomberos de Curacavi", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 279, "nombre": "Cuerpo de Bomberos de Curaco de Velez", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 189, "nombre": "Cuerpo de Bomberos de Curanilahue", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 221, "nombre": "Cuerpo de Bomberos de Curarrehue", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 137, "nombre": "Cuerpo de Bomberos de Curepto", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 138, "nombre": "Cuerpo de Bomberos de Curico", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 280, "nombre": "Cuerpo de Bomberos de Dalcahue", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 21, "nombre": "Cuerpo de Bomberos de Diego de Almagro", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 104, "nombre": "Cuerpo de Bomberos de Donihue", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 167, "nombre": "Cuerpo de Bomberos de El Carmen", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 79, "nombre": "Cuerpo de Bomberos de El Monte", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 31, "nombre": "Cuerpo de Bomberos de El Palqui", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 47, "nombre": "Cuerpo de Bomberos de El Quisco", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 48, "nombre": "Cuerpo de Bomberos de El Tabo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 139, "nombre": "Cuerpo de Bomberos de Empedrado", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 281, "nombre": "Cuerpo de Bomberos de Entre Lagos", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 222, "nombre": "Cuerpo de Bomberos de Ercilla", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 190, "nombre": "Cuerpo de Bomberos de Florida", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 223, "nombre": "Cuerpo de Bomberos de Freire", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 23, "nombre": "Cuerpo de Bomberos de Freirina", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 282, "nombre": "Cuerpo de Bomberos de Fresia", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 283, "nombre": "Cuerpo de Bomberos de Frutillar", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 284, "nombre": "Cuerpo de Bomberos de Futaleufu", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 253, "nombre": "Cuerpo de Bomberos de Futrono", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 224, "nombre": "Cuerpo de Bomberos de Galvarino", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 225, "nombre": "Cuerpo de Bomberos de Gorbea", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 105, "nombre": "Cuerpo de Bomberos de Graneros", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 49, "nombre": "Cuerpo de Bomberos de Hijuelas", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 285, "nombre": "Cuerpo de Bomberos de Hualaihue", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 140, "nombre": "Cuerpo de Bomberos de Hualane", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 192, "nombre": "Cuerpo de Bomberos de Hualqui", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 191, "nombre": "Cuerpo de Bomberos de Huapen", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 6, "nombre": "Cuerpo de Bomberos de Huara", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 24, "nombre": "Cuerpo de Bomberos de Huasco", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 254, "nombre": "Cuerpo de Bomberos de Huellelhue", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 193, "nombre": "Cuerpo de Bomberos de Huepil", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 32, "nombre": "Cuerpo de Bomberos de Illapel", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 22, "nombre": "Cuerpo de Bomberos de Inca de Oro", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 7, "nombre": "Cuerpo de Bomberos de Iquique", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 80, "nombre": "Cuerpo de Bomberos de Isla de Maipo", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 50, "nombre": "Cuerpo de Bomberos de Isla de Pascua", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 51, "nombre": "Cuerpo de Bomberos de La Calera", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 52, "nombre": "Cuerpo de Bomberos de La Cruz", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 106, "nombre": "Cuerpo de Bomberos de La Estrella", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 81, "nombre": "Cuerpo de Bomberos de La Granja San Ramon y La Pintana", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 33, "nombre": "Cuerpo de Bomberos de La Higuera", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 257, "nombre": "Cuerpo de Bomberos de La Lanco", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 53, "nombre": "Cuerpo de Bomberos de La Ligua", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 34, "nombre": "Cuerpo de Bomberos de La Serena", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 255, "nombre": "Cuerpo de Bomberos de La Union", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 256, "nombre": "Cuerpo de Bomberos de Lago Ranco", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 194, "nombre": "Cuerpo de Bomberos de Laja", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 107, "nombre": "Cuerpo de Bomberos de Las Cabras", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 286, "nombre": "Cuerpo de Bomberos de Las Cascadas", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 35, "nombre": "Cuerpo de Bomberos de Las Vilos", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 226, "nombre": "Cuerpo de Bomberos de Lastarria", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 227, "nombre": "Cuerpo de Bomberos de Lautaro", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 195, "nombre": "Cuerpo de Bomberos de Lebu", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 228, "nombre": "Cuerpo de Bomberos de Lican Ray", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 141, "nombre": "Cuerpo de Bomberos de Licanten", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 54, "nombre": "Cuerpo de Bomberos de Limache", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 143, "nombre": "Cuerpo de Bomberos de Linares", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 108, "nombre": "Cuerpo de Bomberos de Litueche", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 287, "nombre": "Cuerpo de Bomberos de Llanquihue", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 55, "nombre": "Cuerpo de Bomberos de Llay-Llay", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 142, "nombre": "Cuerpo de Bomberos de Llico", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 109, "nombre": "Cuerpo de Bomberos de Lolol", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 229, "nombre": "Cuerpo de Bomberos de Loncoche", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 144, "nombre": "Cuerpo de Bomberos de Longavi", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 230, "nombre": "Cuerpo de Bomberos de Lonquimay", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 196, "nombre": "Cuerpo de Bomberos de Los alamos", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 197, "nombre": "Cuerpo de Bomberos de Los angeles", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 258, "nombre": "Cuerpo de Bomberos de Los Lagos", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 288, "nombre": "Cuerpo de Bomberos de Los Muermos", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 231, "nombre": "Cuerpo de Bomberos de Los Sauces", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 198, "nombre": "Cuerpo de Bomberos de Lota", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 232, "nombre": "Cuerpo de Bomberos de Lumaco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 110, "nombre": "Cuerpo de Bomberos de Machali", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 259, "nombre": "Cuerpo de Bomberos de Mafil", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 82, "nombre": "Cuerpo de Bomberos de Maipu", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 260, "nombre": "Cuerpo de Bomberos de Malalhue", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 111, "nombre": "Cuerpo de Bomberos de Malloa", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 112, "nombre": "Cuerpo de Bomberos de Marchigue", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 12, "nombre": "Cuerpo de Bomberos de Maria Elena", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 83, "nombre": "Cuerpo de Bomberos de Maria Pinto", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 145, "nombre": "Cuerpo de Bomberos de Maule", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 289, "nombre": "Cuerpo de Bomberos de Maullin", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 261, "nombre": "Cuerpo de Bomberos de Mehuin", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 13, "nombre": "Cuerpo de Bomberos de Mejillones", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 307, "nombre": "Cuerpo de Bomberos de Melinka", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 84, "nombre": "Cuerpo de Bomberos de Melipilla", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 233, "nombre": "Cuerpo de Bomberos de Mellipeuco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 146, "nombre": "Cuerpo de Bomberos de Molina", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 199, "nombre": "Cuerpo de Bomberos de Mulchen", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 200, "nombre": "Cuerpo de Bomberos de Nacimiento", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 113, "nombre": "Cuerpo de Bomberos de Nancagua", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 114, "nombre": "Cuerpo de Bomberos de Navidad", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 201, "nombre": "Cuerpo de Bomberos de Negrete", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 168, "nombre": "Cuerpo de Bomberos de Ninhue", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 169, "nombre": "Cuerpo de Bomberos de nipas", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 170, "nombre": "Cuerpo de Bomberos de niquen", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 56, "nombre": "Cuerpo de Bomberos de Nogales", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 234, "nombre": "Cuerpo de Bomberos de Nueva Imperial", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 86, "nombre": "Cuerpo de Bomberos de nunoa", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 115, "nombre": "Cuerpo de Bomberos de Olivar", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 57, "nombre": "Cuerpo de Bomberos de Olmue", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 290, "nombre": "Cuerpo de Bomberos de Osorno", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 36, "nombre": "Cuerpo de Bomberos de Ovalle", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 37, "nombre": "Cuerpo de Bomberos de Paihuano", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 262, "nombre": "Cuerpo de Bomberos de Paillaco", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 87, "nombre": "Cuerpo de Bomberos de Paine", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 291, "nombre": "Cuerpo de Bomberos de Palena", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 116, "nombre": "Cuerpo de Bomberos de Palmilla", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 263, "nombre": "Cuerpo de Bomberos de Panguipulli", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 58, "nombre": "Cuerpo de Bomberos de Papudo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 117, "nombre": "Cuerpo de Bomberos de Paredones", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 147, "nombre": "Cuerpo de Bomberos de Parral", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 148, "nombre": "Cuerpo de Bomberos de Pelarco", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 149, "nombre": "Cuerpo de Bomberos de Pelluhue", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 171, "nombre": "Cuerpo de Bomberos de Pemuco", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 88, "nombre": "Cuerpo de Bomberos de Penaflor", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 150, "nombre": "Cuerpo de Bomberos de Pencahue", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 202, "nombre": "Cuerpo de Bomberos de Penco", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 118, "nombre": "Cuerpo de Bomberos de Peralillo", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 235, "nombre": "Cuerpo de Bomberos de Perquenco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 59, "nombre": "Cuerpo de Bomberos de Petorca", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 119, "nombre": "Cuerpo de Bomberos de Peumo", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 8, "nombre": "Cuerpo de Bomberos de Pica", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 120, "nombre": "Cuerpo de Bomberos de Pichidegua", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 121, "nombre": "Cuerpo de Bomberos de Pichilemu", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 264, "nombre": "Cuerpo de Bomberos de Pichirropulli", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 172, "nombre": "Cuerpo de Bomberos de Pinto", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 236, "nombre": "Cuerpo de Bomberos de Pitrufquen", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 122, "nombre": "Cuerpo de Bomberos de Placilla", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 173, "nombre": "Cuerpo de Bomberos de Portezuelo", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 310, "nombre": "Cuerpo de Bomberos de Porvenir", "region": "Region de Magallanes y Antartica Chilena" },
+  { "idCuerpoBomberos": 9, "nombre": "Cuerpo de Bomberos de Pozo Almonte", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 60, "nombre": "Cuerpo de Bomberos de Puchuncavi", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 237, "nombre": "Cuerpo de Bomberos de Pucon", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 89, "nombre": "Cuerpo de Bomberos de Puente Alto", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 308, "nombre": "Cuerpo de Bomberos de Puerto Aysen", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 309, "nombre": "Cuerpo de Bomberos de Puerto Cisnes", "region": "Region de Aysen" },
+  { "idCuerpoBomberos": 292, "nombre": "Cuerpo de Bomberos de Puerto Montt", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 311, "nombre": "Cuerpo de Bomberos de Puerto Natales", "region": "Region de Magallanes y Antartica Chilena" },
+  { "idCuerpoBomberos": 293, "nombre": "Cuerpo de Bomberos de Puerto Octay", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 238, "nombre": "Cuerpo de Bomberos de Puerto Saavedra", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 294, "nombre": "Cuerpo de Bomberos de Puerto Varas", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 312, "nombre": "Cuerpo de Bomberos de Puerto Williams", "region": "Region de Magallanes y Antartica Chilena" },
+  { "idCuerpoBomberos": 123, "nombre": "Cuerpo de Bomberos de Pumanque", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 38, "nombre": "Cuerpo de Bomberos de Punitaqui", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 313, "nombre": "Cuerpo de Bomberos de Punta Arenas", "region": "Region de Magallanes y Antartica Chilena" },
+  { "idCuerpoBomberos": 295, "nombre": "Cuerpo de Bomberos de Puqueldon", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 239, "nombre": "Cuerpo de Bomberos de Puren", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 296, "nombre": "Cuerpo de Bomberos de Purranque", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 61, "nombre": "Cuerpo de Bomberos de Putaendo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 297, "nombre": "Cuerpo de Bomberos de Queilen", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 298, "nombre": "Cuerpo de Bomberos de Quellon", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 299, "nombre": "Cuerpo de Bomberos de Quemchi", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 203, "nombre": "Cuerpo de Bomberos de Quilaco", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 90, "nombre": "Cuerpo de Bomberos de Quilicura", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 204, "nombre": "Cuerpo de Bomberos de Quilleco", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 174, "nombre": "Cuerpo de Bomberos de Quillon", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 62, "nombre": "Cuerpo de Bomberos de Quillota", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 63, "nombre": "Cuerpo de Bomberos de Quilpue", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 124, "nombre": "Cuerpo de Bomberos de Quinta de Tilcoco", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 91, "nombre": "Cuerpo de Bomberos de Quinta Normal", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 64, "nombre": "Cuerpo de Bomberos de Quintero", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 175, "nombre": "Cuerpo de Bomberos de Quirihue", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 240, "nombre": "Cuerpo de Bomberos de Quitratue", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 125, "nombre": "Cuerpo de Bomberos de Rancagua", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 151, "nombre": "Cuerpo de Bomberos de Rauco", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 241, "nombre": "Cuerpo de Bomberos de Renaico", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 126, "nombre": "Cuerpo de Bomberos de Rengo", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 127, "nombre": "Cuerpo de Bomberos de Requinoa", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 152, "nombre": "Cuerpo de Bomberos de Retiro", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 265, "nombre": "Cuerpo de Bomberos de Reumen", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 300, "nombre": "Cuerpo de Bomberos de Riachuelo", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 65, "nombre": "Cuerpo de Bomberos de Rinconada", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 266, "nombre": "Cuerpo de Bomberos de Rio Bueno", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 39, "nombre": "Cuerpo de Bomberos de Rio Hurtado", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 301, "nombre": "Cuerpo de Bomberos de Rio Negro", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 153, "nombre": "Cuerpo de Bomberos de Romeral", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 154, "nombre": "Cuerpo de Bomberos de Sagrada Familia", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 40, "nombre": "Cuerpo de Bomberos de Salamanca", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 66, "nombre": "Cuerpo de Bomberos de San Antonio", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 92, "nombre": "Cuerpo de Bomberos de San Bernardo", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 176, "nombre": "Cuerpo de Bomberos de San Carlos", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 155, "nombre": "Cuerpo de Bomberos de San Clemente", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 67, "nombre": "Cuerpo de Bomberos de San Esteban", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 68, "nombre": "Cuerpo de Bomberos de San Felipe", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 128, "nombre": "Cuerpo de Bomberos de San Fernando", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 129, "nombre": "Cuerpo de Bomberos de San Francisco de Mostazal", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 177, "nombre": "Cuerpo de Bomberos de San Ignacio", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 156, "nombre": "Cuerpo de Bomberos de San Javier", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 267, "nombre": "Cuerpo de Bomberos de San Jose De La Mariquina", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 93, "nombre": "Cuerpo de Bomberos de San Jose de Maipo", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 302, "nombre": "Cuerpo de Bomberos de San Juan De La Costa", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 178, "nombre": "Cuerpo de Bomberos de San Nicolas", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 303, "nombre": "Cuerpo de Bomberos de San Pablo", "region": "Region de Los Lagos" },
+  { "idCuerpoBomberos": 14, "nombre": "Cuerpo de Bomberos de San Pedro de Atacama", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 205, "nombre": "Cuerpo de Bomberos de San Pedro de la Paz", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 94, "nombre": "Cuerpo de Bomberos de San Pedro de Melipilla", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 157, "nombre": "Cuerpo de Bomberos de San Rafael", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 206, "nombre": "Cuerpo de Bomberos de San Rosendo", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 130, "nombre": "Cuerpo de Bomberos de San Vicente de Tagua Tagua", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 207, "nombre": "Cuerpo de Bomberos de Santa Barbara", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 131, "nombre": "Cuerpo de Bomberos de Santa Cruz", "region": "Region del Libertador General Bernardo OHiggins" },
+  { "idCuerpoBomberos": 208, "nombre": "Cuerpo de Bomberos de Santa Juana", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 69, "nombre": "Cuerpo de Bomberos de Santa Maria", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 4, "nombre": "Cuerpo de Bomberos de Santa Rosa de Huantajaya", "region": "Region de Tarapaca" },
+  { "idCuerpoBomberos": 95, "nombre": "Cuerpo de Bomberos de Santiago", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 70, "nombre": "Cuerpo de Bomberos de Santo Domingo", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 15, "nombre": "Cuerpo de Bomberos de Sierra Gorda", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 96, "nombre": "Cuerpo de Bomberos de Talagante", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 158, "nombre": "Cuerpo de Bomberos de Talca", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 209, "nombre": "Cuerpo de Bomberos de Talcahuano", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 16, "nombre": "Cuerpo de Bomberos de Taltal", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 242, "nombre": "Cuerpo de Bomberos de Temuco", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 159, "nombre": "Cuerpo de Bomberos de Teno", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 243, "nombre": "Cuerpo de Bomberos de Teodoro Schmidt", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 25, "nombre": "Cuerpo de Bomberos de Tierra Amarilla", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 97, "nombre": "Cuerpo de Bomberos de Til-til", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 210, "nombre": "Cuerpo de Bomberos de Tirua", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 17, "nombre": "Cuerpo de Bomberos de Tocopilla", "region": "Region de Antofagasta" },
+  { "idCuerpoBomberos": 244, "nombre": "Cuerpo de Bomberos de Tolten", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 211, "nombre": "Cuerpo de Bomberos de Tome", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 245, "nombre": "Cuerpo de Bomberos de Traiguen", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 179, "nombre": "Cuerpo de Bomberos de Trehuaco", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 268, "nombre": "Cuerpo de Bomberos de Valdivia", "region": "Region de Los Rios" },
+  { "idCuerpoBomberos": 26, "nombre": "Cuerpo de Bomberos de Vallenar", "region": "Region de Atacama" },
+  { "idCuerpoBomberos": 71, "nombre": "Cuerpo de Bomberos de Valparaiso", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 246, "nombre": "Cuerpo de Bomberos de Victoria", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 41, "nombre": "Cuerpo de Bomberos de Vicuna", "region": "Region de Coquimbo" },
+  { "idCuerpoBomberos": 247, "nombre": "Cuerpo de Bomberos de Vilcun", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 160, "nombre": "Cuerpo de Bomberos de Villa Alegre", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 72, "nombre": "Cuerpo de Bomberos de Villa Alemana", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 98, "nombre": "Cuerpo de Bomberos de Villa Alhue", "region": "Region de Metropolitana" },
+  { "idCuerpoBomberos": 248, "nombre": "Cuerpo de Bomberos de Villarrica", "region": "Region de La Araucania" },
+  { "idCuerpoBomberos": 73, "nombre": "Cuerpo de Bomberos de Vina del Mar", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 161, "nombre": "Cuerpo de Bomberos de Yerbas Buenas", "region": "Region del Maule" },
+  { "idCuerpoBomberos": 212, "nombre": "Cuerpo de Bomberos de Yumbel", "region": "Region del Biobio" },
+  { "idCuerpoBomberos": 180, "nombre": "Cuerpo de Bomberos de Yungay", "region": "Region del Nuble" },
+  { "idCuerpoBomberos": 74, "nombre": "Cuerpo de Bomberos de Zapallar", "region": "Region de Valparaiso" },
+  { "idCuerpoBomberos": 85, "nombre": "Cuerpo de Bomberos Metropolitano Sur", "region": "Region de Metropolitana" }
+];
 
 function AuthView({ setView }) {
   const [mode, setMode] = useState('register'); // Default to register based on screenshots
   const [step, setStep] = useState(1);
+  const [cuerpoSearch, setCuerpoSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     rut: '', password: '', confirmPassword: '', nombre: '', telefono: '', correo: '', cuartel: '', cuerpoBomberos: ''
   });
@@ -381,6 +699,28 @@ function AuthView({ setView }) {
     }
   };
 
+  const filteredCuerpos = cuerposBomberos.filter(c => 
+    c.nombre.toLowerCase().includes(cuerpoSearch.toLowerCase()) || 
+    c.region.toLowerCase().includes(cuerpoSearch.toLowerCase())
+  );
+
+  const groupedCuerpos = filteredCuerpos.reduce((acc, curr) => {
+    const groupName = curr.region.replace(/Region (de |del )?/i, '').toUpperCase();
+    if (!acc[groupName]) acc[groupName] = [];
+    acc[groupName].push(curr);
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   if (mode === 'login') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-bg p-4">
@@ -416,7 +756,7 @@ function AuthView({ setView }) {
   return (
     <div className="min-h-screen flex bg-dark-bg">
       {/* Left Panel */}
-      <div className="hidden lg:flex w-1/2 relative bg-dark-bg items-end p-12 border-r border-dark-border overflow-hidden">
+      <div className="hidden lg:flex lg:w-[40%] xl:w-[35%] relative bg-dark-bg items-end p-12 border-r border-dark-border overflow-hidden">
         <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
           <source src="/images/necesito_que_crees_un_video_de.mp4" type="video/mp4" />
         </video>
@@ -430,69 +770,97 @@ function AuthView({ setView }) {
       </div>
 
       {/* Right Panel */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-dark-bg relative">
-        <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2 rajdhani">
-              {step === 1 ? 'Crear cuenta' : step === 2 ? 'Registro de Institución' : 'Seguridad de la cuenta'}
-            </h2>
-            <p className="text-text-muted">
-              {step === 1 ? 'Ingresa tus datos personales para comenzar' : step === 2 ? 'Paso 2 de 3: Información de la Compañía' : 'Casi listo. Configura tu contraseña para terminar.'}
-            </p>
-          </div>
+      <div className="w-full lg:w-[60%] xl:w-[65%] flex flex-col justify-center items-center p-8 bg-dark-bg relative overflow-x-hidden">
+        <div className="w-full max-w-5xl flex justify-center">
+          <div className={`grid gap-8 items-start w-full ${step === 1 ? 'xl:grid-cols-[320px_minmax(0,512px)] justify-center' : 'grid-cols-[minmax(0,512px)] justify-center'}`}>
+            
+            {/* Info Card Column */}
+            {step === 1 && (
+              <div className="hidden xl:block w-full mt-[208px]">
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 text-left font-sans shadow-lg">
+                  <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] mb-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                  <h3 className="text-[#2563EB] text-[1.1rem] font-semibold mb-3">Registro de Compañía</h3>
+                  <div className="text-[#64748B] text-[0.95rem] leading-relaxed">
+                    <p className="pb-4 border-b border-[#E2E8F0]">
+                      Para registrar una nueva compañía en la plataforma debes ser el <strong className="text-[#0F172A] font-semibold">administrador</strong> o tener autorización.
+                    </p>
+                    <p className="pt-4">
+                      Si eres voluntario y tu compañía aún no utiliza el sistema, <strong className="text-[#0F172A] font-semibold">comunica a tu superior</strong> sobre CuartelAmigo para que puedan unirse.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Stepper */}
-          <div className="flex items-center justify-center mb-10">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
-              {step > 1 ? '✓' : '1'}
-            </div>
-            <div className={`w-16 h-0.5 mx-2 ${step >= 2 ? 'bg-brand-cyan' : 'bg-dark-border'}`}></div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
-              {step > 2 ? '✓' : '2'}
-            </div>
-            <div className={`w-16 h-0.5 mx-2 ${step >= 3 ? 'bg-brand-cyan' : 'bg-dark-border'}`}></div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
-              3
-            </div>
-          </div>
+            {/* Form Column */}
+            <div className="w-full flex flex-col mx-auto max-w-md xl:max-w-none">
+              {/* Header */}
+              <div className="text-center mb-10">
+                <h2 className="text-4xl font-bold text-white mb-3 rajdhani">
+                  {step === 1 ? 'Crear cuenta' : step === 2 ? 'Registro de Institución' : 'Seguridad de la cuenta'}
+                </h2>
+                <p className="text-text-muted text-lg">
+                  {step === 1 ? 'Ingresa tus datos personales para comenzar' : step === 2 ? 'Paso 2 de 3: Información de la Compañía' : 'Casi listo. Configura tu contraseña para terminar.'}
+                </p>
+              </div>
 
-          {/* Form Card */}
-          <div className="bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-lg">
-            {step === 1 && <h3 className="text-lg font-semibold text-white mb-6 rajdhani">Datos Personales</h3>}
-            {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
+              {/* Stepper */}
+              <div className="flex items-center justify-center mb-12">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shadow-md ${step >= 1 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
+                  {step > 1 ? '✓' : '1'}
+                </div>
+                <div className={`w-16 h-1 mx-2 ${step >= 2 ? 'bg-brand-cyan' : 'bg-dark-border'}`}></div>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shadow-md ${step >= 2 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
+                  {step > 2 ? '✓' : '2'}
+                </div>
+                <div className={`w-16 h-1 mx-2 ${step >= 3 ? 'bg-brand-cyan' : 'bg-dark-border'}`}></div>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shadow-md ${step >= 3 ? 'bg-brand-cyan text-dark-bg' : 'bg-dark-surface text-text-muted border border-dark-border'}`}>
+                  3
+                </div>
+              </div>
+
+              {/* Form Card */}
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-lg relative z-20">
+              {step === 1 && <h3 className="text-lg font-semibold text-white mb-6 rajdhani">Datos Personales</h3>}
+              {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
 
             <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(e); }}>
 
               {/* STEP 1 */}
               {step === 1 && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Nombre completo</label>
-                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej. Juan Pérez" />
-                    {errors.nombre && <p className="text-brand-red text-xs mt-1">{errors.nombre}</p>}
+                    <label className="block text-base font-medium text-text-main mb-2">Nombre completo</label>
+                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej. Juan Pérez" />
+                    {errors.nombre && <p className="text-brand-red text-sm mt-1">{errors.nombre}</p>}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium text-text-main mb-1.5">RUT</label>
-                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="12.345.678-9" />
-                      {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
+                      <label className="block text-base font-medium text-text-main mb-2">RUT</label>
+                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="12.345.678-9" />
+                      {errors.rut && <p className="text-brand-red text-sm mt-1">{errors.rut}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text-main mb-1.5">Teléfono</label>
-                      <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="+56 9 1234 5678" />
+                      <label className="block text-base font-medium text-text-main mb-2">Teléfono</label>
+                      <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="+56 9 1234 5678" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Email</label>
-                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="juan@ejemplo.com" />
-                    {errors.correo && <p className="text-brand-red text-xs mt-1">{errors.correo}</p>}
+                    <label className="block text-base font-medium text-text-main mb-2">Email</label>
+                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="juan@ejemplo.com" />
+                    {errors.correo && <p className="text-brand-red text-sm mt-1">{errors.correo}</p>}
                   </div>
 
-                  <div className="pt-4 flex justify-end">
-                    <button type="button" onClick={handleNext} className="bg-dark-bg3 border border-dark-border hover:bg-dark-bg2 text-white font-medium py-2.5 px-6 rounded-lg transition-colors">
+                  <div className="pt-6 flex justify-end">
+                    <button type="button" onClick={handleNext} className="bg-dark-bg3 border border-dark-border hover:bg-dark-bg2 text-white text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Siguiente
                     </button>
                   </div>
@@ -501,28 +869,73 @@ function AuthView({ setView }) {
 
               {/* STEP 2 */}
               {step === 2 && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Nombre de la compañía</label>
-                    <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej. Primera Compañía de Bomberos" />
-                    {errors.cuartel && <p className="text-brand-red text-xs mt-1">{errors.cuartel}</p>}
+                    <label className="block text-base font-medium text-text-main mb-2">Nombre de la compañía</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                      </div>
+                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej: Primera Compañía de Bomberos" />
+                    </div>
+                    {errors.cuartel && <p className="text-brand-red text-sm mt-1">{errors.cuartel}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Cuerpo de Bomberos</label>
-                    <select name="cuerpoBomberos" value={formData.cuerpoBomberos} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all appearance-none">
-                      <option value="">Selecciona un cuerpo de bomberos...</option>
-                      <option value="1">Cuerpo de Bomberos Coquimbo</option>
-                      <option value="2">Cuerpo de Bomberos La Serena</option>
-                    </select>
-                    {errors.cuerpoBomberos && <p className="text-brand-red text-xs mt-1">{errors.cuerpoBomberos}</p>}
+                  <div className="relative" ref={dropdownRef}>
+                    <label className="block text-base font-medium text-text-main mb-2">Cuerpo de Bomberos</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                      </div>
+                      <input 
+                        type="text" 
+                        placeholder="Seleccione un cuerpo..." 
+                        value={cuerpoSearch}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        onChange={(e) => {
+                          setCuerpoSearch(e.target.value);
+                          setIsDropdownOpen(true);
+                        }}
+                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all cursor-pointer"
+                      />
+                    </div>
+                    {errors.cuerpoBomberos && <p className="text-brand-red text-sm mt-1">{errors.cuerpoBomberos}</p>}
+
+                    {isDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-2 bg-dark-bg3 border border-dark-border rounded-lg shadow-xl max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-thumb]:bg-text-muted/50 [&::-webkit-scrollbar-thumb]:rounded-full">
+                        {Object.keys(groupedCuerpos).length === 0 ? (
+                          <div className="p-5 text-base text-text-muted italic text-center">No se encontraron resultados...</div>
+                        ) : (
+                          Object.entries(groupedCuerpos).map(([region, cuerpos]) => (
+                            <div key={region} className="mb-2">
+                              <div className="sticky top-0 bg-dark-bg3/95 backdrop-blur-sm px-4 py-3 text-sm font-bold text-brand-green uppercase tracking-wider">
+                                {region}
+                              </div>
+                              {cuerpos.map(c => (
+                                <div 
+                                  key={c.idCuerpoBomberos}
+                                  onClick={() => {
+                                    handleChange({ target: { name: 'cuerpoBomberos', value: c.idCuerpoBomberos } });
+                                    setCuerpoSearch(c.nombre);
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`px-5 py-3 text-base cursor-pointer transition-colors ${formData.cuerpoBomberos == c.idCuerpoBomberos ? 'bg-brand-cyan/10 text-white font-medium' : 'text-text-main hover:bg-dark-bg/80 hover:text-white'}`}
+                                >
+                                  {c.nombre}
+                                </div>
+                              ))}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-8 flex justify-between">
-                    <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted font-medium py-2.5 px-6 rounded-lg transition-colors">
+                    <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Atrás
                     </button>
-                    <button type="button" onClick={handleNext} className="bg-dark-bg3 border border-dark-border hover:bg-dark-bg2 text-white font-medium py-2.5 px-6 rounded-lg transition-colors">
+                    <button type="button" onClick={handleNext} className="bg-dark-bg3 border border-dark-border hover:bg-dark-bg2 text-white text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Siguiente
                     </button>
                   </div>
@@ -531,31 +944,31 @@ function AuthView({ setView }) {
 
               {/* STEP 3 */}
               {step === 3 && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Contraseña</label>
-                    <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="••••••••" />
-                    {errors.password && <p className="text-brand-red text-xs mt-1">{errors.password}</p>}
+                    <label className="block text-base font-medium text-text-main mb-2">Contraseña</label>
+                    <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="••••••••" />
+                    {errors.password && <p className="text-brand-red text-sm mt-1">{errors.password}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text-main mb-1.5">Confirmar contraseña</label>
-                    <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="••••••••" />
-                    {errors.confirmPassword && <p className="text-brand-red text-xs mt-1">{errors.confirmPassword}</p>}
+                    <label className="block text-base font-medium text-text-main mb-2">Confirmar contraseña</label>
+                    <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="••••••••" />
+                    {errors.confirmPassword && <p className="text-brand-red text-sm mt-1">{errors.confirmPassword}</p>}
                   </div>
 
-                  <div className="pt-2">
-                    <label className="flex items-center p-3 rounded-lg border border-dark-border bg-dark-bg2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-brand-cyan border-dark-border rounded focus:ring-brand-cyan bg-dark-bg" required />
-                      <span className="ml-3 text-sm text-text-muted font-medium">Acepto los términos y condiciones de uso</span>
+                  <div className="pt-3">
+                    <label className="flex items-center p-4 rounded-xl border border-dark-border bg-dark-bg2 cursor-pointer transition-colors hover:border-brand-cyan/50">
+                      <input type="checkbox" className="w-5 h-5 text-brand-cyan border-dark-border rounded focus:ring-brand-cyan bg-dark-bg" required />
+                      <span className="ml-4 text-base text-text-muted font-medium">Acepto los términos y condiciones de uso</span>
                     </label>
                   </div>
 
-                  <div className="pt-6 flex justify-between">
-                    <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted font-medium py-2.5 px-6 rounded-lg transition-colors">
+                  <div className="pt-8 flex justify-between">
+                    <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Atrás
                     </button>
-                    <button type="submit" className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 text-white font-medium py-2.5 px-6 rounded-lg transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                    <button type="submit" className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 text-white text-lg font-medium py-3 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
                       Completar Registro
                     </button>
                   </div>
@@ -567,6 +980,9 @@ function AuthView({ setView }) {
           <div className="mt-8 text-center text-sm text-text-muted font-medium">
             ¿Ya tienes una cuenta? <button onClick={() => { setMode('login'); setErrors({}); }} className="text-brand-cyan hover:text-white transition-colors">Inicia sesión</button>
           </div>
+        </div>
+        
+        </div>
         </div>
       </div>
     </div>
