@@ -18,7 +18,7 @@ function AuthView({ setView }) {
 
   const validate = () => {
     const newErrors = {};
-    const rutRegex = /^[0-9]+-[0-9kK]{1}$/;
+    const rutRegex = /^[0-9.]+\-[0-9kK]{1}$/;
 
     if (mode === 'register') {
       if (step === 1) {
@@ -398,12 +398,11 @@ function AuthView({ setView }) {
           <div className="mt-8 text-center text-sm text-text-muted font-medium">
             ¿Ya tienes una cuenta? <button onClick={() => { setMode('login'); setErrors({}); }} className="text-brand-cyan hover:text-white transition-colors">Inicia sesión</button>
           </div>
-        </div>
-        
-        </div>
+          </div>
         </div>
       </div>
     </div>
+  </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/ui/Icons';
 import BodegaCard from '../components/dashboard/BodegaCard';
 import VehiculosView from '../components/dashboard/VehiculosView';
@@ -6,7 +6,6 @@ import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch } from '../services/api';
-import { useEffect } from 'react';
 
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
@@ -48,15 +47,19 @@ function Dashboard({ setView }) {
     setLoading(true);
     try {
       const data = await apiFetch('/api/materiales/creados');
-      const mappedData = data.map(m => ({
-        id: m.idMaterial || m.id,
-        nombre: m.nombre || m.name,
-        tipo: m.tipoMaterial || m.tipo || 'General',
-        valor: m.valor ? `$${parseInt(m.valor).toLocaleString('es-CL')}` : (m.precio ? `$${parseInt(m.precio).toLocaleString('es-CL')}` : '$0'),
-        desechable: m.desechable || false,
-        serializado: m.serializado || false,
-        mantencion: m.requiereMantencion || m.mantencion || false
-      }));
+      const mappedData = data.map(m => {
+        const val = m.valor || m.precio || '0';
+        const numericVal = typeof val === 'number' ? val : parseInt(String(val).replace(/\D/g, '')) || 0;
+        return {
+          id: m.idMaterial || m.id,
+          nombre: m.nombre || m.name || 'Sin nombre',
+          tipo: m.tipoMaterial || m.tipo || 'General',
+          valor: `$${numericVal.toLocaleString('es-CL')}`,
+          desechable: m.desechable || false,
+          serializado: m.serializado || false,
+          mantencion: m.requiereMantencion || m.mantencion || false
+        };
+      });
       setCatalogo(mappedData);
     } catch (error) {
       console.error("Error al cargar catálogo:", error);
@@ -285,7 +288,8 @@ function Dashboard({ setView }) {
                       <th className="px-6 py-4 font-semibold text-center">Mantención</th>
                       <th className="px-6 py-4 font-semibold text-right">Acciones</th>
                     </tr>
-                    <tbody className="divide-y divide-dark-border">
+                  </thead>
+                  <tbody className="divide-y divide-dark-border">
                     {loading ? (
                       <tr>
                         <td colSpan="7" className="px-6 py-20 text-center">
@@ -297,7 +301,7 @@ function Dashboard({ setView }) {
                       </tr>
                     ) : catalogo.length > 0 ? (
                       (filtroTipo === 'Todos los tipos' ? catalogo : catalogo.filter(item => item.tipo === filtroTipo))
-                        .filter(item => item.nombre.toLowerCase().includes(filtroNombre.toLowerCase()))
+                        .filter(item => (item.nombre || '').toLowerCase().includes(filtroNombre.toLowerCase()))
                         .map(item => {
                         const isEditing = editingCatId === item.id;
                         return (
