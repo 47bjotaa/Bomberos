@@ -15,13 +15,7 @@ function Dashboard({ setView }) {
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [catalogo, setCatalogo] = useState([
-    { id: 1, nombre: 'Manguera 50mm', tipo: 'Extinción', valor: '$120.000', desechable: false, serializado: true, mantencion: true },
-    { id: 2, nombre: 'Guantes de Rescate', tipo: 'EPP', valor: '$25.000', desechable: true, serializado: false, mantencion: false },
-    { id: 3, nombre: 'Pitón neblinero', tipo: 'Extinción', valor: '$350.000', desechable: false, serializado: true, mantencion: true },
-    { id: 4, nombre: 'Mascarilla N95', tipo: 'Médico', valor: '$1.500', desechable: true, serializado: false, mantencion: false },
-    { id: 5, nombre: 'Motamoladora', tipo: 'Herramientas', valor: '$850.000', desechable: false, serializado: true, mantencion: true },
-  ]);
+  const [catalogo, setCatalogo] = useState([]);
   const [editingCatId, setEditingCatId] = useState(null);
   const [editCatData, setEditCatData] = useState({});
   const [confirmCatAction, setConfirmCatAction] = useState(null);
@@ -45,8 +39,31 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (activeTab === 'bodegas') {
       fetchUbicaciones();
+    } else if (activeTab === 'catalogo') {
+      fetchCatalogo();
     }
   }, [activeTab]);
+
+  const fetchCatalogo = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/materiales/creados');
+      const mappedData = data.map(m => ({
+        id: m.idMaterial || m.id,
+        nombre: m.nombre || m.name,
+        tipo: m.tipoMaterial || m.tipo || 'General',
+        valor: m.valor ? `$${parseInt(m.valor).toLocaleString('es-CL')}` : (m.precio ? `$${parseInt(m.precio).toLocaleString('es-CL')}` : '$0'),
+        desechable: m.desechable || false,
+        serializado: m.serializado || false,
+        mantencion: m.requiereMantencion || m.mantencion || false
+      }));
+      setCatalogo(mappedData);
+    } catch (error) {
+      console.error("Error al cargar catálogo:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchUbicaciones = async () => {
     setLoading(true);
@@ -268,103 +285,125 @@ function Dashboard({ setView }) {
                       <th className="px-6 py-4 font-semibold text-center">Mantención</th>
                       <th className="px-6 py-4 font-semibold text-right">Acciones</th>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-dark-border">
-                    {(filtroTipo === 'Todos los tipos' ? catalogo : catalogo.filter(item => item.tipo === filtroTipo))
-                      .filter(item => item.nombre.toLowerCase().includes(filtroNombre.toLowerCase()))
-                      .map(item => {
-                      const isEditing = editingCatId === item.id;
-                      return (
-                        <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
-                          <td className="px-6 py-4 font-medium text-white">{item.nombre}</td>
-                          <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
-                          <td className="px-6 py-4 text-text-muted">
-                            {isEditing ? (
-                              <input 
-                                type="text" 
-                                value={editCatData.valor} 
-                                onChange={e => {
-                                  let rawValue = e.target.value.replace(/\D/g, '');
-                                  if (rawValue === '') {
-                                    setEditCatData({...editCatData, valor: ''});
-                                  } else {
-                                    const numValue = parseInt(rawValue, 10);
-                                    setEditCatData({...editCatData, valor: '$' + numValue.toLocaleString('es-CL')});
-                                  }
-                                }}
-                                className="w-full px-2 py-1 bg-dark-bg border border-brand-cyan rounded text-sm text-white focus:outline-none"
-                              />
-                            ) : item.valor}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            {isEditing ? (
-                              <input 
-                                type="checkbox" 
-                                checked={editCatData.desechable} 
-                                onChange={e => setEditCatData({...editCatData, desechable: e.target.checked})}
-                                className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                              />
-                            ) : (item.desechable ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            {isEditing ? (
-                               <input 
-                                 type="checkbox" 
-                                 checked={editCatData.serializado} 
-                                 onChange={e => setEditCatData({...editCatData, serializado: e.target.checked})}
-                                 className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                               />
-                            ) : (item.serializado ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            {isEditing ? (
-                               <input 
-                                 type="checkbox" 
-                                 checked={editCatData.mantencion} 
-                                 onChange={e => setEditCatData({...editCatData, mantencion: e.target.checked})}
-                                 className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                               />
-                            ) : (item.mantencion ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {isEditing ? (
-                               <>
-                                 <button 
-                                   onClick={() => setConfirmCatAction({ type: 'edit', id: item.id, data: editCatData })}
-                                   className="text-brand-green hover:opacity-80 transition-opacity mr-3"
-                                 >
-                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                 </button>
-                                 <button 
-                                   onClick={() => setEditingCatId(null)}
-                                   className="text-brand-red hover:opacity-80 transition-opacity"
-                                 >
-                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                 </button>
-                               </>
-                            ) : (
-                               <>
-                                 <button 
-                                   onClick={() => {
-                                     setEditingCatId(item.id);
-                                     setEditCatData({ ...item });
-                                   }}
-                                   className="text-text-muted hover:text-brand-cyan transition-colors mr-3"
-                                 >
-                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                 </button>
-                                 <button 
-                                   onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
-                                   className="text-text-muted hover:text-brand-red transition-colors"
-                                 >
-                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                 </button>
-                               </>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    <tbody className="divide-y divide-dark-border">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-20 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-10 h-10 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin mb-4"></div>
+                            <p className="text-text-muted rajdhani text-lg">Cargando catálogo de materiales...</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : catalogo.length > 0 ? (
+                      (filtroTipo === 'Todos los tipos' ? catalogo : catalogo.filter(item => item.tipo === filtroTipo))
+                        .filter(item => item.nombre.toLowerCase().includes(filtroNombre.toLowerCase()))
+                        .map(item => {
+                        const isEditing = editingCatId === item.id;
+                        return (
+                          <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
+                            <td className="px-6 py-4 font-medium text-white">{item.nombre}</td>
+                            <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
+                            <td className="px-6 py-4 text-text-muted">
+                              {isEditing ? (
+                                <input 
+                                  type="text" 
+                                  value={editCatData.valor} 
+                                  onChange={e => {
+                                    let rawValue = e.target.value.replace(/\D/g, '');
+                                    if (rawValue === '') {
+                                      setEditCatData({...editCatData, valor: ''});
+                                    } else {
+                                      const numValue = parseInt(rawValue, 10);
+                                      setEditCatData({...editCatData, valor: '$' + numValue.toLocaleString('es-CL')});
+                                    }
+                                  }}
+                                  className="w-full px-2 py-1 bg-dark-bg border border-brand-cyan rounded text-sm text-white focus:outline-none"
+                                />
+                              ) : item.valor}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {isEditing ? (
+                                <input 
+                                  type="checkbox" 
+                                  checked={editCatData.desechable} 
+                                  onChange={e => setEditCatData({...editCatData, desechable: e.target.checked})}
+                                  className="accent-brand-cyan w-4 h-4 cursor-pointer"
+                                />
+                              ) : (item.desechable ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {isEditing ? (
+                                 <input 
+                                   type="checkbox" 
+                                   checked={editCatData.serializado} 
+                                   onChange={e => setEditCatData({...editCatData, serializado: e.target.checked})}
+                                   className="accent-brand-cyan w-4 h-4 cursor-pointer"
+                                 />
+                              ) : (item.serializado ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {isEditing ? (
+                                 <input 
+                                   type="checkbox" 
+                                   checked={editCatData.mantencion} 
+                                   onChange={e => setEditCatData({...editCatData, mantencion: e.target.checked})}
+                                   className="accent-brand-cyan w-4 h-4 cursor-pointer"
+                                 />
+                              ) : (item.mantencion ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {isEditing ? (
+                                 <>
+                                   <button 
+                                     onClick={() => setConfirmCatAction({ type: 'edit', id: item.id, data: editCatData })}
+                                     className="text-brand-green hover:opacity-80 transition-opacity mr-3"
+                                   >
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                   </button>
+                                   <button 
+                                     onClick={() => setEditingCatId(null)}
+                                     className="text-brand-red hover:opacity-80 transition-opacity"
+                                   >
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                   </button>
+                                 </>
+                              ) : (
+                                 <>
+                                   <button 
+                                     onClick={() => {
+                                       setEditingCatId(item.id);
+                                       setEditCatData({ ...item });
+                                     }}
+                                     className="text-text-muted hover:text-brand-cyan transition-colors mr-3"
+                                   >
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                   </button>
+                                   <button 
+                                     onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
+                                     className="text-text-muted hover:text-brand-red transition-colors"
+                                   >
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                   </button>
+                                 </>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-20 text-center">
+                          <div className="flex flex-col items-center justify-center border-2 border-dashed border-dark-border rounded-xl p-8">
+                            <Icons.Traceability size={48} className="text-text-muted mb-4 opacity-20" />
+                            <p className="text-text-muted rajdhani text-lg">No hay materiales registrados en el catálogo.</p>
+                            <button onClick={() => setShowAddMaterialModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar el primer material</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+      })}
                   </tbody>
                 </table>
               </div>

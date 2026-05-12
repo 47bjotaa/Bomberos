@@ -1,21 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../../components/ui/Icons';
+import { apiFetch } from '../../services/api';
 
 function VehiculosView() {
   const [view, setView] = useState('list'); // list, add, detail
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
 
-  // Simulated data
-  const vehiculosIniciales = [
-    { id: 1, nombre: 'Carro Bomba (B-1)', patente: 'AB-12-34', tipo: 'Carro Bomba (Urbano)', modelo: 'Magirus Iveco 2018', estado: 'Operativo', observaciones: [], mantenciones: [] },
-    { id: 2, nombre: 'Carro Rescate (R-1)', patente: 'CD-56-78', tipo: 'Carro Rescate Pesado', modelo: 'Spartan Metro Star 2020', estado: 'Operativo', observaciones: [], mantenciones: [] },
-    { id: 3, nombre: 'Carro Hazmat (H-1)', patente: 'EF-90-12', tipo: 'Carro Especialidad Hazmat', modelo: 'Rosenbauer Commander 2015', estado: 'Operativo', observaciones: [], mantenciones: [] },
-    { id: 4, nombre: 'Ambulancia (S-1)', patente: 'GH-34-56', tipo: 'Ambulancia Avanzada', modelo: 'Mercedes Benz Sprinter 2021', estado: 'Operativo', observaciones: [], mantenciones: [] },
-    { id: 5, nombre: 'Carro Escala (Q-1)', patente: 'IJ-78-90', tipo: 'Carro Portaescalas', modelo: 'Pierce Arrow XT 2019', estado: 'Operativo', observaciones: [], mantenciones: [] },
-    { id: 6, nombre: 'Carro Aljibe (Z-1)', patente: 'KL-12-34', tipo: 'Carro Aljibe', modelo: 'Scania P410 2022', estado: 'Operativo', observaciones: [], mantenciones: [] }
-  ];
+  const [vehiculos, setVehiculos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [vehiculos, setVehiculos] = useState(vehiculosIniciales);
+  useEffect(() => {
+    fetchVehiculos();
+  }, []);
+
+  const fetchVehiculos = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/vehiculos');
+      const mappedData = data.map(v => ({
+        id: v.idVehiculo || v.id,
+        nombre: v.nombre || v.name || `Unidad ${v.patente || ''}`,
+        patente: v.patente || 'S/N',
+        tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
+        modelo: v.modelo || v.descripcion || 'Sin especificar',
+        estado: v.estado || 'Operativo',
+        observaciones: v.observaciones || [],
+        mantenciones: v.mantenciones || []
+      }));
+      setVehiculos(mappedData);
+    } catch (error) {
+      console.error("Error al cargar vehículos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form states
   const [formData, setFormData] = useState({
@@ -68,32 +86,40 @@ function VehiculosView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {vehiculos.map((v) => (
-            <div
-              key={v.id}
-              onClick={() => {
-                setSelectedVehiculo(v);
-                setView('detail');
-                setIsEditingPatente(false);
-                setShowAddObs(false);
-                setShowAddMant(false);
-              }}
-              className={`bg-dark-surface border rounded-xl cursor-pointer hover:shadow-lg hover:shadow-brand-cyan/5 transition-all flex flex-col items-center justify-center pt-8 pb-4 relative group overflow-hidden ${v.id === 1 ? 'border-brand-cyan ring-1 ring-brand-cyan' : 'border-dark-border hover:border-brand-cyan/50'}`}
-            >
-              {v.id === 1 && (
-                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-brand-cyan flex items-center justify-center text-dark-bg">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-              )}
-              <div className={`w-20 h-20 flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${v.id === 1 ? 'text-brand-cyan' : 'text-text-muted'}`}>
-                <Icons.Truck />
-              </div>
-              <div className={`w-full py-3 px-4 text-center border-t ${v.id === 1 ? 'bg-brand-cyan/5 border-brand-cyan/20' : 'border-dark-border bg-dark-bg/50'}`}>
-                <div className={`text-sm font-semibold mb-1 ${v.id === 1 ? 'text-brand-cyan' : 'text-white'}`}>{v.nombre}</div>
-                <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
-              </div>
+          {loading ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-20">
+              <div className="w-12 h-12 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin mb-4"></div>
+              <p className="text-text-muted rajdhani text-lg">Cargando parque automotriz...</p>
             </div>
-          ))}
+          ) : vehiculos.length > 0 ? (
+            vehiculos.map((v) => (
+              <div
+                key={v.id}
+                onClick={() => {
+                  setSelectedVehiculo(v);
+                  setView('detail');
+                  setIsEditingPatente(false);
+                  setShowAddObs(false);
+                  setShowAddMant(false);
+                }}
+                className={`bg-dark-surface border rounded-xl cursor-pointer hover:shadow-lg hover:shadow-brand-cyan/5 transition-all flex flex-col items-center justify-center pt-8 pb-4 relative group overflow-hidden border-dark-border hover:border-brand-cyan/50`}
+              >
+                <div className={`w-20 h-20 flex items-center justify-center mb-6 transition-transform group-hover:scale-110 text-text-muted`}>
+                  <Icons.Truck />
+                </div>
+                <div className={`w-full py-3 px-4 text-center border-t border-dark-border bg-dark-bg/50`}>
+                  <div className={`text-sm font-semibold mb-1 text-white`}>{v.nombre}</div>
+                  <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-dark-border rounded-2xl">
+              <Icons.Truck size={48} className="text-text-muted mb-4 opacity-20" />
+              <p className="text-text-muted rajdhani text-lg">No hay vehículos registrados.</p>
+              <button onClick={() => setView('add')} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehículo</button>
+            </div>
+          )}
         </div>
       </div>
     );
