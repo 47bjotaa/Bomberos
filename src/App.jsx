@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { authService } from './services/api';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap');
@@ -333,11 +334,43 @@ function AuthView({ setView }) {
     setStep(step - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Datos validados listos para BD futura:", formData);
-      setView('dashboard');
+      if (mode === 'login') {
+        try {
+          const res = await authService.login(formData.correo, formData.password);
+          console.log("Login exitoso", res);
+          setView('dashboard');
+        } catch (error) {
+          setErrors({ ...errors, api: "Error de credenciales o de conexión. Verifica los datos." });
+          console.error("Error API Login:", error);
+        }
+      } else {
+        try {
+          // Mapeo según la API /api/Companias/registrar-compania
+          const userData = {
+            idCuerpoBomberos: parseInt(formData.cuerpoBomberos) || 1,
+            nombreCompania: formData.cuartel,
+            rutUsuario: formData.rut,
+            emailUsuario: formData.correo,
+            password: formData.password,
+            nombreBombero: formData.nombre,
+            telefonoBombero: formData.telefono || "N/A",
+            rol: "Administrador" // Rol por defecto al crear una compañía
+          };
+          
+          await authService.register(userData);
+          console.log("Registro exitoso en BD");
+          
+          // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
+          await authService.login(formData.correo, formData.password);
+          setView('dashboard');
+        } catch (error) {
+          setErrors({ ...errors, api: "Error al intentar crear la cuenta en la base de datos." });
+          console.error("Error API Registro:", error);
+        }
+      }
     }
   };
 
@@ -356,6 +389,7 @@ function AuthView({ setView }) {
             <h2 className="text-2xl font-bold text-white mb-2 rajdhani">Iniciar Sesión</h2>
             <p className="text-text-muted text-sm">Ingresa tus credenciales para acceder</p>
           </div>
+          {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-main mb-1">Correo Electrónico</label>
@@ -426,6 +460,7 @@ function AuthView({ setView }) {
           {/* Form Card */}
           <div className="bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-lg">
             {step === 1 && <h3 className="text-lg font-semibold text-white mb-6 rajdhani">Datos Personales</h3>}
+            {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
 
             <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(e); }}>
 
@@ -477,8 +512,8 @@ function AuthView({ setView }) {
                     <label className="block text-sm font-medium text-text-main mb-1.5">Cuerpo de Bomberos</label>
                     <select name="cuerpoBomberos" value={formData.cuerpoBomberos} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all appearance-none">
                       <option value="">Selecciona un cuerpo de bomberos...</option>
-                      <option value="coquimbo">Cuerpo de Bomberos Coquimbo</option>
-                      <option value="serena">Cuerpo de Bomberos La Serena</option>
+                      <option value="1">Cuerpo de Bomberos Coquimbo</option>
+                      <option value="2">Cuerpo de Bomberos La Serena</option>
                     </select>
                     {errors.cuerpoBomberos && <p className="text-brand-red text-xs mt-1">{errors.cuerpoBomberos}</p>}
                   </div>
@@ -814,10 +849,9 @@ function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, on
   return (
     <div
       onClick={!isEditing ? onClick : undefined}
-      className={`relative flex flex-col items-center justify-center p-8 bg-dark-surface border rounded-3xl cursor-pointer transition-all hover:shadow-lg hover:shadow-brand-cyan/10 ${active ? 'border-brand-cyan ring-1 ring-brand-cyan bg-brand-cyan/5' : 'border-dark-border hover:border-brand-cyan/30'}`}
-      style={{ aspectRatio: '1/1' }}
+      className={`relative flex flex-col items-center justify-center p-6 pt-10 pb-8 bg-dark-surface border rounded-2xl cursor-pointer transition-all hover:shadow-lg hover:shadow-brand-cyan/10 ${active ? 'border-brand-cyan ring-1 ring-brand-cyan bg-brand-cyan/5' : 'border-dark-border hover:border-brand-cyan/30'}`}
     >
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-3 right-3 flex items-center gap-2">
         {!isEditing && onNameChange && (
           <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); setTempName(name); }} className="text-text-muted hover:text-brand-cyan transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -828,13 +862,13 @@ function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, on
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         )}
-        <div className="flex items-center text-xs font-semibold text-text-muted bg-dark-bg px-2.5 py-1.5 rounded-lg border border-dark-border shadow-sm">
-          <svg className="w-3.5 h-3.5 mr-1 text-text-muted opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2-2z"></path></svg>
+        <div className="flex items-center text-xs font-semibold text-text-muted bg-dark-bg px-2 py-1 rounded-md border border-dark-border shadow-sm">
+          <svg className="w-3 h-3 mr-1 text-text-muted opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2-2z"></path></svg>
           {items}
         </div>
       </div>
-      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-5 transition-colors ${active ? 'bg-brand-cyan text-white shadow-[0_0_15px_rgba(56,189,248,0.4)]' : 'bg-dark-bg text-text-muted border border-dark-border'}`}>
-        <div className="w-8 h-8 flex items-center justify-center">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 transition-colors ${active ? 'bg-brand-cyan text-white shadow-[0_0_15px_rgba(56,189,248,0.4)]' : 'bg-dark-bg text-text-muted border border-dark-border'}`}>
+        <div className="w-6 h-6 flex items-center justify-center">
           <ComputedIcon />
         </div>
       </div>
