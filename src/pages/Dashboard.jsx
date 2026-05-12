@@ -403,8 +403,6 @@ function Dashboard({ setView }) {
                       </tr>
                     )}
                   </tbody>
-      })}
-                  </tbody>
                 </table>
               </div>
             </div>
