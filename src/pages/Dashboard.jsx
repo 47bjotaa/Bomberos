@@ -26,6 +26,7 @@ function Dashboard({ setView }) {
   const [activeUbicacion, setActiveUbicacion] = useState(null);
   const [itemsUbicacion, setItemsUbicacion] = useState([]);
   const [subUbicaciones, setSubUbicaciones] = useState([]);
+  const [parentInfo, setParentInfo] = useState(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [showAddUbicacionModal, setShowAddUbicacionModal] = useState(false);
@@ -87,6 +88,14 @@ function Dashboard({ setView }) {
               (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
       }));
       setItemsUbicacion(allItems);
+
+      // 3. Capturar info del padre para navegación hacia atrás
+      const sampleItem = dataMateriales?.materiales?.[0] || dataMateriales?.items?.[0];
+      if (sampleItem && sampleItem.idPadre) {
+        setParentInfo({ id: sampleItem.idPadre, nombre: sampleItem.nombrePadre });
+      } else {
+        setParentInfo(null);
+      }
 
     } catch (error) {
       console.error("Error al cargar detalles de la ubicación:", error);
@@ -301,11 +310,14 @@ function Dashboard({ setView }) {
               {/* Side Panel for Items */}
               {activeUbicacion && (
                 <LocationItemsView 
-                  locationName={ubicaciones.find(u => u.id === activeUbicacion)?.name || 'Ubicación'}
+                  locationName={ubicaciones.find(u => u.id === activeUbicacion)?.name || parentInfo?.nombre || 'Ubicación'}
                   items={itemsUbicacion}
                   subUbicaciones={subUbicaciones}
+                  parentInfo={parentInfo}
                   loading={loadingItems}
                   onClose={() => setActiveUbicacion(null)}
+                  onSubClick={(id) => setActiveUbicacion(id)}
+                  onBack={(id) => setActiveUbicacion(id)}
                 />
               )}
             </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-function LocationItemsView({ locationName, items, subUbicaciones = [], loading, onClose }) {
+function LocationItemsView({ locationName, items, subUbicaciones = [], parentInfo, loading, onClose, onSubClick, onBack }) {
   // Mapping categories to specific icons (SVG)
   const getIcon = (iconType) => {
     switch (iconType) {
@@ -42,7 +42,20 @@ function LocationItemsView({ locationName, items, subUbicaciones = [], loading, 
     <div className="flex flex-col h-full bg-dark-surface border-l border-dark-border shadow-2xl animate-slide-in-right w-full max-w-md">
       {/* Header Panel */}
       <div className="p-6 border-b border-dark-border bg-dark-bg/40">
-        <div className="flex justify-between items-start mb-4">
+        {/* Navigation Breadcrumb/Back button */}
+        {parentInfo && (
+          <button 
+            onClick={() => onBack(parentInfo.id)}
+            className="flex items-center gap-2 text-xs font-bold text-brand-cyan mb-4 hover:underline transition-all"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            VOLVER A {parentInfo.nombre.toUpperCase()}
+          </button>
+        )}
+
+        <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-brand-cyan/10 rounded-lg text-brand-cyan border border-brand-cyan/20">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,7 +83,7 @@ function LocationItemsView({ locationName, items, subUbicaciones = [], loading, 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
             <div className="w-8 h-8 border-2 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin mb-4"></div>
-            <p className="text-sm text-text-muted rajdhani text-center px-6">Consultando servidores de Synetix...</p>
+            <p className="text-sm text-text-muted rajdhani text-center px-6">Sincronizando con el cuartel...</p>
           </div>
         ) : (
           <>
@@ -83,14 +96,18 @@ function LocationItemsView({ locationName, items, subUbicaciones = [], loading, 
                 </h4>
                 <div className="space-y-2">
                   {subUbicaciones.map((sub) => (
-                    <div key={sub.id} className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/40 border border-dark-border hover:border-brand-cyan/20 transition-all cursor-pointer group">
+                    <div 
+                      key={sub.id} 
+                      onClick={() => onSubClick(sub.id)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/40 border border-dark-border hover:border-brand-cyan/20 hover:bg-dark-bg/60 transition-all cursor-pointer group"
+                    >
                       <div className="text-text-muted group-hover:text-brand-cyan">
                         {getIcon('folder')}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm text-text-main font-medium truncate">{sub.nombre}</span>
+                        <span className="text-sm text-text-main font-medium truncate group-hover:text-white">{sub.nombre}</span>
                       </div>
-                      <svg className="w-4 h-4 text-text-muted group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-text-muted group-hover:text-brand-cyan transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
