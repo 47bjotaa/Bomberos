@@ -43,6 +43,18 @@ export const authService = {
     });
     if (data.token) {
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+      // Guardar información del perfil para mostrar en la interfaz
+      const userInfo = {
+        idUsuario: data.idUsuario,
+        idCompania: data.idCompania,
+        cargo: data.cargo,
+        permisos: data.permisos || [],
+        email: data.email
+      };
+      localStorage.setItem('user', JSON.stringify(userInfo));
     }
     return data;
   },
@@ -56,5 +68,7 @@ export const authService = {
   },
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
   }
 };
