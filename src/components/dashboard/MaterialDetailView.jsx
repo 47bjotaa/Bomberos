@@ -104,25 +104,13 @@ const getArrayPayload = (payload, keys = []) => {
 const getImageFileId = (image) => {
   if (typeof image === 'number' || typeof image === 'string') return image;
 
-  return image?.idArchivo
-    || image?.idImagen
-    || image?.idObservacionImagen
-    || image?.id
-    || image?.archivoId
-    || null;
+  return image?.idArchivo || null;
 };
 
 const getTemporaryImageUrl = (payload) => {
   if (typeof payload === 'string') return payload;
 
-  return payload?.url
-    || payload?.urlTemporal
-    || payload?.temporaryUrl
-    || payload?.data?.url
-    || payload?.data?.urlTemporal
-    || payload?.result?.url
-    || payload?.result?.urlTemporal
-    || '';
+  return payload?.url || '';
 };
 
 function EmptyState({ children, palette }) {
@@ -279,7 +267,10 @@ function MaterialDetailView({ route, onBack }) {
 
           return {
             idArchivo,
-            nombre: image?.nombre || image?.nombreArchivo || image?.fileName || `Imagen ${idArchivo}`,
+            nombre: image?.nombreOriginal || `Imagen ${idArchivo}`,
+            contentType: image?.contentType || '',
+            tamanioBytes: image?.tamanioBytes || 0,
+            fechaSubida: image?.fechaSubida || '',
             url,
           };
         }));
@@ -753,7 +744,12 @@ function MaterialDetailView({ route, onBack }) {
                         style={{ borderColor: palette.border, background: palette.cardSoft }}
                       >
                         <img src={image.url} alt={image.nombre} className="h-44 w-full object-cover" />
-                        <p className="truncate px-3 py-2 text-xs" style={{ color: palette.muted }}>{image.nombre}</p>
+                        <div className="px-3 py-2">
+                          <p className="truncate text-xs font-semibold" style={{ color: palette.text }}>{image.nombre}</p>
+                          {image.fechaSubida && (
+                            <p className="mt-1 text-[11px]" style={{ color: palette.muted }}>{formatDate(image.fechaSubida)}</p>
+                          )}
+                        </div>
                       </a>
                     ))}
                   </div>
