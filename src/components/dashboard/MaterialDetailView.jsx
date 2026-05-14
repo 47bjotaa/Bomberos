@@ -72,6 +72,17 @@ const getObservationTargetIds = (material, route) => {
   };
 };
 
+const getQueryString = (params) => {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  return searchParams.toString();
+};
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -229,9 +240,10 @@ function MaterialDetailView({ route, onBack }) {
           observationImages.forEach(({ file }) => {
             imageFormData.append('imagenes', file);
           });
+          const targetQuery = getQueryString(targetIds);
 
           try {
-            await apiFetch(`/api/observaciones/${idObservacion}/imagenes`, {
+            await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${targetQuery}`, {
               method: 'POST',
               body: imageFormData,
             });
