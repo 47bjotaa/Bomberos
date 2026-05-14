@@ -5,6 +5,7 @@ import LocationItemsView from '../components/dashboard/LocationItemsView';
 import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
+import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMaterialModal';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 
@@ -24,6 +25,7 @@ function Dashboard({ setView }) {
   const [filtroTipo, setFiltroTipo] = useState('Todos los tipos');
   const [filtroNombre, setFiltroNombre] = useState('');
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [showInventoryMaterialModal, setShowInventoryMaterialModal] = useState(false);
   const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
   const [locationPath, setLocationPath] = useState([]);
@@ -219,6 +221,11 @@ function Dashboard({ setView }) {
   const visibleUbicaciones = currentUbicacion ? subUbicaciones : ubicaciones;
   const selectedUbicacion = [...locationPath, ...subUbicaciones, ...ubicaciones].find(u => u.id === activeUbicacion);
   const selectedUbicacionName = selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
+  const refreshActiveUbicacion = async () => {
+    if (!activeUbicacion) return;
+
+    await fetchItemsUbicacion({ id: activeUbicacion, name: selectedUbicacionName }, { updateChildren: false });
+  };
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
@@ -355,6 +362,7 @@ function Dashboard({ setView }) {
                   items={itemsUbicacion}
                   loading={loadingItems}
                   hasSelection={Boolean(activeUbicacion)}
+                  onAddMaterial={() => setShowInventoryMaterialModal(true)}
                 />
               </div>
 
@@ -840,6 +848,14 @@ function Dashboard({ setView }) {
             onAssign={(newAssignments) => {
               setEppData(prev => [...newAssignments, ...prev]);
             }}
+          />
+        )}
+
+        {showInventoryMaterialModal && (
+          <AddInventoryMaterialModal
+            idUbicacion={activeUbicacion}
+            onClose={() => setShowInventoryMaterialModal(false)}
+            onAdded={refreshActiveUbicacion}
           />
         )}
       </main>
