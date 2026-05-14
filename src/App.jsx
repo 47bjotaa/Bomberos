@@ -4,6 +4,8 @@ import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import './App.css';
 
+const hasAuthToken = () => Boolean(localStorage.getItem('token'));
+
 const getViewFromPath = (pathname) => {
   if (pathname.startsWith('/dashboard')) return 'dashboard';
   if (pathname.startsWith('/login') || pathname.startsWith('/register')) return 'auth';
@@ -20,14 +22,49 @@ const pathByView = {
   dashboard: '/dashboard',
 };
 
+const getRouteStateFromPath = (pathname) => {
+  if (pathname.startsWith('/dashboard') && !hasAuthToken()) {
+    return {
+      view: 'auth',
+      authMode: 'login',
+      path: '/login',
+      shouldReplace: true,
+    };
+  }
+
+  return {
+    view: getViewFromPath(pathname),
+    authMode: getAuthModeFromPath(pathname),
+    path: pathname,
+    shouldReplace: false,
+  };
+};
+
 export default function App() {
-  const [view, setCurrentView] = useState(() => getViewFromPath(window.location.pathname));
-  const [authMode, setAuthMode] = useState(() => getAuthModeFromPath(window.location.pathname));
+  const [routeState, setRouteState] = useState(() => {
+    const initialRoute = getRouteStateFromPath(window.location.pathname);
+
+    if (initialRoute.shouldReplace && window.location.pathname !== initialRoute.path) {
+      window.history.replaceState({}, '', initialRoute.path);
+    }
+
+    return initialRoute;
+  });
+  const { view, authMode } = routeState;
+
+  const applyRouteFromPath = (pathname) => {
+    const nextRoute = getRouteStateFromPath(pathname);
+
+    if (nextRoute.shouldReplace && window.location.pathname !== nextRoute.path) {
+      window.history.replaceState({}, '', nextRoute.path);
+    }
+
+    setRouteState(nextRoute);
+  };
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentView(getViewFromPath(window.location.pathname));
-      setAuthMode(getAuthModeFromPath(window.location.pathname));
+      applyRouteFromPath(window.location.pathname);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -35,16 +72,23 @@ export default function App() {
   }, []);
 
   const setView = (nextView) => {
+    if (nextView === 'dashboard' && !hasAuthToken()) {
+      window.history.pushState({}, '', '/login');
+      setRouteState({ view: 'auth', authMode: 'login', path: '/login', shouldReplace: false });
+      return;
+    }
+
     const nextPath = pathByView[nextView];
     if (nextPath && window.location.pathname !== nextPath) {
       window.history.pushState({}, '', nextPath);
     }
 
-    if (nextView === 'auth') {
-      setAuthMode(getAuthModeFromPath(nextPath || window.location.pathname));
-    }
-
-    setCurrentView(nextView);
+    setRouteState({
+      view: nextView,
+      authMode: nextView === 'auth' ? getAuthModeFromPath(nextPath || window.location.pathname) : authMode,
+      path: nextPath || window.location.pathname,
+      shouldReplace: false,
+    });
   };
 
   return (

@@ -6,7 +6,7 @@ import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import { useTheme } from '../context/ThemeContext';
-import { apiFetch } from '../services/api';
+import { apiFetch, authService } from '../services/api';
 
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
@@ -201,7 +201,10 @@ function Dashboard({ setView }) {
           {showProfileMenu && (
             <div className="absolute right-0 top-full mt-2 w-48 bg-dark-surface border border-dark-border rounded-lg shadow-xl overflow-hidden z-50">
               <button
-                onClick={() => setView('landing')}
+                onClick={() => {
+                  authService.logout();
+                  setView('auth');
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-red hover:bg-dark-bg3 transition-colors text-left"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>

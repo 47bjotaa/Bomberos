@@ -1,5 +1,18 @@
 const API_URL = import.meta.env.VITE_API_URL || "https://api-staging-bomberos-afabenevecetgwhf.brazilsouth-01.azurewebsites.net";
 
+const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+};
+
+const redirectToLogin = () => {
+  if (window.location.pathname !== '/login') {
+    window.history.replaceState({}, '', '/login');
+    window.dispatchEvent(new Event('popstate'));
+  }
+};
+
 export const apiFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('token');
   const headers = {
@@ -17,13 +30,18 @@ export const apiFetch = async (endpoint, options = {}) => {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      redirectToLogin();
+    }
+
     let errorMessage = `Error API: ${response.status}`;
     const errorText = await response.text().catch(() => "");
     if (errorText) {
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
-      } catch (e) {
+      } catch {
         errorMessage = errorText;
       }
     }
@@ -67,8 +85,6 @@ export const authService = {
     return data;
   },
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    clearSession();
   }
 };
