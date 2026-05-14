@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -91,23 +91,51 @@ function MaterialDetailView({ route, onBack }) {
   const [error, setError] = useState('');
   const [showObservationForm, setShowObservationForm] = useState(false);
   const [observationText, setObservationText] = useState('');
-  const [observationImage, setObservationImage] = useState(null);
-  const [observationImagePreview, setObservationImagePreview] = useState('');
+  const [observationImages, setObservationImages] = useState([]);
   const [observationSaving, setObservationSaving] = useState(false);
   const [observationError, setObservationError] = useState('');
+  const [observationNotice, setObservationNotice] = useState('');
+  const observationImagesRef = useRef([]);
 
   const resetObservationDraft = () => {
     setShowObservationForm(false);
     setObservationText('');
-    setObservationImage(null);
-    setObservationImagePreview('');
+    observationImages.forEach((image) => URL.revokeObjectURL(image.preview));
+    setObservationImages([]);
     setObservationError('');
   };
 
   const handleObservationImageChange = (event) => {
-    const file = event.target.files?.[0] || null;
-    setObservationImage(file);
-    setObservationImagePreview(file ? URL.createObjectURL(file) : '');
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setObservationImages((currentImages) => {
+      const availableSlots = Math.max(0, 3 - currentImages.length);
+      const nextFiles = selectedFiles.slice(0, availableSlots).map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+
+      if (selectedFiles.length > availableSlots) {
+        setObservationError('Solo puedes subir hasta 3 imagenes por observacion.');
+      } else {
+        setObservationError('');
+      }
+
+      return [...currentImages, ...nextFiles];
+    });
+    event.target.value = '';
+  };
+
+  const removeObservationImage = (indexToRemove) => {
+    setObservationImages((currentImages) => {
+      const imageToRemove = currentImages[indexToRemove];
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+
+      return currentImages.filter((_, index) => index !== indexToRemove);
+    });
   };
 
   useEffect(() => {
@@ -118,9 +146,12 @@ function MaterialDetailView({ route, onBack }) {
       setError('');
       setShowObservationForm(false);
       setObservationText('');
-      setObservationImage(null);
-      setObservationImagePreview('');
+      setObservationImages((currentImages) => {
+        currentImages.forEach((image) => URL.revokeObjectURL(image.preview));
+        return [];
+      });
       setObservationError('');
+      setObservationNotice('');
 
       try {
         const endpoint = route.type === 'item'
@@ -148,11 +179,13 @@ function MaterialDetailView({ route, onBack }) {
     };
   }, [route]);
 
+  useEffect(() => {
+    observationImagesRef.current = observationImages;
+  }, [observationImages]);
+
   useEffect(() => () => {
-    if (observationImagePreview) {
-      URL.revokeObjectURL(observationImagePreview);
-    }
-  }, [observationImagePreview]);
+    observationImagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
+  }, []);
 
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
   const shouldShowMantenciones = Boolean(material.requiereMantencion);
@@ -174,6 +207,7 @@ function MaterialDetailView({ route, onBack }) {
 
     setObservationSaving(true);
     setObservationError('');
+    setObservationNotice('');
 
     try {
       const createdObservation = await apiFetch('/api/observaciones', {
@@ -181,23 +215,30 @@ function MaterialDetailView({ route, onBack }) {
         body: JSON.stringify(payload),
       });
       const idObservacion = getObservationId(createdObservation);
+      let imageUploadError = null;
 
-      if (observationImage) {
+      if (observationImages.length > 0) {
         if (!idObservacion) {
-          throw new Error('La observacion fue creada, pero la respuesta no incluyo idObservacion para subir la imagen.');
+          imageUploadError = new Error('La respuesta no incluyo idObservacion para subir la imagen.');
+        } else {
+          const imageFormData = new FormData();
+          imageFormData.append('idObservacion', idObservacion);
+          Object.entries(targetIds).forEach(([key, value]) => {
+            imageFormData.append(key, value);
+          });
+          observationImages.forEach(({ file }) => {
+            imageFormData.append('imagenes', file);
+          });
+
+          try {
+            await apiFetch(`/api/observaciones/${idObservacion}/imagenes`, {
+              method: 'POST',
+              body: imageFormData,
+            });
+          } catch (err) {
+            imageUploadError = err;
+          }
         }
-
-        const imageFormData = new FormData();
-        imageFormData.append('idObservacion', idObservacion);
-        Object.entries(targetIds).forEach(([key, value]) => {
-          imageFormData.append(key, value);
-        });
-        imageFormData.append('imagenes', observationImage);
-
-        await apiFetch(`/api/observaciones/${idObservacion}/imagenes`, {
-          method: 'POST',
-          body: imageFormData,
-        });
       }
 
       const nextObservation = {
@@ -217,9 +258,13 @@ function MaterialDetailView({ route, onBack }) {
         };
       });
       setObservationText('');
-      setObservationImage(null);
-      setObservationImagePreview('');
+      observationImages.forEach((image) => URL.revokeObjectURL(image.preview));
+      setObservationImages([]);
       setShowObservationForm(false);
+
+      if (imageUploadError) {
+        setObservationNotice(`La observacion fue creada, pero la imagen no pudo subirse: ${imageUploadError.message || 'revisa CORS en el endpoint de imagenes.'}`);
+      }
     } catch (err) {
       setObservationError(err.message || 'No se pudo crear la observacion.');
     } finally {
@@ -358,6 +403,11 @@ function MaterialDetailView({ route, onBack }) {
                     + Agregar
                   </button>
                 </div>
+                {observationNotice && (
+                  <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {observationNotice}
+                  </p>
+                )}
                 <div className="space-y-3">
                   {material.observaciones.length > 0 ? material.observaciones.map((obs) => (
                     <article key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`} className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
@@ -463,23 +513,37 @@ function MaterialDetailView({ route, onBack }) {
                   className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition-colors hover:border-brand-cyan/60"
                   style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.muted }}
                 >
-                  {observationImagePreview ? (
-                    <img src={observationImagePreview} alt="Vista previa" className="mb-3 max-h-40 rounded-lg object-contain" />
-                  ) : (
-                    <span className="mb-2 text-2xl">&#128247;</span>
-                  )}
+                  <span className="mb-2 text-2xl">&#128247;</span>
                   <span className="text-sm font-semibold" style={{ color: palette.text }}>
-                    {observationImage ? observationImage.name : 'Seleccionar imagen'}
+                    {observationImages.length >= 3 ? 'Limite de 3 imagenes alcanzado' : 'Seleccionar imagenes'}
                   </span>
-                  <span className="mt-1 text-xs" style={{ color: palette.muted }}>PNG, JPG o JPEG</span>
+                  <span className="mt-1 text-xs" style={{ color: palette.muted }}>PNG, JPG o JPEG. Maximo 3 fotos.</span>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg"
+                    multiple
                     className="hidden"
                     onChange={handleObservationImageChange}
-                    disabled={observationSaving}
+                    disabled={observationSaving || observationImages.length >= 3}
                   />
                 </label>
+                {observationImages.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-3">
+                    {observationImages.map((image, index) => (
+                      <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border" style={{ borderColor: palette.border }}>
+                        <img src={image.preview} alt={`Vista previa ${index + 1}`} className="h-24 w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeObservationImage(index)}
+                          disabled={observationSaving}
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {observationError && (
