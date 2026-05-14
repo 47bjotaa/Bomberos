@@ -256,7 +256,7 @@ function MaterialDetailView({ route, onBack }) {
       setObservationDetailImages([]);
 
       try {
-        const imageListPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes`);
+        const imageListPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${targetQuery}`);
         const imageList = getArrayPayload(imageListPayload, ['imagenes', 'archivos', 'files']);
         const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
           const idArchivo = getImageFileId(image);
