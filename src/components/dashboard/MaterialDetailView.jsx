@@ -64,6 +64,10 @@ function MaterialDetailView({ route, onBack }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showObservationForm, setShowObservationForm] = useState(false);
+  const [observationText, setObservationText] = useState('');
+  const [observationSaving, setObservationSaving] = useState(false);
+  const [observationError, setObservationError] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -71,6 +75,9 @@ function MaterialDetailView({ route, onBack }) {
     const fetchDetail = async () => {
       setLoading(true);
       setError('');
+      setShowObservationForm(false);
+      setObservationText('');
+      setObservationError('');
 
       try {
         const endpoint = route.type === 'item'
@@ -101,6 +108,55 @@ function MaterialDetailView({ route, onBack }) {
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
   const shouldShowMantenciones = Boolean(material.requiereMantencion);
   const gridColumns = shouldShowMantenciones ? 'lg:grid-cols-2' : 'lg:grid-cols-1';
+
+  const handleCreateObservation = async (event) => {
+    event.preventDefault();
+
+    const trimmedObservation = observationText.trim();
+    if (!trimmedObservation) return;
+
+    const idItem = material.esSerializacion ? Number(material.idItem || route.id) : 0;
+    const idMaterial = material.esSerializacion ? 0 : Number(material.idMaterial || route.id);
+    const fecha = new Date().toISOString();
+    const payload = {
+      idItem,
+      idMaterial,
+      idVehiculo: 0,
+      observacion: trimmedObservation,
+      fecha,
+    };
+
+    setObservationSaving(true);
+    setObservationError('');
+
+    try {
+      const createdObservation = await apiFetch('/api/observaciones', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const nextObservation = {
+        ...payload,
+        ...createdObservation,
+        observacion: createdObservation.observacion || payload.observacion,
+        fecha: createdObservation.fecha || payload.fecha,
+      };
+
+      setDetail((currentDetail) => {
+        const current = currentDetail || material;
+
+        return {
+          ...current,
+          observaciones: [nextObservation, ...(current.observaciones || [])],
+        };
+      });
+      setObservationText('');
+      setShowObservationForm(false);
+    } catch (err) {
+      setObservationError(err.message || 'No se pudo crear la observacion.');
+    } finally {
+      setObservationSaving(false);
+    }
+  };
 
   return (
     <section className="themed-ui h-full overflow-y-auto" style={{ background: palette.isLight ? '#FFFFFF' : palette.bg, color: palette.text }}>
@@ -221,11 +277,65 @@ function MaterialDetailView({ route, onBack }) {
                     <span className="text-text-muted">&#128196;</span>
                     Observaciones
                   </h3>
-                  <button className="rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: palette.border, background: palette.card, color: palette.text }} type="button">
+                  <button
+                    className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                    style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                    type="button"
+                    onClick={() => {
+                      setShowObservationForm(true);
+                      setObservationError('');
+                    }}
+                  >
                     + Agregar
                   </button>
                 </div>
                 <div className="space-y-3">
+                  {showObservationForm && (
+                    <form
+                      onSubmit={handleCreateObservation}
+                      className="rounded-lg border p-4"
+                      style={{ borderColor: palette.border, background: palette.card }}
+                    >
+                      <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                        Nueva observacion
+                      </label>
+                      <textarea
+                        autoFocus
+                        value={observationText}
+                        onChange={(event) => setObservationText(event.target.value)}
+                        placeholder="Escribe el detalle de la observacion..."
+                        className="min-h-[96px] w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
+                        style={{ borderColor: palette.border, background: palette.bg2, color: palette.text }}
+                      />
+                      {observationError && (
+                        <p className="mt-2 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                          {observationError}
+                        </p>
+                      )}
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowObservationForm(false);
+                            setObservationText('');
+                            setObservationError('');
+                          }}
+                          className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:text-brand-cyan"
+                          style={{ color: palette.muted }}
+                          disabled={observationSaving}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!observationText.trim() || observationSaving}
+                          className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {observationSaving ? 'Guardando...' : 'Guardar'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                   {material.observaciones.length > 0 ? material.observaciones.map((obs) => (
                     <article key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`} className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
                       <p className="text-xs" style={{ color: palette.muted }}>{formatDate(obs.fecha)}</p>
