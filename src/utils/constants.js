@@ -1,3 +1,5 @@
+export const APP_LOGIN_URL = 'https://app.cuartelamigo.cl/login';
+
 export const cuerposBomberos = [
   { "idCuerpoBomberos": 44, "nombre": "Cuerpo de Bomberos Cartagena", "region": "Region de Valparaiso" },
   { "idCuerpoBomberos": 269, "nombre": "Cuerpo de Bomberos de Achao", "region": "Region de Los Lagos" },
@@ -312,4 +314,4 @@ export const cuerposBomberos = [
   { "idCuerpoBomberos": 180, "nombre": "Cuerpo de Bomberos de Yungay", "region": "Region del Nuble" },
   { "idCuerpoBomberos": 74, "nombre": "Cuerpo de Bomberos de Zapallar", "region": "Region de Valparaiso" },
   { "idCuerpoBomberos": 85, "nombre": "Cuerpo de Bomberos Metropolitano Sur", "region": "Region de Metropolitana" }
-];
+];

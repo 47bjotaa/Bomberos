@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { authService } from '../services/api';
 import { cuerposBomberos } from '../utils/constants';
 import { useTheme } from '../context/ThemeContext';
 import { Icons } from '../components/ui/Icons';
 
-function AuthView({ setView }) {
+function AuthView({ initialMode = 'register' }) {
   const { theme, toggleTheme } = useTheme();
-  const [mode, setMode] = useState('register'); // Default to register based on screenshots
+  const [mode, setMode] = useState(initialMode);
   const [step, setStep] = useState(1);
   const [cuerpoSearch, setCuerpoSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -16,9 +16,13 @@ function AuthView({ setView }) {
   });
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
   const validate = () => {
     const newErrors = {};
-    const rutRegex = /^[0-9.]+\-[0-9kK]{1}$/;
+    const rutRegex = /^[0-9.]+-[0-9kK]{1}$/;
 
     if (mode === 'register') {
       if (step === 1) {
@@ -58,7 +62,7 @@ function AuthView({ setView }) {
         try {
           const res = await authService.login(formData.rut, formData.password);
           console.log("Login exitoso", res);
-          setView('dashboard');
+          window.location.href = "/dashboard";
         } catch (error) {
           setErrors(prev => ({ ...prev, api: error.message || "Error al iniciar sesión." }));
           console.error("Error API Login:", error);
@@ -82,7 +86,7 @@ function AuthView({ setView }) {
           
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
           await authService.login(formData.rut, formData.password);
-          setView('dashboard');
+          window.location.href = "/dashboard";
         } catch (error) {
           setErrors(prev => ({ ...prev, api: error.message || "Error al intentar crear la cuenta en la base de datos." }));
           console.error("Error API Registro:", error);

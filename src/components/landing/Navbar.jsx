@@ -1,7 +1,8 @@
 import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { APP_LOGIN_URL } from '../../utils/constants';
 
-function Navbar({ mobileMenuOpen, setMobileMenuOpen, setView }) {
+function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -23,7 +24,7 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen, setView }) {
           >
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
           </button>
-          <button onClick={() => setView('auth')} className="btn btn-primary nav-btn">Registrarse</button>
+          <a href={APP_LOGIN_URL} className="btn btn-primary nav-btn">Ingresar</a>
           <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <Icons.Menu />
           </button>

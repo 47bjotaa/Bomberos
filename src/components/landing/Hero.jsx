@@ -1,7 +1,7 @@
-import React from 'react';
 import { Icons } from '../../components/ui/Icons';
+import { APP_LOGIN_URL } from '../../utils/constants';
 
-function Hero({ setView }) {
+function Hero() {
   return (
     <section className="hero text-center" style={{ paddingBottom: '160px' }}>
       <video autoPlay loop muted playsInline className="hero-video-bg">
@@ -19,7 +19,7 @@ function Hero({ setView }) {
           integral, robusto y en tiempo real diseñado exclusivamente para bomberos.
         </p>
         <div className="flex justify-center gap-4 reveal is-visible delay-200">
-          <button onClick={() => setView('auth')} className="btn btn-primary">Registrarse / Ingresar <Icons.ChevronRight /></button>
+          <a href={APP_LOGIN_URL} className="btn btn-primary">Registrarse / Ingresar <Icons.ChevronRight /></a>
           <a href="#solucion" className="btn btn-secondary">Explorar Módulos</a>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import Problema from '../components/landing/Problema';
@@ -9,7 +9,7 @@ import ComoFunciona from '../components/landing/ComoFunciona';
 import CtaFinal from '../components/landing/CtaFinal';
 import Footer from '../components/landing/Footer';
 
-function Landing({ setView }) {
+function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -25,14 +25,14 @@ function Landing({ setView }) {
 
   return (
     <div className="landing-page fade-in">
-      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} setView={setView} />
-      <Hero setView={setView} />
+      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
+      <Hero />
       <Problema />
       <Solucion />
       <Semaforo />
       <DashboardPreview />
       <ComoFunciona />
-      <CtaFinal setView={setView} />
+      <CtaFinal />
       <Footer />
     </div>
   );
