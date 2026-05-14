@@ -145,6 +145,16 @@ const isImageFile = (file) => {
   return contentType.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name);
 };
 
+const sortMaintenances = (maintenances = []) => (
+  [...maintenances].sort((a, b) => {
+    const aPending = String(a.estadoMantencion || '').toLowerCase().includes('pendiente');
+    const bPending = String(b.estadoMantencion || '').toLowerCase().includes('pendiente');
+    if (aPending !== bPending) return aPending ? -1 : 1;
+
+    return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
+  })
+);
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -325,6 +335,7 @@ function MaterialDetailView({ route, onBack }) {
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
   const shouldShowMantenciones = Boolean(material.requiereMantencion);
   const gridColumns = shouldShowMantenciones ? 'lg:grid-cols-2' : 'lg:grid-cols-1';
+  const sortedMaintenances = useMemo(() => sortMaintenances(material.mantenciones), [material.mantenciones]);
   const targetIds = useMemo(() => getObservationTargetIds(material, route), [material, route]);
   const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
   const maintenanceTargetIds = useMemo(() => getMaintenanceTargetIds(material, route), [material, route]);
@@ -814,8 +825,11 @@ function MaterialDetailView({ route, onBack }) {
                       {maintenanceNotice}
                     </p>
                   )}
-                  <div className="space-y-3">
-                    {material.mantenciones.length > 0 ? material.mantenciones.map((mant) => (
+                  <div
+                    className="custom-scrollbar max-h-[294px] space-y-3 overflow-y-auto pr-1"
+                    style={{ scrollbarGutter: 'stable' }}
+                  >
+                    {sortedMaintenances.length > 0 ? sortedMaintenances.map((mant) => (
                       <article
                         key={mant.idMantencion || `${mant.fecha}-${mant.descripcion}`}
                         className="cursor-pointer rounded-lg border p-4 transition-colors hover:border-brand-cyan/50"
