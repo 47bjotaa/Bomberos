@@ -1,4 +1,4 @@
-function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial }) {
+function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, addMaterialDisabledReason = '' }) {
   const getIcon = (iconType) => {
     switch (iconType) {
       case 'radio':
@@ -99,7 +99,17 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
 
       {hasSelection && !loading && (
         <div className="flex-shrink-0 border-t border-dark-border bg-dark-bg/60 p-4">
-          <button onClick={onAddMaterial} className="w-full rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 py-3 text-sm font-bold text-brand-cyan shadow-[0_0_15px_rgba(56,189,248,0.05)] transition-all hover:bg-brand-cyan/20">
+          {addMaterialDisabledReason && (
+            <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+              {addMaterialDisabledReason}
+            </p>
+          )}
+          <button
+            onClick={onAddMaterial}
+            disabled={Boolean(addMaterialDisabledReason)}
+            title={addMaterialDisabledReason || 'Añadir material'}
+            className="w-full rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 py-3 text-sm font-bold text-brand-cyan shadow-[0_0_15px_rgba(56,189,248,0.05)] transition-all hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:border-dark-border disabled:bg-dark-bg3 disabled:text-text-muted disabled:shadow-none"
+          >
             + Añadir material
           </button>
         </div>

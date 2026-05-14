@@ -79,10 +79,16 @@ function Dashboard({ setView }) {
     Array.isArray(payload?.[key]) ? payload[key] : []
   );
 
+  const toBoolean = (value) => (
+    value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
+  );
+
   const mapUbicacion = (u) => ({
     id: u.idUbicacion || u.id || u.idUbicacionHija || u.idUbicacionPadre,
     name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
-    items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0
+    items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0,
+    idTipo: u.idTipo,
+    nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
   });
 
   const getMaterialesPayload = (payload) => {
@@ -189,7 +195,7 @@ function Dashboard({ setView }) {
           tipo: m.tipoMaterial || m.tipo || 'General',
           valor: `$${numericVal.toLocaleString('es-CL')}`,
           desechable: m.desechable || false,
-          serializado: m.serializado || false,
+          serializado: toBoolean(m.serializado) || toBoolean(m.esSerializado) || toBoolean(m.esSerializacion),
           mantencion: m.requiereMantencion || m.mantencion || false
         };
       });
@@ -221,6 +227,9 @@ function Dashboard({ setView }) {
   const visibleUbicaciones = currentUbicacion ? subUbicaciones : ubicaciones;
   const selectedUbicacion = [...locationPath, ...subUbicaciones, ...ubicaciones].find(u => u.id === activeUbicacion);
   const selectedUbicacionName = selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
+  const selectedUbicacionTipo = selectedUbicacion?.nombreTipo || currentUbicacion?.nombreTipo || '';
+  const isGeneralVehiculo = currentUbicacion?.id === activeUbicacion && selectedUbicacionTipo.toLowerCase() === 'vehiculo';
+  const addMaterialDisabledReason = isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -362,7 +371,12 @@ function Dashboard({ setView }) {
                   items={itemsUbicacion}
                   loading={loadingItems}
                   hasSelection={Boolean(activeUbicacion)}
-                  onAddMaterial={() => setShowInventoryMaterialModal(true)}
+                  addMaterialDisabledReason={addMaterialDisabledReason}
+                  onAddMaterial={() => {
+                    if (!addMaterialDisabledReason) {
+                      setShowInventoryMaterialModal(true);
+                    }
+                  }}
                 />
               </div>
 

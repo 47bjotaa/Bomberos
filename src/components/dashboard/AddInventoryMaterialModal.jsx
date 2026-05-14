@@ -25,11 +25,15 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     return [];
   };
 
+  const toBoolean = (value) => (
+    value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
+  );
+
   const mapMaterial = (material) => ({
     id: material.idMaterial || material.id,
     nombre: material.nombre || material.nombreMaterial || material.name || 'Material',
     tipo: material.tipoMaterial || material.nombreTipoProducto || material.tipo || 'General',
-    serializado: Boolean(material.serializado || material.esSerializado || material.requiereCodigoUnico),
+    serializado: toBoolean(material.serializado) || toBoolean(material.esSerializado) || toBoolean(material.esSerializacion) || toBoolean(material.requiereCodigoUnico),
   });
 
   useEffect(() => {
