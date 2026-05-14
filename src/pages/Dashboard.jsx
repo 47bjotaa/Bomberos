@@ -24,9 +24,9 @@ function Dashboard({ setView }) {
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
+  const [locationPath, setLocationPath] = useState([]);
   const [itemsUbicacion, setItemsUbicacion] = useState([]);
   const [subUbicaciones, setSubUbicaciones] = useState([]);
-  const [parentInfo, setParentInfo] = useState(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [showAddUbicacionModal, setShowAddUbicacionModal] = useState(false);
@@ -48,60 +48,93 @@ function Dashboard({ setView }) {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    if (activeUbicacion) {
-      fetchItemsUbicacion(activeUbicacion);
-    } else {
-      setItemsUbicacion([]);
-    }
-  }, [activeUbicacion]);
+  const mapUbicacion = (u) => ({
+    id: u.idUbicacion || u.id,
+    name: u.nombre || u.name || 'Ubicacion',
+    items: u.totalItems || u.items || 0
+  });
 
-  const fetchItemsUbicacion = async (id) => {
+  const mapMateriales = (dataMateriales) => ([
+    ...(dataMateriales?.materiales || []),
+    ...(dataMateriales?.items || [])
+  ].map(item => ({
+    id: item.idMaterial || item.idItem || item.idInventario || item.id,
+    nombre: item.nombreMaterial || item.nombre || 'Material',
+    categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
+    cantidad: item.cantidad || 1,
+    codigo: item.codigoUnico || null,
+    icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' :
+          (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
+          (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
+  })));
+
+  const fetchItemsUbicacion = async (ubicacion, { updateChildren = true } = {}) => {
+    const id = ubicacion.id;
+
+    setActiveUbicacion(id);
     setLoadingItems(true);
+    setItemsUbicacion([]);
     try {
-      // Realizamos ambas llamadas en paralelo usando el ID dinámico
-      const [dataHijas, dataMateriales] = await Promise.all([
-        apiFetch(`/api/ubicaciones/${id}/hijas`),
-        apiFetch(`/api/materiales?idUbicacion=${id}`)
-      ]);
+      const requests = [apiFetch(`/api/materiales?idUbicacion=${id}`)];
 
-      // 1. Procesar Subdivisiones (Hijas)
-      const mappedHijas = (dataHijas || []).map(h => ({
-        id: h.idUbicacion || h.id,
-        nombre: h.nombre || 'Gaveta/Espacio',
-        tipo: h.nombreTipo || 'Subdivisión'
-      }));
-      setSubUbicaciones(mappedHijas);
-
-      // 2. Procesar Materiales e Items combinados
-      const allItems = [
-        ...(dataMateriales?.materiales || []),
-        ...(dataMateriales?.items || [])
-      ].map(item => ({
-        id: item.idMaterial || item.idItem || item.idInventario || item.id,
-        nombre: item.nombreMaterial || item.nombre || 'Material',
-        categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
-        cantidad: item.cantidad || 1,
-        codigo: item.codigoUnico || null,
-        icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' : 
-              (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
-              (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
-      }));
-      setItemsUbicacion(allItems);
-
-      // 3. Capturar info del padre para navegación hacia atrás
-      const sampleItem = dataMateriales?.materiales?.[0] || dataMateriales?.items?.[0];
-      if (sampleItem && sampleItem.idPadre) {
-        setParentInfo({ id: sampleItem.idPadre, nombre: sampleItem.nombrePadre });
-      } else {
-        setParentInfo(null);
+      if (updateChildren) {
+        requests.push(apiFetch(`/api/ubicaciones/${id}/hijas`));
       }
 
+      const [dataMateriales, dataHijas = []] = await Promise.all(requests);
+      const mappedHijas = (dataHijas || []).map(mapUbicacion);
+      if (updateChildren) {
+        setSubUbicaciones(mappedHijas);
+      }
+      const allItems = mapMateriales(dataMateriales);
+      setItemsUbicacion(allItems);
     } catch (error) {
       console.error("Error al cargar detalles de la ubicación:", error);
     } finally {
       setLoadingItems(false);
     }
+  };
+
+  const openUbicacion = async (ubicacion) => {
+    const normalizedUbicacion = mapUbicacion(ubicacion);
+
+    setLocationPath(prev => {
+      const currentIndex = prev.findIndex(item => item.id === normalizedUbicacion.id);
+      if (currentIndex >= 0) {
+        return prev.slice(0, currentIndex + 1);
+      }
+
+      return [...prev, normalizedUbicacion];
+    });
+
+    await fetchItemsUbicacion(normalizedUbicacion);
+  };
+
+  const selectGeneralUbicacion = async () => {
+    const currentUbicacion = locationPath[locationPath.length - 1];
+    if (!currentUbicacion) return;
+
+    await fetchItemsUbicacion(currentUbicacion, { updateChildren: false });
+  };
+
+  const resetUbicacionesExplorer = () => {
+    setLocationPath([]);
+    setActiveUbicacion(null);
+    setItemsUbicacion([]);
+    setSubUbicaciones([]);
+  };
+
+  const goToPathIndex = async (index) => {
+    if (index < 0) {
+      resetUbicacionesExplorer();
+      return;
+    }
+
+    const nextPath = locationPath.slice(0, index + 1);
+    const nextUbicacion = nextPath[nextPath.length - 1];
+
+    setLocationPath(nextPath);
+    await fetchItemsUbicacion(nextUbicacion);
   };
 
   const fetchCatalogo = async () => {
@@ -133,11 +166,7 @@ function Dashboard({ setView }) {
     setLoading(true);
     try {
       const data = await apiFetch('/api/ubicaciones');
-      const mappedData = data.map(u => ({
-        id: u.idUbicacion || u.id,
-        name: u.nombre || u.name,
-        items: u.totalItems || u.items || 0
-      }));
+      const mappedData = data.map(mapUbicacion);
       setUbicaciones(mappedData);
     } catch (error) {
       console.error("Error al cargar ubicaciones:", error);
@@ -145,6 +174,11 @@ function Dashboard({ setView }) {
       setLoading(false);
     }
   };
+
+  const currentUbicacion = locationPath[locationPath.length - 1] || null;
+  const visibleUbicaciones = currentUbicacion ? subUbicaciones : ubicaciones;
+  const selectedUbicacion = [...locationPath, ...subUbicaciones, ...ubicaciones].find(u => u.id === activeUbicacion);
+  const selectedUbicacionName = selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
@@ -226,25 +260,23 @@ function Dashboard({ setView }) {
               </div>
               <div className="flex flex-col">
                 <h2 className="text-lg font-bold text-white rajdhani tracking-wide leading-tight">
-                  {activeTab === 'bodegas' ? 'Ubicaciones Principales' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : 'Dashboard'}
+                  {activeTab === 'bodegas' ? 'Ubicaciones Principales' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
                 </h2>
-                {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignación y estado del equipamiento de los voluntarios</span>}
+                {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
               </div>
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'bodegas' && (
-                <>
-                  <button onClick={() => {
-                    setNewUbicacionName("");
-                    setShowAddUbicacionModal(true);
-                  }} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicación</button>
-                </>
+                <button onClick={() => {
+                  setNewUbicacionName("");
+                  setShowAddUbicacionModal(true);
+                }} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
               )}
               {activeTab === 'catalogo' && (
                 <>
                   <button className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Importar catálogo
+                    Importar catalogo
                   </button>
                   <button onClick={() => {
                     setNewMaterialData({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
@@ -267,65 +299,95 @@ function Dashboard({ setView }) {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'bodegas' && (
-            <div className="flex h-full overflow-hidden">
-              {/* Main Grid area */}
-              <div className={`flex-1 p-8 bg-dark-bg overflow-y-auto transition-all duration-300 ${activeUbicacion ? 'mr-0' : ''}`}>
-                <div className="mb-6">
-                  <h3 className="text-2xl font-semibold text-white mb-1 rajdhani tracking-wide">Ubicaciones Principales</h3>
-                  <p className="text-sm text-text-muted">Selecciona una ubicación principal para ver sus subdivisiones o asignar items directamente.</p>
+            <div className="flex h-full flex-col overflow-hidden lg:flex-row">
+              <div className="h-[42%] min-h-[320px] w-full flex-shrink-0 lg:h-full lg:w-1/2">
+                <LocationItemsView
+                  locationName={selectedUbicacionName}
+                  items={itemsUbicacion}
+                  loading={loadingItems}
+                  hasSelection={Boolean(activeUbicacion)}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto bg-dark-bg p-6 lg:p-8">
+                <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                  <div>
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                      <button onClick={() => goToPathIndex(-1)} className="hover:text-brand-cyan">Ubicaciones</button>
+                      {locationPath.map((item, index) => (
+                        <span key={item.id} className="flex items-center gap-2">
+                          <span>/</span>
+                          <button onClick={() => goToPathIndex(index)} className="hover:text-brand-cyan">{item.name}</button>
+                        </span>
+                      ))}
+                    </div>
+                    <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-white">
+                      {currentUbicacion ? currentUbicacion.name : 'Ubicaciones Principales'}
+                    </h3>
+                    <p className="text-sm text-text-muted">
+                      {currentUbicacion ? 'Selecciona General para ver la ubicacion actual o abre una sububicacion.' : 'Selecciona una ubicacion principal para cargar sus materiales y sububicaciones.'}
+                    </p>
+                  </div>
+                  {currentUbicacion && (
+                    <button onClick={() => goToPathIndex(locationPath.length - 2)} className="self-start rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2 hover:text-white xl:self-auto">
+                      Volver
+                    </button>
+                  )}
                 </div>
 
-                <div className={`grid gap-6 ${activeUbicacion ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 2xl:grid-cols-3">
                   {loading ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-20">
-                      <div className="w-12 h-12 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin mb-4"></div>
-                      <p className="text-text-muted rajdhani text-lg">Cargando ubicaciones desde el servidor...</p>
+                      <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
+                      <p className="rajdhani text-lg text-text-muted">Cargando ubicaciones desde el servidor...</p>
                     </div>
-                  ) : ubicaciones.length > 0 ? (
-                    ubicaciones.map(ubi => (
-                      <BodegaCard
-                        key={ubi.id}
-                        name={ubi.name}
-                        items={ubi.items}
-                        active={activeUbicacion === ubi.id}
-                        onClick={() => setActiveUbicacion(ubi.id === activeUbicacion ? null : ubi.id)}
-                        onNameChange={(newName) => {
-                          setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
-                        }}
-                        onDelete={() => {
-                          if (window.confirm(`¿Estás seguro que deseas eliminar la ubicación "${ubi.name}"?`)) {
-                            setUbicaciones(ubicaciones.filter(u => u.id !== ubi.id));
-                            if (activeUbicacion === ubi.id) setActiveUbicacion(null);
-                          }
-                        }}
-                      />
-                    ))
                   ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-dark-border rounded-2xl">
-                      <Icons.Inventory size={48} className="text-text-muted mb-4 opacity-20" />
-                      <p className="text-text-muted rajdhani text-lg">No se encontraron ubicaciones registradas.</p>
-                      <button onClick={() => setShowAddUbicacionModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar la primera ubicación</button>
-                    </div>
+                    <>
+                      {currentUbicacion && subUbicaciones.length > 0 && (
+                        <BodegaCard
+                          key={`general-${currentUbicacion.id}`}
+                          name="General"
+                          items={itemsUbicacion.length}
+                          icon={Icons.Inventory}
+                          active={activeUbicacion === currentUbicacion.id}
+                          onClick={selectGeneralUbicacion}
+                        />
+                      )}
+
+                      {visibleUbicaciones.length > 0 ? (
+                        visibleUbicaciones.map(ubi => (
+                          <BodegaCard
+                            key={ubi.id}
+                            name={ubi.name}
+                            items={ubi.items}
+                            active={activeUbicacion === ubi.id}
+                            onClick={() => openUbicacion(ubi)}
+                            onNameChange={!currentUbicacion ? (newName) => {
+                              setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
+                            } : undefined}
+                            onDelete={!currentUbicacion ? () => {
+                              if (window.confirm(`Estas seguro que deseas eliminar la ubicacion "${ubi.name}"?`)) {
+                                setUbicaciones(ubicaciones.filter(u => u.id !== ubi.id));
+                                if (activeUbicacion === ubi.id) resetUbicacionesExplorer();
+                              }
+                            } : undefined}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border py-20 text-center">
+                          <Icons.Inventory size={48} className="mb-4 text-text-muted opacity-20" />
+                          <p className="rajdhani text-lg text-text-muted">
+                            {currentUbicacion ? 'Esta ubicacion no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
+                          </p>
+                          {!currentUbicacion && <button onClick={() => setShowAddUbicacionModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar la primera ubicacion</button>}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
-
-              {/* Side Panel for Items */}
-              {activeUbicacion && (
-                <LocationItemsView 
-                  locationName={ubicaciones.find(u => u.id === activeUbicacion)?.name || parentInfo?.nombre || 'Ubicación'}
-                  items={itemsUbicacion}
-                  subUbicaciones={subUbicaciones}
-                  parentInfo={parentInfo}
-                  loading={loadingItems}
-                  onClose={() => setActiveUbicacion(null)}
-                  onSubClick={(id) => setActiveUbicacion(id)}
-                  onBack={(id) => setActiveUbicacion(id)}
-                />
-              )}
             </div>
           )}
-
           {activeTab === 'catalogo' && (
             <div className="p-8">
               <div className="flex gap-4 mb-6">
