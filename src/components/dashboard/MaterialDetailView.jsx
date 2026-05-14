@@ -60,6 +60,18 @@ const getObservationId = (payload) => {
     || null;
 };
 
+const getObservationTargetIds = (material, route) => {
+  if (material.esSerializacion) {
+    return {
+      idItem: Number(material.idItem || route.id),
+    };
+  }
+
+  return {
+    idMaterial: Number(material.idMaterial || route.id),
+  };
+};
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -152,13 +164,10 @@ function MaterialDetailView({ route, onBack }) {
     const trimmedObservation = observationText.trim();
     if (!trimmedObservation) return;
 
-    const idItem = material.esSerializacion ? Number(material.idItem || route.id) : 0;
-    const idMaterial = material.esSerializacion ? 0 : Number(material.idMaterial || route.id);
+    const targetIds = getObservationTargetIds(material, route);
     const fecha = new Date().toISOString();
     const payload = {
-      idItem,
-      idMaterial,
-      idVehiculo: 0,
+      ...targetIds,
       observacion: trimmedObservation,
       fecha,
     };
@@ -180,9 +189,9 @@ function MaterialDetailView({ route, onBack }) {
 
         const imageFormData = new FormData();
         imageFormData.append('idObservacion', idObservacion);
-        imageFormData.append('idItem', payload.idItem);
-        imageFormData.append('idMaterial', payload.idMaterial);
-        imageFormData.append('idVehiculo', payload.idVehiculo);
+        Object.entries(targetIds).forEach(([key, value]) => {
+          imageFormData.append(key, value);
+        });
         imageFormData.append('imagenes', observationImage);
 
         await apiFetch(`/api/observaciones/${idObservacion}/imagenes`, {
