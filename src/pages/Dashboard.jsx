@@ -15,6 +15,7 @@ function Dashboard({ setView }) {
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ubicacionesError, setUbicacionesError] = useState('');
   const [catalogo, setCatalogo] = useState([]);
   const [editingCatId, setEditingCatId] = useState(null);
   const [editCatData, setEditCatData] = useState({});
@@ -48,16 +49,51 @@ function Dashboard({ setView }) {
     }
   }, [activeTab]);
 
+  const getArrayPayload = (payload, keys = []) => {
+    if (Array.isArray(payload)) return payload;
+
+    for (const key of keys) {
+      if (Array.isArray(payload?.[key])) return payload[key];
+    }
+
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.result)) return payload.result;
+    if (Array.isArray(payload?.value)) return payload.value;
+
+    if (payload?.data && typeof payload.data === 'object') {
+      return getArrayPayload(payload.data, keys);
+    }
+
+    if (payload?.result && typeof payload.result === 'object') {
+      return getArrayPayload(payload.result, keys);
+    }
+
+    return [];
+  };
+
+  const getArrayByKey = (payload, key) => (
+    Array.isArray(payload?.[key]) ? payload[key] : []
+  );
+
   const mapUbicacion = (u) => ({
-    id: u.idUbicacion || u.id,
-    name: u.nombre || u.name || 'Ubicacion',
-    items: u.totalItems || u.items || 0
+    id: u.idUbicacion || u.id || u.idUbicacionHija || u.idUbicacionPadre,
+    name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
+    items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0
   });
 
-  const mapMateriales = (dataMateriales) => ([
-    ...(dataMateriales?.materiales || []),
-    ...(dataMateriales?.items || [])
-  ].map(item => ({
+  const getMaterialesPayload = (payload) => {
+    if (Array.isArray(payload)) return payload;
+
+    const materiales = [
+      ...getArrayByKey(payload, 'materiales'),
+      ...getArrayByKey(payload, 'items')
+    ];
+
+    return materiales.length > 0 ? materiales : getArrayPayload(payload, ['data', 'result', 'value']);
+  };
+
+  const mapMateriales = (dataMateriales) => getMaterialesPayload(dataMateriales).map(item => ({
     id: item.idMaterial || item.idItem || item.idInventario || item.id,
     nombre: item.nombreMaterial || item.nombre || 'Material',
     categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
@@ -66,7 +102,7 @@ function Dashboard({ setView }) {
     icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' :
           (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
           (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
-  })));
+  }));
 
   const fetchItemsUbicacion = async (ubicacion, { updateChildren = true } = {}) => {
     const id = ubicacion.id;
@@ -82,7 +118,7 @@ function Dashboard({ setView }) {
       }
 
       const [dataMateriales, dataHijas = []] = await Promise.all(requests);
-      const mappedHijas = (dataHijas || []).map(mapUbicacion);
+      const mappedHijas = getArrayPayload(dataHijas, ['ubicaciones', 'hijas', 'subUbicaciones']).map(mapUbicacion);
       if (updateChildren) {
         setSubUbicaciones(mappedHijas);
       }
@@ -164,12 +200,15 @@ function Dashboard({ setView }) {
 
   const fetchUbicaciones = async () => {
     setLoading(true);
+    setUbicacionesError('');
     try {
       const data = await apiFetch('/api/ubicaciones');
-      const mappedData = data.map(mapUbicacion);
+      const mappedData = getArrayPayload(data, ['ubicaciones']).map(mapUbicacion);
       setUbicaciones(mappedData);
     } catch (error) {
       console.error("Error al cargar ubicaciones:", error);
+      setUbicacionesError(error.message || 'No se pudieron cargar las ubicaciones.');
+      setUbicaciones([]);
     } finally {
       setLoading(false);
     }
@@ -354,7 +393,16 @@ function Dashboard({ setView }) {
                         />
                       )}
 
-                      {visibleUbicaciones.length > 0 ? (
+                      {ubicacionesError ? (
+                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-brand-red/30 bg-brand-red/10 px-8 py-16 text-center">
+                          <Icons.Inventory size={44} className="mb-4 text-brand-red opacity-70" />
+                          <p className="rajdhani text-lg font-semibold text-white">No se pudieron cargar las ubicaciones</p>
+                          <p className="mt-2 max-w-md text-sm text-text-muted">{ubicacionesError}</p>
+                          <button onClick={fetchUbicaciones} className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-red/30">
+                            Reintentar
+                          </button>
+                        </div>
+                      ) : visibleUbicaciones.length > 0 ? (
                         visibleUbicaciones.map(ubi => (
                           <BodegaCard
                             key={ubi.id}
