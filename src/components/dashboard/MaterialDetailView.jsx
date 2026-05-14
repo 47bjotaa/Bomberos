@@ -75,16 +75,12 @@ const getObservationTargetIds = (material, route) => {
 const getMaintenanceTargetIds = (material, route) => {
   if (material.esSerializacion) {
     return {
-      idVehiculo: 0,
-      idMaterial: 0,
       idItem: Number(material.idItem || route.id),
     };
   }
 
   return {
-    idVehiculo: 0,
     idMaterial: Number(material.idMaterial || route.id),
-    idItem: 0,
   };
 };
 
