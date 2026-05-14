@@ -233,10 +233,6 @@ function MaterialDetailView({ route, onBack }) {
           imageUploadError = new Error('La respuesta no incluyo idObservacion para subir la imagen.');
         } else {
           const imageFormData = new FormData();
-          imageFormData.append('idObservacion', idObservacion);
-          Object.entries(targetIds).forEach(([key, value]) => {
-            imageFormData.append(key, value);
-          });
           observationImages.forEach(({ file }) => {
             imageFormData.append('imagenes', file);
           });
