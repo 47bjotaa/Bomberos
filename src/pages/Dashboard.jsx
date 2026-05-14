@@ -15,6 +15,7 @@ function Dashboard({ setView }) {
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingUbicaciones, setLoadingUbicaciones] = useState(true);
   const [ubicacionesError, setUbicacionesError] = useState('');
   const [catalogo, setCatalogo] = useState([]);
   const [editingCatId, setEditingCatId] = useState(null);
@@ -199,7 +200,7 @@ function Dashboard({ setView }) {
   };
 
   const fetchUbicaciones = async () => {
-    setLoading(true);
+    setLoadingUbicaciones(true);
     setUbicacionesError('');
     try {
       const data = await apiFetch('/api/ubicaciones');
@@ -210,7 +211,7 @@ function Dashboard({ setView }) {
       setUbicacionesError(error.message || 'No se pudieron cargar las ubicaciones.');
       setUbicaciones([]);
     } finally {
-      setLoading(false);
+      setLoadingUbicaciones(false);
     }
   };
 
@@ -336,9 +337,9 @@ function Dashboard({ setView }) {
         )}
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {activeTab === 'bodegas' && (
-            <div className="flex h-full flex-col overflow-hidden lg:flex-row">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
               <div className="h-[42%] min-h-[320px] w-full flex-shrink-0 lg:h-full lg:w-1/2">
                 <LocationItemsView
                   locationName={selectedUbicacionName}
@@ -348,7 +349,7 @@ function Dashboard({ setView }) {
                 />
               </div>
 
-              <div className="flex-1 overflow-y-auto bg-dark-bg p-6 lg:p-8">
+              <div className="min-h-[360px] w-full flex-shrink-0 overflow-y-auto bg-dark-bg p-6 lg:h-full lg:w-1/2 lg:p-8">
                 <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
@@ -375,7 +376,7 @@ function Dashboard({ setView }) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 2xl:grid-cols-3">
-                  {loading ? (
+                  {loadingUbicaciones ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-20">
                       <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
                       <p className="rajdhani text-lg text-text-muted">Cargando ubicaciones desde el servidor...</p>
