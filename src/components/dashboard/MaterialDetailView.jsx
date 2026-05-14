@@ -147,12 +147,16 @@ const isImageFile = (file) => {
 
 const sortMaintenances = (maintenances = []) => (
   [...maintenances].sort((a, b) => {
-    const aPending = String(a.estadoMantencion || '').toLowerCase().includes('pendiente');
-    const bPending = String(b.estadoMantencion || '').toLowerCase().includes('pendiente');
+    const aPending = isMaintenancePending(a);
+    const bPending = isMaintenancePending(b);
     if (aPending !== bPending) return aPending ? -1 : 1;
 
     return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
   })
+);
+
+const isMaintenancePending = (maintenance) => (
+  String(maintenance?.estadoMantencion || '').toLowerCase().includes('pendiente')
 );
 
 function EmptyState({ children, palette }) {
@@ -188,10 +192,12 @@ function MaterialDetailView({ route, onBack }) {
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState('');
   const [maintenanceNotice, setMaintenanceNotice] = useState('');
+  const [markingMaintenanceId, setMarkingMaintenanceId] = useState(null);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
   const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
+  const [deletingMaintenance, setDeletingMaintenance] = useState(false);
   const observationImagesRef = useRef([]);
   const maintenanceFilesRef = useRef([]);
 
@@ -629,6 +635,89 @@ function MaterialDetailView({ route, onBack }) {
     }
   };
 
+  const handleMarkMaintenanceAsDone = async (event, maintenance) => {
+    event.stopPropagation();
+
+    const idMantencion = getMaintenanceId(maintenance);
+    if (!idMantencion) {
+      setMaintenanceNotice('No se pudo marcar como realizada: la mantencion no tiene id.');
+      return;
+    }
+
+    setMarkingMaintenanceId(idMantencion);
+    setMaintenanceNotice('');
+
+    try {
+      const updatedMaintenance = await apiFetch(`/api/mantenciones/${idMantencion}/realizada`, {
+        method: 'PATCH',
+        body: JSON.stringify(maintenanceTargetIds),
+      });
+
+      setDetail((currentDetail) => {
+        const current = currentDetail || material;
+
+        return {
+          ...current,
+          mantenciones: (current.mantenciones || []).map((item) => (
+            String(getMaintenanceId(item)) === String(idMantencion)
+              ? {
+                  ...item,
+                  ...(updatedMaintenance || {}),
+                  estadoMantencion: updatedMaintenance?.estadoMantencion || 'Realizada',
+                }
+              : item
+          )),
+        };
+      });
+    } catch (err) {
+      setMaintenanceNotice(err.message || 'No se pudo marcar la mantencion como realizada.');
+    } finally {
+      setMarkingMaintenanceId(null);
+    }
+  };
+
+  const handleDeleteMaintenance = async () => {
+    if (!selectedMaintenance || deletingMaintenance) return;
+
+    const idMantencion = getMaintenanceId(selectedMaintenance);
+    if (!idMantencion) {
+      setMaintenanceFilesError('No se pudo eliminar: la mantencion no tiene id.');
+      return;
+    }
+
+    setDeletingMaintenance(true);
+    setMaintenanceFilesError('');
+
+    try {
+      await Promise.all(maintenanceDetailFiles.map((file) => (
+        apiFetch(`/api/mantenciones/${idMantencion}/archivos/${file.idArchivo}?${maintenanceTargetQuery}`, {
+          method: 'DELETE',
+        })
+      )));
+
+      await apiFetch(`/api/mantenciones/${idMantencion}`, {
+        method: 'DELETE',
+        body: JSON.stringify(maintenanceTargetIds),
+      });
+
+      setDetail((currentDetail) => {
+        const current = currentDetail || material;
+
+        return {
+          ...current,
+          mantenciones: (current.mantenciones || []).filter((item) => (
+            String(getMaintenanceId(item)) !== String(idMantencion)
+          )),
+        };
+      });
+      setSelectedMaintenance(null);
+    } catch (err) {
+      setMaintenanceFilesError(err.message || 'No se pudo eliminar la mantencion.');
+    } finally {
+      setDeletingMaintenance(false);
+    }
+  };
+
   return (
     <section className="themed-ui h-full overflow-y-auto" style={{ background: palette.isLight ? '#FFFFFF' : palette.bg, color: palette.text }}>
       <div className="mx-auto max-w-7xl px-6 py-5">
@@ -852,6 +941,18 @@ function MaterialDetailView({ route, onBack }) {
                         </div>
                         <p className="mt-3 text-sm font-semibold" style={{ color: palette.text }}>{mant.tipo || 'Mantencion'}</p>
                         <p className="mt-1 text-sm leading-relaxed" style={{ color: palette.muted }}>{mant.descripcion || 'Sin detalle'}</p>
+                        {isMaintenancePending(mant) && (
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={(event) => handleMarkMaintenanceAsDone(event, mant)}
+                              disabled={String(markingMaintenanceId) === String(getMaintenanceId(mant))}
+                              className="rounded-lg border border-brand-green/30 bg-brand-green/10 px-3 py-1.5 text-xs font-bold text-brand-green transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {String(markingMaintenanceId) === String(getMaintenanceId(mant)) ? 'Marcando...' : 'Marcar como realizada'}
+                            </button>
+                          </div>
+                        )}
                       </article>
                     )) : (
                       <EmptyState palette={palette}>No hay mantenciones registradas.</EmptyState>
@@ -1229,14 +1330,25 @@ function MaterialDetailView({ route, onBack }) {
                 <h3 className="mt-1 text-lg font-bold" style={{ color: palette.text }}>Detalle de mantencion</h3>
                 <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedMaintenance(null)}
-                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red"
-                style={{ color: palette.muted }}
-              >
-                x
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeleteMaintenance}
+                  disabled={deletingMaintenance}
+                  className="rounded-lg bg-brand-red px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingMaintenance ? 'Eliminando...' : 'Eliminar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMaintenance(null)}
+                  disabled={deletingMaintenance}
+                  className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                >
+                  x
+                </button>
+              </div>
             </div>
 
             <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
