@@ -66,8 +66,24 @@ function MaterialDetailView({ route, onBack }) {
   const [error, setError] = useState('');
   const [showObservationForm, setShowObservationForm] = useState(false);
   const [observationText, setObservationText] = useState('');
+  const [observationImage, setObservationImage] = useState(null);
+  const [observationImagePreview, setObservationImagePreview] = useState('');
   const [observationSaving, setObservationSaving] = useState(false);
   const [observationError, setObservationError] = useState('');
+
+  const resetObservationDraft = () => {
+    setShowObservationForm(false);
+    setObservationText('');
+    setObservationImage(null);
+    setObservationImagePreview('');
+    setObservationError('');
+  };
+
+  const handleObservationImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setObservationImage(file);
+    setObservationImagePreview(file ? URL.createObjectURL(file) : '');
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -77,6 +93,8 @@ function MaterialDetailView({ route, onBack }) {
       setError('');
       setShowObservationForm(false);
       setObservationText('');
+      setObservationImage(null);
+      setObservationImagePreview('');
       setObservationError('');
 
       try {
@@ -104,6 +122,12 @@ function MaterialDetailView({ route, onBack }) {
       mounted = false;
     };
   }, [route]);
+
+  useEffect(() => () => {
+    if (observationImagePreview) {
+      URL.revokeObjectURL(observationImagePreview);
+    }
+  }, [observationImagePreview]);
 
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
   const shouldShowMantenciones = Boolean(material.requiereMantencion);
@@ -150,6 +174,8 @@ function MaterialDetailView({ route, onBack }) {
         };
       });
       setObservationText('');
+      setObservationImage(null);
+      setObservationImagePreview('');
       setShowObservationForm(false);
     } catch (err) {
       setObservationError(err.message || 'No se pudo crear la observacion.');
@@ -290,52 +316,6 @@ function MaterialDetailView({ route, onBack }) {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {showObservationForm && (
-                    <form
-                      onSubmit={handleCreateObservation}
-                      className="rounded-lg border p-4"
-                      style={{ borderColor: palette.border, background: palette.card }}
-                    >
-                      <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
-                        Nueva observacion
-                      </label>
-                      <textarea
-                        autoFocus
-                        value={observationText}
-                        onChange={(event) => setObservationText(event.target.value)}
-                        placeholder="Escribe el detalle de la observacion..."
-                        className="min-h-[96px] w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
-                        style={{ borderColor: palette.border, background: palette.bg2, color: palette.text }}
-                      />
-                      {observationError && (
-                        <p className="mt-2 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
-                          {observationError}
-                        </p>
-                      )}
-                      <div className="mt-3 flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowObservationForm(false);
-                            setObservationText('');
-                            setObservationError('');
-                          }}
-                          className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:text-brand-cyan"
-                          style={{ color: palette.muted }}
-                          disabled={observationSaving}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={!observationText.trim() || observationSaving}
-                          className="rounded-lg bg-brand-cyan px-3 py-1.5 text-xs font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {observationSaving ? 'Guardando...' : 'Guardar'}
-                        </button>
-                      </div>
-                    </form>
-                  )}
                   {material.observaciones.length > 0 ? material.observaciones.map((obs) => (
                     <article key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`} className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
                       <p className="text-xs" style={{ color: palette.muted }}>{formatDate(obs.fecha)}</p>
@@ -386,6 +366,107 @@ function MaterialDetailView({ route, onBack }) {
           </>
         )}
       </div>
+
+      {showObservationForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={() => {
+            if (!observationSaving) resetObservationDraft();
+          }}
+        >
+          <form
+            onSubmit={handleCreateObservation}
+            className="w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: palette.text }}>Agregar observacion</h3>
+                <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetObservationDraft}
+                disabled={observationSaving}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="space-y-4 p-6">
+              <div>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                  Observacion
+                </label>
+                <textarea
+                  autoFocus
+                  value={observationText}
+                  onChange={(event) => setObservationText(event.target.value)}
+                  placeholder="Escribe el detalle de la observacion..."
+                  className="min-h-[120px] w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
+                  style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                  Imagen
+                </label>
+                <label
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition-colors hover:border-brand-cyan/60"
+                  style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.muted }}
+                >
+                  {observationImagePreview ? (
+                    <img src={observationImagePreview} alt="Vista previa" className="mb-3 max-h-40 rounded-lg object-contain" />
+                  ) : (
+                    <span className="mb-2 text-2xl">&#128247;</span>
+                  )}
+                  <span className="text-sm font-semibold" style={{ color: palette.text }}>
+                    {observationImage ? observationImage.name : 'Seleccionar imagen'}
+                  </span>
+                  <span className="mt-1 text-xs" style={{ color: palette.muted }}>PNG, JPG o JPEG</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    className="hidden"
+                    onChange={handleObservationImageChange}
+                    disabled={observationSaving}
+                  />
+                </label>
+              </div>
+
+              {observationError && (
+                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                  {observationError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <button
+                type="button"
+                onClick={resetObservationDraft}
+                disabled={observationSaving}
+                className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!observationText.trim() || observationSaving}
+                className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {observationSaving ? 'Guardando...' : 'Guardar observacion'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
