@@ -1,4 +1,4 @@
-function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, addMaterialDisabledReason = '' }) {
+function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, addMaterialDisabledReason = '' }) {
   const getIcon = (iconType) => {
     switch (iconType) {
       case 'radio':
@@ -77,14 +77,25 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="truncate text-sm font-bold text-white transition-colors group-hover:text-brand-cyan">{item.nombre}</h4>
-                      <div className="mt-1 flex items-center gap-2">
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <span className="rounded border border-dark-border bg-dark-bg3 px-1.5 py-0.5 text-[10px] text-text-muted">{item.categoria}</span>
                         {item.codigo && <span className="font-mono text-[10px] text-brand-cyan/70">#{item.codigo}</span>}
+                        <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-1.5 py-0.5 text-[10px] text-brand-cyan/80">
+                          {item.ubicacion || locationName}
+                        </span>
                       </div>
                     </div>
-                    <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-2 py-0.5 font-mono text-sm text-brand-cyan">
-                      x{item.cantidad}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onMoveMaterial?.(item)}
+                        className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
+                      >
+                        Mover
+                      </button>
+                      <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-2 py-0.5 font-mono text-sm text-brand-cyan">
+                        x{item.cantidad}
+                      </span>
+                    </div>
                   </div>
                 ))
               ) : (

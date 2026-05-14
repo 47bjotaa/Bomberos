@@ -6,6 +6,7 @@ import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMaterialModal';
+import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 
@@ -26,6 +27,7 @@ function Dashboard({ setView }) {
   const [filtroNombre, setFiltroNombre] = useState('');
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showInventoryMaterialModal, setShowInventoryMaterialModal] = useState(false);
+  const [movingMaterial, setMovingMaterial] = useState(null);
   const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
   const [locationPath, setLocationPath] = useState([]);
@@ -104,10 +106,16 @@ function Dashboard({ setView }) {
 
   const mapMateriales = (dataMateriales) => getMaterialesPayload(dataMateriales).map(item => ({
     id: item.idMaterial || item.idItem || item.idInventario || item.id,
+    idItem: item.idItem,
+    idInventario: item.idInventario,
+    idMaterial: item.idMaterial || item.id,
     nombre: item.nombreMaterial || item.nombre || 'Material',
     categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
     cantidad: item.cantidad || 1,
     codigo: item.codigoUnico || null,
+    idUbicacion: item.idUbicacion || item.idUbicacionActual,
+    ubicacion: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || '',
+    serializado: Boolean(item.idItem || item.codigoUnico),
     icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' :
           (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
           (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
@@ -230,6 +238,7 @@ function Dashboard({ setView }) {
   const selectedUbicacionTipo = selectedUbicacion?.nombreTipo || currentUbicacion?.nombreTipo || '';
   const isGeneralVehiculo = currentUbicacion?.id === activeUbicacion && selectedUbicacionTipo.toLowerCase() === 'vehiculo';
   const addMaterialDisabledReason = isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
+  const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -372,6 +381,7 @@ function Dashboard({ setView }) {
                   loading={loadingItems}
                   hasSelection={Boolean(activeUbicacion)}
                   addMaterialDisabledReason={addMaterialDisabledReason}
+                  onMoveMaterial={(material) => setMovingMaterial(material)}
                   onAddMaterial={() => {
                     if (!addMaterialDisabledReason) {
                       setShowInventoryMaterialModal(true);
@@ -870,6 +880,15 @@ function Dashboard({ setView }) {
             idUbicacion={activeUbicacion}
             onClose={() => setShowInventoryMaterialModal(false)}
             onAdded={refreshActiveUbicacion}
+          />
+        )}
+
+        {movingMaterial && (
+          <MoveMaterialModal
+            material={movingMaterial}
+            origen={selectedOrigen}
+            onClose={() => setMovingMaterial(null)}
+            onMoved={refreshActiveUbicacion}
           />
         )}
       </main>
