@@ -47,6 +47,19 @@ const normalizeDetail = (data, fallback = {}) => {
   };
 };
 
+const getObservationId = (payload) => {
+  if (!payload) return null;
+  if (typeof payload === 'number' || typeof payload === 'string') return payload;
+
+  return payload.idObservacion
+    || payload.id
+    || payload.data?.idObservacion
+    || payload.data?.id
+    || payload.result?.idObservacion
+    || payload.result?.id
+    || null;
+};
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -158,11 +171,32 @@ function MaterialDetailView({ route, onBack }) {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      const idObservacion = getObservationId(createdObservation);
+
+      if (observationImage) {
+        if (!idObservacion) {
+          throw new Error('La observacion fue creada, pero la respuesta no incluyo idObservacion para subir la imagen.');
+        }
+
+        const imageFormData = new FormData();
+        imageFormData.append('idObservacion', idObservacion);
+        imageFormData.append('idItem', payload.idItem);
+        imageFormData.append('idMaterial', payload.idMaterial);
+        imageFormData.append('idVehiculo', payload.idVehiculo);
+        imageFormData.append('imagenes', observationImage);
+
+        await apiFetch(`/api/observaciones/${idObservacion}/imagenes`, {
+          method: 'POST',
+          body: imageFormData,
+        });
+      }
+
       const nextObservation = {
         ...payload,
-        ...createdObservation,
-        observacion: createdObservation.observacion || payload.observacion,
-        fecha: createdObservation.fecha || payload.fecha,
+        ...(createdObservation || {}),
+        idObservacion: idObservacion || createdObservation?.idObservacion,
+        observacion: createdObservation?.observacion || payload.observacion,
+        fecha: createdObservation?.fecha || payload.fecha,
       };
 
       setDetail((currentDetail) => {
