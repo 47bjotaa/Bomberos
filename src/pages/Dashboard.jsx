@@ -339,8 +339,17 @@ function Dashboard({ setView }) {
         {/* Content Body */}
         <div className="min-h-0 flex-1 overflow-hidden">
           {activeTab === 'bodegas' && (
-            <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
-              <div className="h-[42%] min-h-[320px] w-full flex-shrink-0 lg:h-full lg:w-1/2">
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+                height: '100%',
+                minHeight: 0,
+                overflow: 'hidden',
+                width: '100%'
+              }}
+            >
+              <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
                 <LocationItemsView
                   locationName={selectedUbicacionName}
                   items={itemsUbicacion}
@@ -351,7 +360,7 @@ function Dashboard({ setView }) {
 
               <div
                 style={{
-                  width: '50%',
+                  width: '100%',
                   minWidth: 0,
                   height: '100%',
                   overflowY: 'auto',
