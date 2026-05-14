@@ -72,6 +72,22 @@ const getObservationTargetIds = (material, route) => {
   };
 };
 
+const getMaintenanceTargetIds = (material, route) => {
+  if (material.esSerializacion) {
+    return {
+      idVehiculo: 0,
+      idMaterial: 0,
+      idItem: Number(material.idItem || route.id),
+    };
+  }
+
+  return {
+    idVehiculo: 0,
+    idMaterial: Number(material.idMaterial || route.id),
+    idItem: 0,
+  };
+};
+
 const getQueryString = (params) => {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -140,6 +156,10 @@ function MaterialDetailView({ route, onBack }) {
   const [observationDetailImages, setObservationDetailImages] = useState([]);
   const [loadingObservationImages, setLoadingObservationImages] = useState(false);
   const [observationImagesError, setObservationImagesError] = useState('');
+  const [maintenanceModalMode, setMaintenanceModalMode] = useState(null);
+  const [maintenanceForm, setMaintenanceForm] = useState({ fecha: '', descripcion: '', tipo: '' });
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState('');
   const observationImagesRef = useRef([]);
 
   const resetObservationDraft = () => {
@@ -197,6 +217,9 @@ function MaterialDetailView({ route, onBack }) {
       });
       setObservationError('');
       setObservationNotice('');
+      setMaintenanceModalMode(null);
+      setMaintenanceError('');
+      setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
 
       try {
         const endpoint = route.type === 'item'
@@ -237,6 +260,24 @@ function MaterialDetailView({ route, onBack }) {
   const gridColumns = shouldShowMantenciones ? 'lg:grid-cols-2' : 'lg:grid-cols-1';
   const targetIds = useMemo(() => getObservationTargetIds(material, route), [material, route]);
   const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
+  const maintenanceTargetIds = useMemo(() => getMaintenanceTargetIds(material, route), [material, route]);
+
+  const openMaintenanceModal = (mode) => {
+    setMaintenanceModalMode(mode);
+    setMaintenanceError('');
+    setMaintenanceForm({
+      fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
+      descripcion: '',
+      tipo: '',
+    });
+  };
+
+  const closeMaintenanceModal = () => {
+    if (maintenanceSaving) return;
+    setMaintenanceModalMode(null);
+    setMaintenanceError('');
+    setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+  };
 
   useEffect(() => {
     if (!selectedObservation) return;
@@ -368,6 +409,56 @@ function MaterialDetailView({ route, onBack }) {
       setObservationError(err.message || 'No se pudo crear la observacion.');
     } finally {
       setObservationSaving(false);
+    }
+  };
+
+  const handleCreateMaintenance = async (event) => {
+    event.preventDefault();
+
+    const descripcion = maintenanceForm.descripcion.trim();
+    const tipo = maintenanceForm.tipo.trim();
+    const isProgramada = maintenanceModalMode === 'programada';
+
+    if (!descripcion || !tipo || (isProgramada && !maintenanceForm.fecha)) return;
+
+    const payload = {
+      ...maintenanceTargetIds,
+      ...(isProgramada ? { fecha: maintenanceForm.fecha } : {}),
+      descripcion,
+      tipo,
+    };
+
+    setMaintenanceSaving(true);
+    setMaintenanceError('');
+
+    try {
+      const createdMaintenance = await apiFetch(isProgramada ? '/api/mantenciones/programadas' : '/api/mantenciones/realizadas', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      const nextMaintenance = {
+        ...payload,
+        ...(createdMaintenance || {}),
+        idMantencion: createdMaintenance?.idMantencion || createdMaintenance?.id || Date.now(),
+        estadoMantencion: createdMaintenance?.estadoMantencion || (isProgramada ? 'Programada' : 'Realizada'),
+        fecha: createdMaintenance?.fecha || payload.fecha || new Date().toISOString(),
+      };
+
+      setDetail((currentDetail) => {
+        const current = currentDetail || material;
+
+        return {
+          ...current,
+          mantenciones: [nextMaintenance, ...(current.mantenciones || [])],
+        };
+      });
+      setMaintenanceModalMode(null);
+      setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+    } catch (err) {
+      setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
+    } finally {
+      setMaintenanceSaving(false);
     }
   };
 
@@ -507,7 +598,10 @@ function MaterialDetailView({ route, onBack }) {
                     {observationNotice}
                   </p>
                 )}
-                <div className="space-y-3">
+                <div
+                  className="custom-scrollbar max-h-[294px] space-y-3 overflow-y-auto pr-1"
+                  style={{ scrollbarGutter: 'stable' }}
+                >
                   {material.observaciones.length > 0 ? material.observaciones.map((obs) => (
                     <article
                       key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`}
@@ -541,10 +635,20 @@ function MaterialDetailView({ route, onBack }) {
                       Mantenciones
                     </h3>
                     <div className="flex items-center gap-2">
-                      <button className="rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: palette.border, background: palette.card, color: palette.text }} type="button">
+                      <button
+                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                        style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                        type="button"
+                        onClick={() => openMaintenanceModal('programada')}
+                      >
                         Programar
                       </button>
-                      <button className="rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: palette.border, background: palette.card, color: palette.text }} type="button">
+                      <button
+                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                        style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                        type="button"
+                        onClick={() => openMaintenanceModal('realizada')}
+                      >
                         + Agregar
                       </button>
                     </div>
@@ -681,6 +785,116 @@ function MaterialDetailView({ route, onBack }) {
                 className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {observationSaving ? 'Guardando...' : 'Guardar observacion'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {maintenanceModalMode && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={closeMaintenanceModal}
+        >
+          <form
+            onSubmit={handleCreateMaintenance}
+            className="w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: palette.text }}>
+                  {maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}
+                </h3>
+                <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeMaintenanceModal}
+                disabled={maintenanceSaving}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="space-y-4 p-6">
+              {maintenanceModalMode === 'programada' && (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={maintenanceForm.fecha}
+                    onChange={(event) => setMaintenanceForm((current) => ({ ...current, fecha: event.target.value }))}
+                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
+                    style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
+                    disabled={maintenanceSaving}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                  Tipo
+                </label>
+                <input
+                  type="text"
+                  value={maintenanceForm.tipo}
+                  onChange={(event) => setMaintenanceForm((current) => ({ ...current, tipo: event.target.value }))}
+                  placeholder="Ej. Preventiva, Correctiva..."
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
+                  style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
+                  disabled={maintenanceSaving}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                  Descripcion
+                </label>
+                <textarea
+                  value={maintenanceForm.descripcion}
+                  onChange={(event) => setMaintenanceForm((current) => ({ ...current, descripcion: event.target.value }))}
+                  placeholder="Describe la mantencion..."
+                  className="min-h-[120px] w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
+                  style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
+                  disabled={maintenanceSaving}
+                />
+              </div>
+
+              {maintenanceError && (
+                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                  {maintenanceError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <button
+                type="button"
+                onClick={closeMaintenanceModal}
+                disabled={maintenanceSaving}
+                className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  maintenanceSaving
+                  || !maintenanceForm.tipo.trim()
+                  || !maintenanceForm.descripcion.trim()
+                  || (maintenanceModalMode === 'programada' && !maintenanceForm.fecha)
+                }
+                className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}
               </button>
             </div>
           </form>
