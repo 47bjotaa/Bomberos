@@ -16,13 +16,23 @@ function AuthView({ initialMode = 'register' }) {
   });
   const [errors, setErrors] = useState({});
 
+  const formatRut = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 9);
+
+    if (digits.length <= 1) {
+      return digits;
+    }
+
+    return `${digits.slice(0, -1)}-${digits.slice(-1)}`;
+  };
+
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
 
   const validate = () => {
     const newErrors = {};
-    const rutRegex = /^[0-9.]+-[0-9kK]{1}$/;
+    const rutRegex = /^[0-9]+-[0-9]{1}$/;
 
     if (mode === 'register') {
       if (step === 1) {
@@ -96,9 +106,12 @@ function AuthView({ initialMode = 'register' }) {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: null });
+    const { name, value } = e.target;
+    const nextValue = name === 'rut' ? formatRut(value) : value;
+
+    setFormData({ ...formData, [name]: nextValue });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
     }
   };
 
@@ -145,7 +158,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-main mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12.345.678-9" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12345678-9" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <div>
@@ -266,7 +279,7 @@ function AuthView({ initialMode = 'register' }) {
                   <div className="grid grid-cols-2 gap-5">
                     <div>
                       <label className="block text-base font-medium text-text-main mb-2">RUT</label>
-                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="12.345.678-9" />
+                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-white text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="12345678-9" />
                       {errors.rut && <p className="text-brand-red text-sm mt-1">{errors.rut}</p>}
                     </div>
                     <div>
