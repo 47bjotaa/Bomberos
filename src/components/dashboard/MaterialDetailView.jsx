@@ -571,16 +571,16 @@ function MaterialDetailView({ route, onBack }) {
         if (!idMantencion) {
           fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
         } else {
-          const filesFormData = new FormData();
-          maintenanceFiles.forEach(({ file }) => {
-            filesFormData.append('archivos', file);
-          });
-
           try {
-            await apiFetch(`/api/mantenciones/${idMantencion}/archivos?${maintenanceTargetQuery}`, {
-              method: 'POST',
-              body: filesFormData,
-            });
+            await Promise.all(maintenanceFiles.map(({ file }) => {
+              const fileFormData = new FormData();
+              fileFormData.append('archivo', file);
+
+              return apiFetch(`/api/mantenciones/${idMantencion}/archivos?${maintenanceTargetQuery}`, {
+                method: 'POST',
+                body: fileFormData,
+              });
+            }));
           } catch (err) {
             fileUploadError = err;
           }
