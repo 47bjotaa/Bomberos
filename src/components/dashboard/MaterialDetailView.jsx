@@ -83,6 +83,48 @@ const getQueryString = (params) => {
   return searchParams.toString();
 };
 
+const getArrayPayload = (payload, keys = []) => {
+  if (Array.isArray(payload)) return payload;
+
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.value)) return payload.value;
+
+  if (payload?.data && typeof payload.data === 'object') return getArrayPayload(payload.data, keys);
+  if (payload?.result && typeof payload.result === 'object') return getArrayPayload(payload.result, keys);
+
+  return [];
+};
+
+const getImageFileId = (image) => {
+  if (typeof image === 'number' || typeof image === 'string') return image;
+
+  return image?.idArchivo
+    || image?.idImagen
+    || image?.idObservacionImagen
+    || image?.id
+    || image?.archivoId
+    || null;
+};
+
+const getTemporaryImageUrl = (payload) => {
+  if (typeof payload === 'string') return payload;
+
+  return payload?.url
+    || payload?.urlTemporal
+    || payload?.temporaryUrl
+    || payload?.data?.url
+    || payload?.data?.urlTemporal
+    || payload?.result?.url
+    || payload?.result?.urlTemporal
+    || '';
+};
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -106,6 +148,10 @@ function MaterialDetailView({ route, onBack }) {
   const [observationSaving, setObservationSaving] = useState(false);
   const [observationError, setObservationError] = useState('');
   const [observationNotice, setObservationNotice] = useState('');
+  const [selectedObservation, setSelectedObservation] = useState(null);
+  const [observationDetailImages, setObservationDetailImages] = useState([]);
+  const [loadingObservationImages, setLoadingObservationImages] = useState(false);
+  const [observationImagesError, setObservationImagesError] = useState('');
   const observationImagesRef = useRef([]);
 
   const resetObservationDraft = () => {
@@ -201,6 +247,63 @@ function MaterialDetailView({ route, onBack }) {
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
   const shouldShowMantenciones = Boolean(material.requiereMantencion);
   const gridColumns = shouldShowMantenciones ? 'lg:grid-cols-2' : 'lg:grid-cols-1';
+  const targetIds = useMemo(() => getObservationTargetIds(material, route), [material, route]);
+  const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
+
+  useEffect(() => {
+    if (!selectedObservation) return;
+
+    let mounted = true;
+    const idObservacion = getObservationId(selectedObservation);
+
+    const fetchObservationImages = async () => {
+      if (!idObservacion) {
+        setObservationDetailImages([]);
+        setObservationImagesError('Esta observacion no tiene id para consultar imagenes.');
+        return;
+      }
+
+      setLoadingObservationImages(true);
+      setObservationImagesError('');
+      setObservationDetailImages([]);
+
+      try {
+        const imageListPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes`);
+        const imageList = getArrayPayload(imageListPayload, ['imagenes', 'archivos', 'files']);
+        const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
+          const idArchivo = getImageFileId(image);
+          if (!idArchivo) return null;
+
+          const urlPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes/${idArchivo}/url?${targetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+
+          return {
+            idArchivo,
+            nombre: image?.nombre || image?.nombreArchivo || image?.fileName || `Imagen ${idArchivo}`,
+            url,
+          };
+        }));
+
+        if (mounted) {
+          setObservationDetailImages(imagesWithUrls.filter((image) => image?.url));
+        }
+      } catch (err) {
+        if (mounted) {
+          setObservationImagesError(err.message || 'No se pudieron cargar las imagenes.');
+        }
+      } finally {
+        if (mounted) {
+          setLoadingObservationImages(false);
+        }
+      }
+    };
+
+    fetchObservationImages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedObservation, targetQuery]);
 
   const handleCreateObservation = async (event) => {
     event.preventDefault();
@@ -208,7 +311,6 @@ function MaterialDetailView({ route, onBack }) {
     const trimmedObservation = observationText.trim();
     if (!trimmedObservation) return;
 
-    const targetIds = getObservationTargetIds(material, route);
     const fecha = new Date().toISOString();
     const payload = {
       ...targetIds,
@@ -236,8 +338,6 @@ function MaterialDetailView({ route, onBack }) {
           observationImages.forEach(({ file }) => {
             imageFormData.append('imagenes', file);
           });
-          const targetQuery = getQueryString(targetIds);
-
           try {
             await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${targetQuery}`, {
               method: 'POST',
@@ -418,7 +518,20 @@ function MaterialDetailView({ route, onBack }) {
                 )}
                 <div className="space-y-3">
                   {material.observaciones.length > 0 ? material.observaciones.map((obs) => (
-                    <article key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`} className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                    <article
+                      key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`}
+                      className="cursor-pointer rounded-lg border p-4 transition-colors hover:border-brand-cyan/50"
+                      style={{ borderColor: palette.border, background: palette.card }}
+                      onClick={() => setSelectedObservation(obs)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedObservation(obs);
+                        }
+                      }}
+                    >
                       <p className="text-xs" style={{ color: palette.muted }}>{formatDate(obs.fecha)}</p>
                       <p className="mt-3 text-sm font-semibold" style={{ color: palette.text }}>Observacion</p>
                       <p className="mt-1 text-sm leading-relaxed" style={{ color: palette.muted }}>{obs.observacion || 'Sin detalle'}</p>
@@ -580,6 +693,76 @@ function MaterialDetailView({ route, onBack }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {selectedObservation && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={() => setSelectedObservation(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div className="min-w-0">
+                <p className="text-xs" style={{ color: palette.muted }}>{formatDate(selectedObservation.fecha)}</p>
+                <h3 className="mt-1 text-lg font-bold" style={{ color: palette.text }}>Detalle de observacion</h3>
+                <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedObservation(null)}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
+              <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripcion</p>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: palette.text }}>
+                  {selectedObservation.observacion || 'Sin detalle'}
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <h4 className="mb-3 text-sm font-bold" style={{ color: palette.text }}>Imagenes</h4>
+                {loadingObservationImages ? (
+                  <div className="rounded-lg border py-8 text-center text-sm" style={{ borderColor: palette.border, color: palette.muted }}>
+                    Cargando imagenes...
+                  </div>
+                ) : observationImagesError ? (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {observationImagesError}
+                  </p>
+                ) : observationDetailImages.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {observationDetailImages.map((image) => (
+                      <a
+                        key={image.idArchivo}
+                        href={image.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block overflow-hidden rounded-lg border transition-colors hover:border-brand-cyan/60"
+                        style={{ borderColor: palette.border, background: palette.cardSoft }}
+                      >
+                        <img src={image.url} alt={image.nombre} className="h-44 w-full object-cover" />
+                        <p className="truncate px-3 py-2 text-xs" style={{ color: palette.muted }}>{image.nombre}</p>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState palette={palette}>Esta observacion no tiene imagenes.</EmptyState>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </section>

@@ -50,7 +50,13 @@ export const apiFetch = async (endpoint, options = {}) => {
   }
 
   const text = await response.text();
-  return text ? JSON.parse(text) : {};
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 };
 
 // --- AUTHENTICATION ---
