@@ -60,6 +60,19 @@ const getObservationId = (payload) => {
     || null;
 };
 
+const getMaintenanceId = (payload) => {
+  if (!payload) return null;
+  if (typeof payload === 'number' || typeof payload === 'string') return payload;
+
+  return payload.idMantencion
+    || payload.id
+    || payload.data?.idMantencion
+    || payload.data?.id
+    || payload.result?.idMantencion
+    || payload.result?.id
+    || null;
+};
+
 const getObservationTargetIds = (material, route) => {
   if (material.esSerializacion) {
     return {
@@ -125,6 +138,13 @@ const getTemporaryImageUrl = (payload) => {
   return payload?.url || '';
 };
 
+const isImageFile = (file) => {
+  const contentType = file?.contentType || file?.file?.type || '';
+  const name = file?.nombre || file?.nombreOriginal || file?.file?.name || '';
+
+  return contentType.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name);
+};
+
 function EmptyState({ children, palette }) {
   return (
     <div
@@ -154,9 +174,16 @@ function MaterialDetailView({ route, onBack }) {
   const [observationImagesError, setObservationImagesError] = useState('');
   const [maintenanceModalMode, setMaintenanceModalMode] = useState(null);
   const [maintenanceForm, setMaintenanceForm] = useState({ fecha: '', descripcion: '', tipo: '' });
+  const [maintenanceFiles, setMaintenanceFiles] = useState([]);
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState('');
+  const [maintenanceNotice, setMaintenanceNotice] = useState('');
+  const [selectedMaintenance, setSelectedMaintenance] = useState(null);
+  const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
+  const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
+  const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const observationImagesRef = useRef([]);
+  const maintenanceFilesRef = useRef([]);
 
   const resetObservationDraft = () => {
     setShowObservationForm(false);
@@ -199,6 +226,39 @@ function MaterialDetailView({ route, onBack }) {
     });
   };
 
+  const resetMaintenanceDraft = () => {
+    setMaintenanceModalMode(null);
+    setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
+    setMaintenanceError('');
+  };
+
+  const handleMaintenanceFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setMaintenanceFiles((currentFiles) => [
+      ...currentFiles,
+      ...selectedFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      })),
+    ]);
+    event.target.value = '';
+  };
+
+  const removeMaintenanceFile = (indexToRemove) => {
+    setMaintenanceFiles((currentFiles) => {
+      const fileToRemove = currentFiles[indexToRemove];
+      if (fileToRemove) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+
+      return currentFiles.filter((_, index) => index !== indexToRemove);
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -216,6 +276,12 @@ function MaterialDetailView({ route, onBack }) {
       setMaintenanceModalMode(null);
       setMaintenanceError('');
       setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+      setMaintenanceFiles((currentFiles) => {
+        currentFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+        return [];
+      });
+      setMaintenanceNotice('');
+      setSelectedMaintenance(null);
 
       try {
         const endpoint = route.type === 'item'
@@ -247,8 +313,13 @@ function MaterialDetailView({ route, onBack }) {
     observationImagesRef.current = observationImages;
   }, [observationImages]);
 
+  useEffect(() => {
+    maintenanceFilesRef.current = maintenanceFiles;
+  }, [maintenanceFiles]);
+
   useEffect(() => () => {
     observationImagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
+    maintenanceFilesRef.current.forEach((file) => URL.revokeObjectURL(file.preview));
   }, []);
 
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
@@ -257,22 +328,24 @@ function MaterialDetailView({ route, onBack }) {
   const targetIds = useMemo(() => getObservationTargetIds(material, route), [material, route]);
   const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
   const maintenanceTargetIds = useMemo(() => getMaintenanceTargetIds(material, route), [material, route]);
+  const maintenanceTargetQuery = useMemo(() => getQueryString(maintenanceTargetIds), [maintenanceTargetIds]);
 
   const openMaintenanceModal = (mode) => {
     setMaintenanceModalMode(mode);
     setMaintenanceError('');
+    setMaintenanceNotice('');
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
     setMaintenanceForm({
       fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
       descripcion: '',
-      tipo: '',
+      tipo: 'Preventiva',
     });
   };
 
   const closeMaintenanceModal = () => {
     if (maintenanceSaving) return;
-    setMaintenanceModalMode(null);
-    setMaintenanceError('');
-    setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+    resetMaintenanceDraft();
   };
 
   useEffect(() => {
@@ -332,6 +405,64 @@ function MaterialDetailView({ route, onBack }) {
       mounted = false;
     };
   }, [selectedObservation, targetQuery]);
+
+  useEffect(() => {
+    if (!selectedMaintenance) return;
+
+    let mounted = true;
+    const idMantencion = getMaintenanceId(selectedMaintenance);
+
+    const fetchMaintenanceFiles = async () => {
+      if (!idMantencion) {
+        setMaintenanceDetailFiles([]);
+        setMaintenanceFilesError('Esta mantencion no tiene id para consultar archivos.');
+        return;
+      }
+
+      setLoadingMaintenanceFiles(true);
+      setMaintenanceFilesError('');
+      setMaintenanceDetailFiles([]);
+
+      try {
+        const fileListPayload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos?${maintenanceTargetQuery}`);
+        const fileList = getArrayPayload(fileListPayload, ['archivos', 'imagenes', 'files']);
+        const filesWithUrls = await Promise.all(fileList.map(async (file) => {
+          const idArchivo = getImageFileId(file);
+          if (!idArchivo) return null;
+
+          const urlPayload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos/${idArchivo}/url?${maintenanceTargetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+
+          return {
+            idArchivo,
+            nombre: file?.nombreOriginal || `Archivo ${idArchivo}`,
+            contentType: file?.contentType || '',
+            tamanioBytes: file?.tamanioBytes || 0,
+            fechaSubida: file?.fechaSubida || '',
+            url,
+          };
+        }));
+
+        if (mounted) {
+          setMaintenanceDetailFiles(filesWithUrls.filter((file) => file?.url));
+        }
+      } catch (err) {
+        if (mounted) {
+          setMaintenanceFilesError(err.message || 'No se pudieron cargar los archivos.');
+        }
+      } finally {
+        if (mounted) {
+          setLoadingMaintenanceFiles(false);
+        }
+      }
+    };
+
+    fetchMaintenanceFiles();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedMaintenance, maintenanceTargetQuery]);
 
   const handleCreateObservation = async (event) => {
     event.preventDefault();
@@ -426,17 +557,40 @@ function MaterialDetailView({ route, onBack }) {
 
     setMaintenanceSaving(true);
     setMaintenanceError('');
+    setMaintenanceNotice('');
 
     try {
       const createdMaintenance = await apiFetch(isProgramada ? '/api/mantenciones/programadas' : '/api/mantenciones/realizadas', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      const idMantencion = getMaintenanceId(createdMaintenance);
+      let fileUploadError = null;
+
+      if (maintenanceFiles.length > 0) {
+        if (!idMantencion) {
+          fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
+        } else {
+          const filesFormData = new FormData();
+          maintenanceFiles.forEach(({ file }) => {
+            filesFormData.append('archivos', file);
+          });
+
+          try {
+            await apiFetch(`/api/mantenciones/${idMantencion}/archivos?${maintenanceTargetQuery}`, {
+              method: 'POST',
+              body: filesFormData,
+            });
+          } catch (err) {
+            fileUploadError = err;
+          }
+        }
+      }
 
       const nextMaintenance = {
         ...payload,
         ...(createdMaintenance || {}),
-        idMantencion: createdMaintenance?.idMantencion || createdMaintenance?.id || Date.now(),
+        idMantencion: idMantencion || createdMaintenance?.idMantencion || Date.now(),
         estadoMantencion: createdMaintenance?.estadoMantencion || (isProgramada ? 'Programada' : 'Realizada'),
         fecha: createdMaintenance?.fecha || payload.fecha || new Date().toISOString(),
       };
@@ -451,6 +605,12 @@ function MaterialDetailView({ route, onBack }) {
       });
       setMaintenanceModalMode(null);
       setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+      maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+      setMaintenanceFiles([]);
+
+      if (fileUploadError) {
+        setMaintenanceNotice(`La mantencion fue creada, pero los archivos no pudieron subirse: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
+      }
     } catch (err) {
       setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
     } finally {
@@ -649,9 +809,27 @@ function MaterialDetailView({ route, onBack }) {
                       </button>
                     </div>
                   </div>
+                  {maintenanceNotice && (
+                    <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                      {maintenanceNotice}
+                    </p>
+                  )}
                   <div className="space-y-3">
                     {material.mantenciones.length > 0 ? material.mantenciones.map((mant) => (
-                      <article key={mant.idMantencion || `${mant.fecha}-${mant.descripcion}`} className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                      <article
+                        key={mant.idMantencion || `${mant.fecha}-${mant.descripcion}`}
+                        className="cursor-pointer rounded-lg border p-4 transition-colors hover:border-brand-cyan/50"
+                        style={{ borderColor: palette.border, background: palette.card }}
+                        onClick={() => setSelectedMaintenance(mant)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setSelectedMaintenance(mant);
+                          }
+                        }}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-xs" style={{ color: palette.muted }}>{formatDate(mant.fecha)}</p>
                           {mant.estadoMantencion && (
@@ -838,15 +1016,16 @@ function MaterialDetailView({ route, onBack }) {
                 <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
                   Tipo
                 </label>
-                <input
-                  type="text"
+                <select
                   value={maintenanceForm.tipo}
                   onChange={(event) => setMaintenanceForm((current) => ({ ...current, tipo: event.target.value }))}
-                  placeholder="Ej. Preventiva, Correctiva..."
                   className="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
                   style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
                   disabled={maintenanceSaving}
-                />
+                >
+                  <option value="Preventiva">Preventiva</option>
+                  <option value="Correctiva">Correctiva</option>
+                </select>
               </div>
 
               <div>
@@ -861,6 +1040,53 @@ function MaterialDetailView({ route, onBack }) {
                   style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
                   disabled={maintenanceSaving}
                 />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
+                  Imagenes o archivos
+                </label>
+                <label
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition-colors hover:border-brand-cyan/60"
+                  style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.muted }}
+                >
+                  <span className="mb-2 text-2xl">&#128206;</span>
+                  <span className="text-sm font-semibold" style={{ color: palette.text }}>
+                    Seleccionar archivos
+                  </span>
+                  <span className="mt-1 text-xs" style={{ color: palette.muted }}>Puedes subir imagenes, PDF u otros documentos.</span>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleMaintenanceFileChange}
+                    disabled={maintenanceSaving}
+                  />
+                </label>
+                {maintenanceFiles.length > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {maintenanceFiles.map((fileItem, index) => (
+                      <div key={`${fileItem.file.name}-${fileItem.preview}`} className="relative rounded-lg border p-2" style={{ borderColor: palette.border, background: palette.card }}>
+                        {isImageFile(fileItem) ? (
+                          <img src={fileItem.preview} alt={fileItem.file.name} className="mb-2 h-24 w-full rounded object-cover" />
+                        ) : (
+                          <div className="mb-2 flex h-24 items-center justify-center rounded bg-brand-cyan/10 text-2xl text-brand-cyan">
+                            &#128196;
+                          </div>
+                        )}
+                        <p className="truncate pr-7 text-xs font-semibold" style={{ color: palette.text }}>{fileItem.file.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeMaintenanceFile(index)}
+                          disabled={maintenanceSaving}
+                          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {maintenanceError && (
@@ -965,6 +1191,98 @@ function MaterialDetailView({ route, onBack }) {
                   </div>
                 ) : (
                   <EmptyState palette={palette}>Esta observacion no tiene imagenes.</EmptyState>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedMaintenance && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={() => setSelectedMaintenance(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div className="min-w-0">
+                <p className="text-xs" style={{ color: palette.muted }}>{formatDate(selectedMaintenance.fecha)}</p>
+                <h3 className="mt-1 text-lg font-bold" style={{ color: palette.text }}>Detalle de mantencion</h3>
+                <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMaintenance(null)}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Tipo</p>
+                  <p className="mt-2 text-sm font-bold" style={{ color: palette.text }}>{selectedMaintenance.tipo || 'Mantencion'}</p>
+                </div>
+                <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Estado</p>
+                  <p className="mt-2 text-sm font-bold" style={{ color: palette.text }}>{selectedMaintenance.estadoMantencion || 'Sin estado'}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripcion</p>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: palette.text }}>
+                  {selectedMaintenance.descripcion || 'Sin detalle'}
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <h4 className="mb-3 text-sm font-bold" style={{ color: palette.text }}>Imagenes y archivos</h4>
+                {loadingMaintenanceFiles ? (
+                  <div className="rounded-lg border py-8 text-center text-sm" style={{ borderColor: palette.border, color: palette.muted }}>
+                    Cargando archivos...
+                  </div>
+                ) : maintenanceFilesError ? (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {maintenanceFilesError}
+                  </p>
+                ) : maintenanceDetailFiles.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {maintenanceDetailFiles.map((file) => (
+                      <a
+                        key={file.idArchivo}
+                        href={file.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block overflow-hidden rounded-lg border transition-colors hover:border-brand-cyan/60"
+                        style={{ borderColor: palette.border, background: palette.cardSoft }}
+                      >
+                        {isImageFile(file) ? (
+                          <img src={file.url} alt={file.nombre} className="h-44 w-full object-cover" />
+                        ) : (
+                          <div className="flex h-44 items-center justify-center bg-brand-cyan/10 text-4xl text-brand-cyan">
+                            &#128196;
+                          </div>
+                        )}
+                        <div className="px-3 py-2">
+                          <p className="truncate text-xs font-semibold" style={{ color: palette.text }}>{file.nombre}</p>
+                          {file.fechaSubida && (
+                            <p className="mt-1 text-[11px]" style={{ color: palette.muted }}>{formatDate(file.fechaSubida)}</p>
+                          )}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState palette={palette}>Esta mantencion no tiene archivos.</EmptyState>
                 )}
               </div>
             </div>
