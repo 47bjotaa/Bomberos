@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/ui/Icons';
 import BodegaCard from '../components/dashboard/BodegaCard';
 import LocationItemsView from '../components/dashboard/LocationItemsView';
+import MaterialDetailView from '../components/dashboard/MaterialDetailView';
 import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
@@ -11,9 +12,24 @@ import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
 
+const getMaterialDetailRoute = (pathname) => {
+  const itemMatch = pathname.match(/^\/dashboard\/materiales\/items\/([^/]+)$/);
+  if (itemMatch) {
+    return { type: 'item', id: itemMatch[1], fallback: {} };
+  }
+
+  const materialMatch = pathname.match(/^\/dashboard\/materiales\/([^/]+)$/);
+  if (materialMatch) {
+    return { type: 'material', id: materialMatch[1], fallback: {} };
+  }
+
+  return null;
+};
+
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('bodegas');
+  const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const [ubicaciones, setUbicaciones] = useState([]);
@@ -54,6 +70,15 @@ function Dashboard({ setView }) {
       fetchCatalogo();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setMaterialDetailRoute(getMaterialDetailRoute(window.location.pathname));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
@@ -191,6 +216,42 @@ function Dashboard({ setView }) {
     await fetchItemsUbicacion(nextUbicacion);
   };
 
+  const openMaterialDetail = (material) => {
+    const isSerializado = Boolean(material.serializado || material.idItem || material.codigo);
+    const detailId = isSerializado ? material.idItem : material.idMaterial;
+
+    if (!detailId) return;
+
+    const nextRoute = {
+      type: isSerializado ? 'item' : 'material',
+      id: detailId,
+      fallback: material,
+    };
+    const nextPath = isSerializado
+      ? `/dashboard/materiales/items/${detailId}`
+      : `/dashboard/materiales/${detailId}`;
+
+    window.history.pushState({}, '', nextPath);
+    setMaterialDetailRoute(nextRoute);
+  };
+
+  const closeMaterialDetail = () => {
+    if (window.location.pathname.startsWith('/dashboard/materiales/')) {
+      window.history.pushState({}, '', '/dashboard');
+    }
+
+    setMaterialDetailRoute(null);
+  };
+
+  const selectDashboardTab = (tab) => {
+    setActiveTab(tab);
+    setMaterialDetailRoute(null);
+
+    if (window.location.pathname.startsWith('/dashboard/materiales/')) {
+      window.history.pushState({}, '', '/dashboard');
+    }
+  };
+
   const fetchCatalogo = async () => {
     setLoading(true);
     try {
@@ -261,19 +322,19 @@ function Dashboard({ setView }) {
 
         {/* Center: Navigation Icons */}
         <nav className="flex-1 flex items-center justify-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button onClick={() => setActiveTab('inicio')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
-          <button onClick={() => setActiveTab('bodegas')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Inventory /> <span className="hidden lg:inline">Ubicaciones Principales</span>
           </button>
-          <button onClick={() => setActiveTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
           </button>
-          <button onClick={() => setActiveTab('catalogo')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'catalogo' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('catalogo')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'catalogo' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Traceability /> <span className="hidden lg:inline">Catálogo</span>
           </button>
-          <button onClick={() => setActiveTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
         </nav>
@@ -319,7 +380,7 @@ function Dashboard({ setView }) {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden bg-dark-bg relative" onClick={() => showProfileMenu && setShowProfileMenu(false)}>
         {/* Sub Header (Actions specific to active tab) */}
-        {activeTab !== 'vehiculos' && (
+        {activeTab !== 'vehiculos' && !materialDetailRoute && (
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
@@ -365,7 +426,11 @@ function Dashboard({ setView }) {
 
         {/* Content Body */}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {activeTab === 'bodegas' && (
+          {materialDetailRoute && (
+            <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} />
+          )}
+
+          {!materialDetailRoute && activeTab === 'bodegas' && (
             <div
               style={{
                 display: 'grid',
@@ -383,6 +448,7 @@ function Dashboard({ setView }) {
                   loading={loadingItems}
                   hasSelection={Boolean(activeUbicacion)}
                   addMaterialDisabledReason={addMaterialDisabledReason}
+                  onSelectMaterial={openMaterialDetail}
                   onMoveMaterial={(material) => setMovingMaterial(material)}
                   onAddMaterial={() => {
                     if (!addMaterialDisabledReason) {
@@ -488,7 +554,7 @@ function Dashboard({ setView }) {
               </div>
             </div>
           )}
-          {activeTab === 'catalogo' && (
+          {!materialDetailRoute && activeTab === 'catalogo' && (
             <div className="p-8">
               <div className="flex gap-4 mb-6">
                 <div className="flex-1 relative">
@@ -652,15 +718,15 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {activeTab === 'vehiculos' && (
+          {!materialDetailRoute && activeTab === 'vehiculos' && (
             <VehiculosView />
           )}
 
-          {activeTab === 'epp' && (
+          {!materialDetailRoute && activeTab === 'epp' && (
             <EppView eppData={eppData} setEppData={setEppData} />
           )}
 
-          {activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && (
+          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>

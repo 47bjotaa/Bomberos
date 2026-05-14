@@ -1,7 +1,7 @@
 import { useTheme } from '../../context/ThemeContext';
 import { getThemePalette } from '../../utils/themePalette';
 
-function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, addMaterialDisabledReason = '' }) {
+function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, onSelectMaterial, addMaterialDisabledReason = '' }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
 
@@ -88,7 +88,16 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                 items.map((item) => (
                   <div
                     key={`${item.id}-${item.codigo || item.nombre}`}
-                    className="group flex items-center gap-4 rounded-xl border p-4 transition-all hover:border-brand-cyan/30"
+                    onClick={() => onSelectMaterial?.(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectMaterial?.(item);
+                      }
+                    }}
+                    className="group flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-all hover:border-brand-cyan/30"
                     style={{ background: palette.cardSoft, borderColor: palette.border }}
                   >
                     <div
@@ -114,7 +123,10 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => onMoveMaterial?.(item)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onMoveMaterial?.(item);
+                        }}
                         className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
                         style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
                       >
