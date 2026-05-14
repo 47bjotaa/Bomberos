@@ -1,4 +1,10 @@
+import { useTheme } from '../../context/ThemeContext';
+import { getThemePalette } from '../../utils/themePalette';
+
 function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, addMaterialDisabledReason = '' }) {
+  const { theme } = useTheme();
+  const palette = getThemePalette(theme);
+
   const getIcon = (iconType) => {
     switch (iconType) {
       case 'radio':
@@ -30,15 +36,21 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
   };
 
   return (
-    <section className="flex h-full w-full flex-col border-r border-dark-border bg-dark-surface shadow-xl">
-      <div className="flex-shrink-0 border-b border-dark-border bg-dark-bg/40 p-6">
+    <section
+      className="themed-ui flex h-full w-full flex-col border-r shadow-xl"
+      style={{ background: palette.surface, borderColor: palette.border, color: palette.text }}
+    >
+      <div
+        className="flex-shrink-0 border-b p-6"
+        style={{ background: palette.bg2, borderColor: palette.border }}
+      >
         <div className="flex items-start gap-3">
           <div className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 p-2 text-brand-cyan">
             {getIcon('package')}
           </div>
           <div>
-            <h3 className="rajdhani text-xl font-bold tracking-wide text-white">Materiales</h3>
-            <p className="mt-0.5 text-xs text-text-muted">
+            <h3 className="rajdhani text-xl font-bold tracking-wide" style={{ color: palette.text }}>Materiales</h3>
+            <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>
               {hasSelection ? `Contenido de ${locationName}` : 'Selecciona una ubicacion para cargar su inventario'}
             </p>
           </div>
@@ -47,17 +59,23 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
 
       <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
         {!hasSelection ? (
-          <div className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border bg-dark-bg/30 px-8 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-dark-border bg-dark-bg2 text-text-muted">
+          <div
+            className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-8 text-center"
+            style={{ background: palette.cardSoft, borderColor: palette.border }}
+          >
+            <div
+              className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border"
+              style={{ background: palette.bg2, borderColor: palette.border, color: palette.muted }}
+            >
               {getIcon('package')}
             </div>
-            <p className="rajdhani text-lg font-semibold text-white">Sin ubicacion seleccionada</p>
-            <p className="mt-2 max-w-sm text-sm text-text-muted">El inventario aparecera aqui cuando abras una ubicacion del panel derecho.</p>
+            <p className="rajdhani text-lg font-semibold" style={{ color: palette.text }}>Sin ubicacion seleccionada</p>
+            <p className="mt-2 max-w-sm text-sm" style={{ color: palette.muted }}>El inventario aparecera aqui cuando abras una ubicacion del panel derecho.</p>
           </div>
         ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-60">
             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-cyan/20 border-t-brand-cyan"></div>
-            <p className="rajdhani px-6 text-center text-sm text-text-muted">Sincronizando con el cuartel...</p>
+            <p className="rajdhani px-6 text-center text-sm" style={{ color: palette.muted }}>Sincronizando con el cuartel...</p>
           </div>
         ) : (
           <div>
@@ -70,15 +88,24 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                 items.map((item) => (
                   <div
                     key={`${item.id}-${item.codigo || item.nombre}`}
-                    className="group flex items-center gap-4 rounded-xl border border-dark-border bg-dark-bg/40 p-4 transition-all hover:border-brand-cyan/30 hover:bg-dark-bg/60"
+                    className="group flex items-center gap-4 rounded-xl border p-4 transition-all hover:border-brand-cyan/30"
+                    style={{ background: palette.cardSoft, borderColor: palette.border }}
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dark-border bg-dark-bg2 text-text-muted transition-colors group-hover:border-brand-cyan/20 group-hover:text-brand-cyan">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-xl border transition-colors group-hover:border-brand-cyan/20 group-hover:text-brand-cyan"
+                      style={{ background: palette.bg2, borderColor: palette.border, color: palette.muted }}
+                    >
                       {getIcon(item.icon)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-sm font-bold text-white transition-colors group-hover:text-brand-cyan">{item.nombre}</h4>
+                      <h4 className="truncate text-sm font-bold transition-colors group-hover:text-brand-cyan" style={{ color: palette.text }}>{item.nombre}</h4>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <span className="rounded border border-dark-border bg-dark-bg3 px-1.5 py-0.5 text-[10px] text-text-muted">{item.categoria}</span>
+                        <span
+                          className="rounded border px-1.5 py-0.5 text-[10px]"
+                          style={{ background: palette.bg3, borderColor: palette.border, color: palette.muted }}
+                        >
+                          {item.categoria}
+                        </span>
                         {item.codigo && <span className="font-mono text-[10px] text-brand-cyan/70">#{item.codigo}</span>}
                         <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-1.5 py-0.5 text-[10px] text-brand-cyan/80">
                           {item.ubicacion || locationName}
@@ -88,7 +115,8 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onMoveMaterial?.(item)}
-                        className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
+                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
+                        style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
                       >
                         Mover
                       </button>
@@ -99,8 +127,11 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border-2 border-dashed border-dark-border py-10 text-center opacity-50">
-                  <p className="text-sm text-text-muted">Sin materiales directos.</p>
+                <div
+                  className="rounded-2xl border-2 border-dashed py-10 text-center opacity-70"
+                  style={{ borderColor: palette.border }}
+                >
+                  <p className="text-sm" style={{ color: palette.muted }}>Sin materiales directos.</p>
                 </div>
               )}
             </div>
@@ -109,7 +140,10 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
       </div>
 
       {hasSelection && !loading && (
-        <div className="flex-shrink-0 border-t border-dark-border bg-dark-bg/60 p-4">
+        <div
+          className="flex-shrink-0 border-t p-4"
+          style={{ background: palette.bg2, borderColor: palette.border }}
+        >
           {addMaterialDisabledReason && (
             <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
               {addMaterialDisabledReason}

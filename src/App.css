@@ -82,6 +82,39 @@
     filter: brightness(1.1) contrast(1.05);
   }
 
+  .light .themed-ui .text-white,
+  .light .themed-ui .text-text-main {
+    color: #0F172A !important;
+  }
+
+  .light .themed-ui .hover\:text-white:hover {
+    color: #0F172A !important;
+  }
+
+  .light .themed-ui .text-text-muted {
+    color: #475569 !important;
+  }
+
+  .light .themed-ui .bg-dark-surface {
+    background-color: #FFFFFF !important;
+  }
+
+  .light .themed-ui .bg-dark-bg {
+    background-color: #F8FAFC !important;
+  }
+
+  .light .themed-ui .bg-dark-bg2 {
+    background-color: #F1F5F9 !important;
+  }
+
+  .light .themed-ui .bg-dark-bg3 {
+    background-color: #E2E8F0 !important;
+  }
+
+  .light .themed-ui .border-dark-border {
+    border-color: rgba(15, 23, 42, 0.14) !important;
+  }
+
   .landing-page::before {
     content: '';
     position: fixed;
@@ -356,4 +389,4 @@
     .bodegas-grid { grid-template-columns: 1fr; }
     .dash-main-content::before { left: 0; }
     .grid-2-form { grid-template-columns: 1fr; }
-  }
+  }

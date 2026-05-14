@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import { getThemePalette } from '../../utils/themePalette';
 
 function MoveMaterialModal({ material, origen, onClose, onMoved }) {
+  const { theme } = useTheme();
+  const palette = getThemePalette(theme);
   const [ubicaciones, setUbicaciones] = useState([]);
   const [subUbicaciones, setSubUbicaciones] = useState([]);
   const [selectedGeneral, setSelectedGeneral] = useState(null);
@@ -57,6 +61,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
   ), [subUbicaciones, selectedTargetId]);
 
   const targetName = selectedTarget?.name || '';
+  const originId = material?.idUbicacion || origen?.id;
   const idUsuario = useMemo(() => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -67,7 +72,8 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
   }, []);
 
   const isSerializado = Boolean(material?.serializado || material?.idItem || material?.codigo);
-  const canMove = selectedTarget && motivo.trim() && (isSerializado ? material?.idItem : material?.idMaterial) && (isSerializado || (material?.idUbicacion || origen?.id));
+  const isSameDestination = selectedTarget && originId && String(selectedTarget.id) === String(originId);
+  const canMove = selectedTarget && !isSameDestination && motivo.trim() && (isSerializado ? material?.idItem : material?.idMaterial) && (isSerializado || originId);
 
   const selectGeneral = async (ubicacion) => {
     setSelectedGeneral(ubicacion);
@@ -111,7 +117,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
         }
       : {
           idMaterial: material.idMaterial,
-          idUbicacionOrigen: material.idUbicacion || origen.id,
+          idUbicacionOrigen: originId,
           idUbicacionDestino: selectedTarget.id,
           idUsuario,
           motivo: motivo.trim(),
@@ -133,8 +139,8 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-dark-border bg-dark-surface shadow-2xl">
+    <div className="themed-ui fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: palette.overlay }}>
+      <div className="w-full max-w-3xl overflow-hidden rounded-2xl border shadow-2xl" style={{ background: palette.surface, borderColor: palette.border, color: palette.text }}>
         <div className="flex items-center justify-between border-b border-dark-border px-6 py-4">
           <div>
             <h3 className="rajdhani text-xl font-bold text-white">¿Donde quieres mover el material seleccionado?</h3>
@@ -196,10 +202,18 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
                 >
                   <option value="">{loadingHijas ? 'Cargando...' : 'Seleccionar ubicacion hija...'}</option>
                   {subUbicaciones.map(ubicacion => (
-                    <option key={ubicacion.id} value={ubicacion.id}>{ubicacion.name}</option>
+                    <option key={ubicacion.id} value={ubicacion.id} disabled={originId && String(ubicacion.id) === String(originId)}>
+                      {ubicacion.name}{originId && String(ubicacion.id) === String(originId) ? ' (ubicacion actual)' : ''}
+                    </option>
                   ))}
                 </select>
               </label>
+
+              {isSameDestination && (
+                <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">
+                  La ubicacion destino no puede ser la misma que la ubicacion origen.
+                </div>
+              )}
 
               {subUbicaciones.length === 0 && !loadingHijas && (
                 <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">

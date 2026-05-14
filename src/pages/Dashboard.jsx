@@ -9,6 +9,7 @@ import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMater
 import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
+import { getThemePalette } from '../utils/themePalette';
 
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
@@ -239,6 +240,7 @@ function Dashboard({ setView }) {
   const isGeneralVehiculo = currentUbicacion?.id === activeUbicacion && selectedUbicacionTipo.toLowerCase() === 'vehiculo';
   const addMaterialDisabledReason = isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
   const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
+  const palette = getThemePalette(theme);
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -254,7 +256,7 @@ function Dashboard({ setView }) {
           <div className="w-8 h-8 flex items-center justify-center">
             <img src="/images/logo.png" className="brand-logo" alt="SYNETIX" style={{ height: '32px' }} />
           </div>
-          <span className="font-bold text-white tracking-tight rajdhani text-xl hidden md:block">SGLB</span>
+          <span className="font-bold tracking-tight rajdhani text-xl hidden md:block" style={{ color: palette.text }}>SGLB</span>
         </div>
 
         {/* Center: Navigation Icons */}
@@ -291,7 +293,7 @@ function Dashboard({ setView }) {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
             <div className="text-right hidden md:block">
-              <div className="text-sm font-semibold text-white">Nicolás C.</div>
+              <div className="text-sm font-semibold" style={{ color: palette.text }}>Nicolás C.</div>
               <div className="text-xs text-brand-cyan">Capitán</div>
             </div>
             <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">NC</div>
@@ -324,7 +326,7 @@ function Dashboard({ setView }) {
                 {activeTab === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
-                <h2 className="text-lg font-bold text-white rajdhani tracking-wide leading-tight">
+                <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
                   {activeTab === 'bodegas' ? 'Ubicaciones Principales' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
                 </h2>
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
@@ -396,45 +398,45 @@ function Dashboard({ setView }) {
                   minWidth: 0,
                   height: '100%',
                   overflowY: 'auto',
-                  background: '#05080f',
-                  color: '#ffffff',
+                  background: palette.bg,
+                  color: palette.text,
                   padding: '32px',
-                  borderLeft: '1px solid rgba(148, 163, 184, 0.16)',
+                  borderLeft: `1px solid ${palette.border}`,
                   boxSizing: 'border-box'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '24px' }}>
                   <div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', color: '#8ea0d0', fontSize: '12px' }}>
-                      <button onClick={() => goToPathIndex(-1)} style={{ color: '#38bdf8', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>Ubicaciones</button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', color: palette.muted, fontSize: '12px' }}>
+                      <button onClick={() => goToPathIndex(-1)} style={{ color: palette.cyan, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>Ubicaciones</button>
                       {locationPath.map((item, index) => (
                         <span key={item.id} style={{ display: 'flex', gap: '8px' }}>
                           <span>/</span>
-                          <button onClick={() => goToPathIndex(index)} style={{ color: '#38bdf8', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>{item.name}</button>
+                          <button onClick={() => goToPathIndex(index)} style={{ color: palette.cyan, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>{item.name}</button>
                         </span>
                       ))}
                     </div>
-                    <h3 style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700, margin: 0 }}>
+                    <h3 style={{ color: palette.text, fontSize: '24px', fontWeight: 700, margin: 0 }}>
                       {currentUbicacion ? currentUbicacion.name : 'Ubicaciones Principales'}
                     </h3>
-                    <p style={{ color: '#8ea0d0', fontSize: '14px', margin: '8px 0 0' }}>
+                    <p style={{ color: palette.muted, fontSize: '14px', margin: '8px 0 0' }}>
                       {currentUbicacion ? 'Selecciona General para ver la ubicacion actual o abre una sububicacion.' : 'Selecciona una ubicacion principal para cargar sus materiales y sububicaciones.'}
                     </p>
                   </div>
                   {currentUbicacion && (
-                    <button onClick={() => goToPathIndex(locationPath.length - 2)} style={{ height: '40px', padding: '0 16px', borderRadius: '8px', border: '1px solid #27324a', background: '#111827', color: '#ffffff', cursor: 'pointer' }}>
+                    <button onClick={() => goToPathIndex(locationPath.length - 2)} style={{ height: '40px', padding: '0 16px', borderRadius: '8px', border: `1px solid ${palette.borderStrong}`, background: palette.card, color: palette.text, cursor: 'pointer' }}>
                       Volver
                     </button>
                   )}
                 </div>
 
                 {loadingUbicaciones ? (
-                  <div style={{ padding: '56px 0', textAlign: 'center', color: '#8ea0d0' }}>Cargando ubicaciones desde el servidor...</div>
+                  <div style={{ padding: '56px 0', textAlign: 'center', color: palette.muted }}>Cargando ubicaciones desde el servidor...</div>
                 ) : ubicacionesError ? (
                   <div style={{ border: '1px solid rgba(232,55,42,.35)', background: 'rgba(232,55,42,.1)', borderRadius: '12px', padding: '32px', textAlign: 'center' }}>
-                    <p style={{ color: '#ffffff', fontWeight: 700, margin: 0 }}>No se pudieron cargar las ubicaciones</p>
-                    <p style={{ color: '#8ea0d0', margin: '10px 0 18px' }}>{ubicacionesError}</p>
-                    <button onClick={fetchUbicaciones} style={{ border: '1px solid rgba(232,55,42,.4)', background: 'rgba(232,55,42,.2)', color: '#ffffff', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer' }}>
+                    <p style={{ color: palette.text, fontWeight: 700, margin: 0 }}>No se pudieron cargar las ubicaciones</p>
+                    <p style={{ color: palette.muted, margin: '10px 0 18px' }}>{ubicacionesError}</p>
+                    <button onClick={fetchUbicaciones} style={{ border: '1px solid rgba(232,55,42,.4)', background: 'rgba(232,55,42,.2)', color: palette.text, borderRadius: '8px', padding: '10px 16px', cursor: 'pointer' }}>
                       Reintentar
                     </button>
                   </div>
@@ -446,9 +448,9 @@ function Dashboard({ setView }) {
                         style={{
                           minHeight: '150px',
                           borderRadius: '14px',
-                          border: activeUbicacion === currentUbicacion.id ? '1px solid #38bdf8' : '1px solid #27324a',
-                          background: activeUbicacion === currentUbicacion.id ? 'rgba(56,189,248,.12)' : '#111827',
-                          color: '#ffffff',
+                          border: activeUbicacion === currentUbicacion.id ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
+                          background: activeUbicacion === currentUbicacion.id ? palette.cyanSoft : palette.card,
+                          color: palette.text,
                           cursor: 'pointer',
                           fontWeight: 700
                         }}
@@ -464,20 +466,20 @@ function Dashboard({ setView }) {
                         style={{
                           minHeight: '150px',
                           borderRadius: '14px',
-                          border: activeUbicacion === ubi.id ? '1px solid #38bdf8' : '1px solid #27324a',
-                          background: activeUbicacion === ubi.id ? 'rgba(56,189,248,.12)' : '#111827',
-                          color: '#ffffff',
+                          border: activeUbicacion === ubi.id ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
+                          background: activeUbicacion === ubi.id ? palette.cyanSoft : palette.card,
+                          color: palette.text,
                           cursor: 'pointer',
                           padding: '20px',
                           textAlign: 'center',
                           fontWeight: 700
                         }}
                       >
-                        <div style={{ marginBottom: '10px', color: '#38bdf8' }}>▣</div>
+                        <div style={{ marginBottom: '10px', color: palette.cyan }}>▣</div>
                         {ubi.name}
                       </button>
                     )) : (
-                      <div style={{ gridColumn: '1 / -1', border: '1px dashed #27324a', borderRadius: '14px', padding: '56px 24px', textAlign: 'center', color: '#8ea0d0' }}>
+                      <div style={{ gridColumn: '1 / -1', border: `1px dashed ${palette.borderStrong}`, borderRadius: '14px', padding: '56px 24px', textAlign: 'center', color: palette.muted }}>
                         {currentUbicacion ? 'Esta ubicacion no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
                       </div>
                     )}
