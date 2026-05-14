@@ -349,91 +349,99 @@ function Dashboard({ setView }) {
                 />
               </div>
 
-              <div className="min-h-[360px] w-full flex-shrink-0 overflow-y-auto bg-dark-bg p-6 lg:h-full lg:w-1/2 lg:p-8">
-                <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div
+                style={{
+                  width: '50%',
+                  minWidth: 0,
+                  height: '100%',
+                  overflowY: 'auto',
+                  background: '#05080f',
+                  color: '#ffffff',
+                  padding: '32px',
+                  borderLeft: '1px solid rgba(148, 163, 184, 0.16)',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '24px' }}>
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                      <button onClick={() => goToPathIndex(-1)} className="hover:text-brand-cyan">Ubicaciones</button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', color: '#8ea0d0', fontSize: '12px' }}>
+                      <button onClick={() => goToPathIndex(-1)} style={{ color: '#38bdf8', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>Ubicaciones</button>
                       {locationPath.map((item, index) => (
-                        <span key={item.id} className="flex items-center gap-2">
+                        <span key={item.id} style={{ display: 'flex', gap: '8px' }}>
                           <span>/</span>
-                          <button onClick={() => goToPathIndex(index)} className="hover:text-brand-cyan">{item.name}</button>
+                          <button onClick={() => goToPathIndex(index)} style={{ color: '#38bdf8', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>{item.name}</button>
                         </span>
                       ))}
                     </div>
-                    <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-white">
+                    <h3 style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700, margin: 0 }}>
                       {currentUbicacion ? currentUbicacion.name : 'Ubicaciones Principales'}
                     </h3>
-                    <p className="text-sm text-text-muted">
+                    <p style={{ color: '#8ea0d0', fontSize: '14px', margin: '8px 0 0' }}>
                       {currentUbicacion ? 'Selecciona General para ver la ubicacion actual o abre una sububicacion.' : 'Selecciona una ubicacion principal para cargar sus materiales y sububicaciones.'}
                     </p>
                   </div>
                   {currentUbicacion && (
-                    <button onClick={() => goToPathIndex(locationPath.length - 2)} className="self-start rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2 hover:text-white xl:self-auto">
+                    <button onClick={() => goToPathIndex(locationPath.length - 2)} style={{ height: '40px', padding: '0 16px', borderRadius: '8px', border: '1px solid #27324a', background: '#111827', color: '#ffffff', cursor: 'pointer' }}>
                       Volver
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 2xl:grid-cols-3">
-                  {loadingUbicaciones ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20">
-                      <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
-                      <p className="rajdhani text-lg text-text-muted">Cargando ubicaciones desde el servidor...</p>
-                    </div>
-                  ) : (
-                    <>
-                      {currentUbicacion && subUbicaciones.length > 0 && (
-                        <BodegaCard
-                          key={`general-${currentUbicacion.id}`}
-                          name="General"
-                          items={itemsUbicacion.length}
-                          icon={Icons.Inventory}
-                          active={activeUbicacion === currentUbicacion.id}
-                          onClick={selectGeneralUbicacion}
-                        />
-                      )}
+                {loadingUbicaciones ? (
+                  <div style={{ padding: '56px 0', textAlign: 'center', color: '#8ea0d0' }}>Cargando ubicaciones desde el servidor...</div>
+                ) : ubicacionesError ? (
+                  <div style={{ border: '1px solid rgba(232,55,42,.35)', background: 'rgba(232,55,42,.1)', borderRadius: '12px', padding: '32px', textAlign: 'center' }}>
+                    <p style={{ color: '#ffffff', fontWeight: 700, margin: 0 }}>No se pudieron cargar las ubicaciones</p>
+                    <p style={{ color: '#8ea0d0', margin: '10px 0 18px' }}>{ubicacionesError}</p>
+                    <button onClick={fetchUbicaciones} style={{ border: '1px solid rgba(232,55,42,.4)', background: 'rgba(232,55,42,.2)', color: '#ffffff', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer' }}>
+                      Reintentar
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px' }}>
+                    {currentUbicacion && subUbicaciones.length > 0 && (
+                      <button
+                        onClick={selectGeneralUbicacion}
+                        style={{
+                          minHeight: '150px',
+                          borderRadius: '14px',
+                          border: activeUbicacion === currentUbicacion.id ? '1px solid #38bdf8' : '1px solid #27324a',
+                          background: activeUbicacion === currentUbicacion.id ? 'rgba(56,189,248,.12)' : '#111827',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          fontWeight: 700
+                        }}
+                      >
+                        General
+                      </button>
+                    )}
 
-                      {ubicacionesError ? (
-                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-brand-red/30 bg-brand-red/10 px-8 py-16 text-center">
-                          <Icons.Inventory size={44} className="mb-4 text-brand-red opacity-70" />
-                          <p className="rajdhani text-lg font-semibold text-white">No se pudieron cargar las ubicaciones</p>
-                          <p className="mt-2 max-w-md text-sm text-text-muted">{ubicacionesError}</p>
-                          <button onClick={fetchUbicaciones} className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-red/30">
-                            Reintentar
-                          </button>
-                        </div>
-                      ) : visibleUbicaciones.length > 0 ? (
-                        visibleUbicaciones.map(ubi => (
-                          <BodegaCard
-                            key={ubi.id}
-                            name={ubi.name}
-                            items={ubi.items}
-                            active={activeUbicacion === ubi.id}
-                            onClick={() => openUbicacion(ubi)}
-                            onNameChange={!currentUbicacion ? (newName) => {
-                              setUbicaciones(ubicaciones.map(u => u.id === ubi.id ? { ...u, name: newName } : u));
-                            } : undefined}
-                            onDelete={!currentUbicacion ? () => {
-                              if (window.confirm(`Estas seguro que deseas eliminar la ubicacion "${ubi.name}"?`)) {
-                                setUbicaciones(ubicaciones.filter(u => u.id !== ubi.id));
-                                if (activeUbicacion === ubi.id) resetUbicacionesExplorer();
-                              }
-                            } : undefined}
-                          />
-                        ))
-                      ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border py-20 text-center">
-                          <Icons.Inventory size={48} className="mb-4 text-text-muted opacity-20" />
-                          <p className="rajdhani text-lg text-text-muted">
-                            {currentUbicacion ? 'Esta ubicacion no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
-                          </p>
-                          {!currentUbicacion && <button onClick={() => setShowAddUbicacionModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar la primera ubicacion</button>}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                    {visibleUbicaciones.length > 0 ? visibleUbicaciones.map(ubi => (
+                      <button
+                        key={ubi.id}
+                        onClick={() => openUbicacion(ubi)}
+                        style={{
+                          minHeight: '150px',
+                          borderRadius: '14px',
+                          border: activeUbicacion === ubi.id ? '1px solid #38bdf8' : '1px solid #27324a',
+                          background: activeUbicacion === ubi.id ? 'rgba(56,189,248,.12)' : '#111827',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          padding: '20px',
+                          textAlign: 'center',
+                          fontWeight: 700
+                        }}
+                      >
+                        <div style={{ marginBottom: '10px', color: '#38bdf8' }}>▣</div>
+                        {ubi.name}
+                      </button>
+                    )) : (
+                      <div style={{ gridColumn: '1 / -1', border: '1px dashed #27324a', borderRadius: '14px', padding: '56px 24px', textAlign: 'center', color: '#8ea0d0' }}>
+                        {currentUbicacion ? 'Esta ubicacion no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
