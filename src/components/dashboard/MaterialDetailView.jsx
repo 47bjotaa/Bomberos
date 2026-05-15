@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -97,6 +97,16 @@ const getMaintenanceTargetIds = (material, route) => {
   };
 };
 
+const getMaterialImageBasePath = (material, route) => {
+  if (material.esSerializacion) {
+    const idItem = material.idItem || route.id;
+    return idItem ? `/api/materiales/items/${idItem}/imagenes` : '';
+  }
+
+  const idMaterial = material.idMaterial || route.id;
+  return idMaterial ? `/api/materiales/${idMaterial}/imagenes` : '';
+};
+
 const getQueryString = (params) => {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -176,6 +186,13 @@ function MaterialDetailView({ route, onBack }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [materialImages, setMaterialImages] = useState([]);
+  const [loadingMaterialImages, setLoadingMaterialImages] = useState(false);
+  const [materialImagesError, setMaterialImagesError] = useState('');
+  const [showMaterialImageModal, setShowMaterialImageModal] = useState(false);
+  const [materialImageUploads, setMaterialImageUploads] = useState([]);
+  const [materialImageSaving, setMaterialImageSaving] = useState(false);
+  const [materialImageUploadError, setMaterialImageUploadError] = useState('');
   const [showObservationForm, setShowObservationForm] = useState(false);
   const [observationText, setObservationText] = useState('');
   const [observationImages, setObservationImages] = useState([]);
@@ -200,6 +217,7 @@ function MaterialDetailView({ route, onBack }) {
   const [deletingMaintenance, setDeletingMaintenance] = useState(false);
   const observationImagesRef = useRef([]);
   const maintenanceFilesRef = useRef([]);
+  const materialImageUploadsRef = useRef([]);
 
   const resetObservationDraft = () => {
     setShowObservationForm(false);
@@ -275,12 +293,53 @@ function MaterialDetailView({ route, onBack }) {
     });
   };
 
+  const resetMaterialImageDraft = () => {
+    setShowMaterialImageModal(false);
+    materialImageUploads.forEach((image) => URL.revokeObjectURL(image.preview));
+    setMaterialImageUploads([]);
+    setMaterialImageUploadError('');
+  };
+
+  const handleMaterialImageChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setMaterialImageUploads((currentImages) => [
+      ...currentImages,
+      ...selectedFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      })),
+    ]);
+    setMaterialImageUploadError('');
+    event.target.value = '';
+  };
+
+  const removeMaterialImageUpload = (indexToRemove) => {
+    setMaterialImageUploads((currentImages) => {
+      const imageToRemove = currentImages[indexToRemove];
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+
+      return currentImages.filter((_, index) => index !== indexToRemove);
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
 
     const fetchDetail = async () => {
       setLoading(true);
       setError('');
+      setMaterialImages([]);
+      setMaterialImagesError('');
+      setShowMaterialImageModal(false);
+      setMaterialImageUploads((currentImages) => {
+        currentImages.forEach((image) => URL.revokeObjectURL(image.preview));
+        return [];
+      });
+      setMaterialImageUploadError('');
       setShowObservationForm(false);
       setObservationText('');
       setObservationImages((currentImages) => {
@@ -333,9 +392,14 @@ function MaterialDetailView({ route, onBack }) {
     maintenanceFilesRef.current = maintenanceFiles;
   }, [maintenanceFiles]);
 
+  useEffect(() => {
+    materialImageUploadsRef.current = materialImageUploads;
+  }, [materialImageUploads]);
+
   useEffect(() => () => {
     observationImagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
     maintenanceFilesRef.current.forEach((file) => URL.revokeObjectURL(file.preview));
+    materialImageUploadsRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
   }, []);
 
   const material = useMemo(() => detail || normalizeDetail({}, route.fallback), [detail, route.fallback]);
@@ -346,6 +410,47 @@ function MaterialDetailView({ route, onBack }) {
   const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
   const maintenanceTargetIds = useMemo(() => getMaintenanceTargetIds(material, route), [material, route]);
   const maintenanceTargetQuery = useMemo(() => getQueryString(maintenanceTargetIds), [maintenanceTargetIds]);
+  const materialImageBasePath = useMemo(() => getMaterialImageBasePath(material, route), [material, route]);
+  const primaryMaterialImage = materialImages[0] || null;
+
+  const fetchMaterialImages = useCallback(async () => {
+    if (!materialImageBasePath || loading || error) return;
+
+    setLoadingMaterialImages(true);
+    setMaterialImagesError('');
+
+    try {
+      const imageListPayload = await apiFetch(materialImageBasePath);
+      const imageList = getArrayPayload(imageListPayload, ['imagenes', 'archivos', 'files']);
+      const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
+        const idArchivo = getImageFileId(image);
+        if (!idArchivo) return null;
+
+        const urlPayload = await apiFetch(`${materialImageBasePath}/${idArchivo}/url`);
+        const url = getTemporaryImageUrl(urlPayload);
+
+        return {
+          idArchivo,
+          nombre: image?.nombreOriginal || `Imagen ${idArchivo}`,
+          contentType: image?.contentType || '',
+          tamanioBytes: image?.tamanioBytes || 0,
+          fechaSubida: image?.fechaSubida || '',
+          url,
+        };
+      }));
+
+      setMaterialImages(imagesWithUrls.filter((image) => image?.url));
+    } catch (err) {
+      setMaterialImagesError(err.message || 'No se pudieron cargar las imagenes del material.');
+      setMaterialImages([]);
+    } finally {
+      setLoadingMaterialImages(false);
+    }
+  }, [materialImageBasePath, loading, error]);
+
+  useEffect(() => {
+    fetchMaterialImages();
+  }, [fetchMaterialImages]);
 
   const openMaintenanceModal = (mode) => {
     setMaintenanceModalMode(mode);
@@ -553,6 +658,36 @@ function MaterialDetailView({ route, onBack }) {
       setObservationError(err.message || 'No se pudo crear la observacion.');
     } finally {
       setObservationSaving(false);
+    }
+  };
+
+  const handleUploadMaterialImages = async (event) => {
+    event.preventDefault();
+
+    if (materialImageUploads.length === 0 || !materialImageBasePath) return;
+
+    setMaterialImageSaving(true);
+    setMaterialImageUploadError('');
+
+    try {
+      const imageFormData = new FormData();
+      materialImageUploads.forEach(({ file }) => {
+        imageFormData.append('imagenes', file);
+      });
+
+      await apiFetch(materialImageBasePath, {
+        method: 'POST',
+        body: imageFormData,
+      });
+
+      materialImageUploads.forEach((image) => URL.revokeObjectURL(image.preview));
+      setMaterialImageUploads([]);
+      setShowMaterialImageModal(false);
+      await fetchMaterialImages();
+    } catch (err) {
+      setMaterialImageUploadError(err.message || 'No se pudieron subir las imagenes.');
+    } finally {
+      setMaterialImageSaving(false);
     }
   };
 
@@ -770,23 +905,58 @@ function MaterialDetailView({ route, onBack }) {
               <div className="grid gap-7 lg:grid-cols-[320px_minmax(0,1fr)]">
                 <div className="space-y-3">
                   <div
-                    className="aspect-square rounded-xl border"
+                    className="aspect-square overflow-hidden rounded-xl border"
                     style={{
                       borderColor: palette.border,
                       backgroundColor: palette.isLight ? '#F8FAFC' : palette.bg2,
-                      backgroundImage: `linear-gradient(45deg, ${palette.isLight ? '#E5E7EB' : '#111827'} 25%, transparent 25%), linear-gradient(-45deg, ${palette.isLight ? '#E5E7EB' : '#111827'} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${palette.isLight ? '#E5E7EB' : '#111827'} 75%), linear-gradient(-45deg, transparent 75%, ${palette.isLight ? '#E5E7EB' : '#111827'} 75%)`,
-                      backgroundSize: '32px 32px',
-                      backgroundPosition: '0 0, 0 16px, 16px -16px, -16px 0px',
+                      ...(primaryMaterialImage ? {} : {
+                        backgroundImage: `linear-gradient(45deg, ${palette.isLight ? '#E5E7EB' : '#111827'} 25%, transparent 25%), linear-gradient(-45deg, ${palette.isLight ? '#E5E7EB' : '#111827'} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${palette.isLight ? '#E5E7EB' : '#111827'} 75%), linear-gradient(-45deg, transparent 75%, ${palette.isLight ? '#E5E7EB' : '#111827'} 75%)`,
+                        backgroundSize: '32px 32px',
+                        backgroundPosition: '0 0, 0 16px, 16px -16px, -16px 0px',
+                      }),
                     }}
-                  />
+                  >
+                    {loadingMaterialImages ? (
+                      <div className="flex h-full items-center justify-center text-sm" style={{ color: palette.muted }}>
+                        Cargando imagen...
+                      </div>
+                    ) : primaryMaterialImage ? (
+                      <img src={primaryMaterialImage.url} alt={primaryMaterialImage.nombre} className="h-full w-full object-cover" />
+                    ) : null}
+                  </div>
                   <button
                     className="flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/50"
                     style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.text }}
                     type="button"
+                    onClick={() => {
+                      setShowMaterialImageModal(true);
+                      setMaterialImageUploadError('');
+                    }}
                   >
                     <span className="text-base leading-none">&#128247;</span>
                     Anadir foto
                   </button>
+                  {materialImagesError && (
+                    <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                      {materialImagesError}
+                    </p>
+                  )}
+                  {materialImages.length > 1 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {materialImages.slice(0, 3).map((image) => (
+                        <a
+                          key={image.idArchivo}
+                          href={image.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block aspect-square overflow-hidden rounded-lg border"
+                          style={{ borderColor: palette.border }}
+                        >
+                          <img src={image.url} alt={image.nombre} className="h-full w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   {material.ubicacion && (
                     <div className="flex items-center gap-3 rounded-lg border p-3" style={{ borderColor: palette.border, background: palette.cardSoft }}>
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-cyan/10 text-brand-cyan">
@@ -964,6 +1134,101 @@ function MaterialDetailView({ route, onBack }) {
           </>
         )}
       </div>
+
+      {showMaterialImageModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={() => {
+            if (!materialImageSaving) resetMaterialImageDraft();
+          }}
+        >
+          <form
+            onSubmit={handleUploadMaterialImages}
+            className="w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: palette.text }}>Anadir fotos</h3>
+                <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetMaterialImageDraft}
+                disabled={materialImageSaving}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="space-y-4 p-6">
+              <label
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-6 text-center transition-colors hover:border-brand-cyan/60"
+                style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.muted }}
+              >
+                <span className="mb-2 text-2xl">&#128247;</span>
+                <span className="text-sm font-semibold" style={{ color: palette.text }}>Seleccionar imagenes</span>
+                <span className="mt-1 text-xs" style={{ color: palette.muted }}>PNG, JPG, JPEG o WEBP</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={handleMaterialImageChange}
+                  disabled={materialImageSaving}
+                />
+              </label>
+
+              {materialImageUploads.length > 0 && (
+                <div className="grid grid-cols-3 gap-3">
+                  {materialImageUploads.map((image, index) => (
+                    <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border" style={{ borderColor: palette.border }}>
+                      <img src={image.preview} alt={image.file.name} className="h-24 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeMaterialImageUpload(index)}
+                        disabled={materialImageSaving}
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {materialImageUploadError && (
+                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                  {materialImageUploadError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <button
+                type="button"
+                onClick={resetMaterialImageDraft}
+                disabled={materialImageSaving}
+                className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={materialImageSaving || materialImageUploads.length === 0}
+                className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {materialImageSaving ? 'Subiendo...' : 'Subir fotos'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {showObservationForm && (
         <div
