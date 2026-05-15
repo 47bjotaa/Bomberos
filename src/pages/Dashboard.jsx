@@ -53,7 +53,11 @@ function Dashboard({ setView }) {
   const [loadingItems, setLoadingItems] = useState(false);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [showAddUbicacionModal, setShowAddUbicacionModal] = useState(false);
-  const [newUbicacionName, setNewUbicacionName] = useState("");
+  const [newUbicacionData, setNewUbicacionData] = useState({ nombre: '', descripcion: '', idTipoUbicacion: '' });
+  const [tiposUbicacion, setTiposUbicacion] = useState([]);
+  const [loadingTiposUbicacion, setLoadingTiposUbicacion] = useState(false);
+  const [addUbicacionError, setAddUbicacionError] = useState('');
+  const [savingUbicacion, setSavingUbicacion] = useState(false);
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -115,7 +119,7 @@ function Dashboard({ setView }) {
     id: u.idUbicacion || u.id || u.idUbicacionHija || u.idUbicacionPadre,
     name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
     items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0,
-    idTipo: u.idTipo,
+    idTipo: u.idTipo || u.idTipoUbicacion,
     nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
   });
 
@@ -308,6 +312,90 @@ function Dashboard({ setView }) {
     await fetchItemsUbicacion({ id: activeUbicacion, name: selectedUbicacionName }, { updateChildren: false });
   };
 
+  const mapTipoUbicacion = (tipo) => ({
+    id: tipo.idTipoUbicacion || tipo.idTipo || tipo.id,
+    nombre: tipo.nombre || tipo.name || tipo.nombreTipo || 'Tipo de ubicacion',
+    idCompania: tipo.idCompania,
+  });
+
+  const loadTiposUbicacion = async () => {
+    setLoadingTiposUbicacion(true);
+    setAddUbicacionError('');
+    setTiposUbicacion([]);
+
+    try {
+      const endpoint = currentUbicacion?.idTipo
+        ? `/api/tipoubicaciones/${currentUbicacion.idTipo}/hijos`
+        : '/api/tipoubicaciones';
+      const data = await apiFetch(endpoint);
+      const tipos = getArrayPayload(data, ['tipos', 'tipoUbicaciones', 'tiposUbicacion'])
+        .map(mapTipoUbicacion)
+        .filter(tipo => tipo.id && tipo.nombre.toLowerCase() !== 'vehiculo');
+
+      setTiposUbicacion(tipos);
+      setNewUbicacionData(currentData => ({
+        ...currentData,
+        idTipoUbicacion: tipos[0]?.id ? String(tipos[0].id) : '',
+      }));
+    } catch (error) {
+      setAddUbicacionError(error.message || 'No se pudieron cargar los tipos de ubicacion.');
+    } finally {
+      setLoadingTiposUbicacion(false);
+    }
+  };
+
+  const openAddUbicacionModal = async () => {
+    setNewUbicacionData({ nombre: '', descripcion: '', idTipoUbicacion: '' });
+    setTiposUbicacion([]);
+    setAddUbicacionError('');
+    setShowAddUbicacionModal(true);
+    await loadTiposUbicacion();
+  };
+
+  const closeAddUbicacionModal = () => {
+    if (savingUbicacion) return;
+
+    setShowAddUbicacionModal(false);
+    setAddUbicacionError('');
+  };
+
+  const canCreateUbicacion = newUbicacionData.nombre.trim()
+    && newUbicacionData.descripcion.trim()
+    && newUbicacionData.idTipoUbicacion;
+
+  const handleCreateUbicacion = async (event) => {
+    event.preventDefault();
+    if (!canCreateUbicacion || savingUbicacion) return;
+
+    const payload = {
+      nombre: newUbicacionData.nombre.trim(),
+      descripcion: newUbicacionData.descripcion.trim(),
+      idTipoUbicacion: Number(newUbicacionData.idTipoUbicacion),
+      ...(currentUbicacion?.id ? { idUbicacionPadre: currentUbicacion.id } : {}),
+    };
+
+    setSavingUbicacion(true);
+    setAddUbicacionError('');
+
+    try {
+      await apiFetch('/api/ubicaciones', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      setShowAddUbicacionModal(false);
+      if (currentUbicacion) {
+        await fetchItemsUbicacion(currentUbicacion);
+      } else {
+        await fetchUbicaciones();
+      }
+    } catch (error) {
+      setAddUbicacionError(error.message || 'No se pudo crear la ubicacion.');
+    } finally {
+      setSavingUbicacion(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
       {/* Top Navigation Bar */}
@@ -395,10 +483,7 @@ function Dashboard({ setView }) {
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'bodegas' && (
-                <button onClick={() => {
-                  setNewUbicacionName("");
-                  setShowAddUbicacionModal(true);
-                }} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
+                <button onClick={openAddUbicacionModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
               )}
               {activeTab === 'catalogo' && (
                 <>
@@ -735,53 +820,81 @@ function Dashboard({ setView }) {
 
         {showAddUbicacionModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+            <form onSubmit={handleCreateUbicacion} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white rajdhani">Agregar Nueva Ubicación</h3>
-                <button onClick={() => setShowAddUbicacionModal(false)} className="text-text-muted hover:text-white transition-colors">
+                <button type="button" onClick={closeAddUbicacionModal} disabled={savingUbicacion} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
-              <div className="p-6">
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Tipo de ubicacion</label>
+                  <select
+                    autoFocus
+                    value={newUbicacionData.idTipoUbicacion}
+                    onChange={(e) => setNewUbicacionData({ ...newUbicacionData, idTipoUbicacion: e.target.value })}
+                    disabled={loadingTiposUbicacion || savingUbicacion || tiposUbicacion.length === 0}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  >
+                    <option value="">{loadingTiposUbicacion ? 'Cargando tipos...' : 'Selecciona un tipo'}</option>
+                    {tiposUbicacion.map(tipo => (
+                      <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                    ))}
+                  </select>
+                </div>
                 <label className="block text-sm font-medium text-text-muted mb-2">Nombre de la ubicación</label>
                 <input
-                  autoFocus
                   type="text"
-                  className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
-                  placeholder="Ej. Carro 3, Bodega Central..."
-                  value={newUbicacionName}
-                  onChange={(e) => setNewUbicacionName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newUbicacionName.trim()) {
-                      const newId = Math.max(0, ...ubicaciones.map(u => u.id)) + 1;
-                      setUbicaciones([...ubicaciones, { id: newId, name: newUbicacionName.trim(), items: 0 }]);
-                      setShowAddUbicacionModal(false);
-                    }
-                  }}
+                  className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  placeholder="Ej. Gaveta 3, Bodega central..."
+                  value={newUbicacionData.nombre}
+                  onChange={(e) => setNewUbicacionData({ ...newUbicacionData, nombre: e.target.value })}
+                  disabled={savingUbicacion}
                 />
+
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <textarea
+                    rows={4}
+                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Detalle breve de la ubicacion"
+                    value={newUbicacionData.descripcion}
+                    onChange={(e) => setNewUbicacionData({ ...newUbicacionData, descripcion: e.target.value })}
+                    disabled={savingUbicacion}
+                  />
+                </div>
+
+                {!loadingTiposUbicacion && tiposUbicacion.length === 0 && !addUbicacionError && (
+                  <p className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs text-text-muted">
+                    No hay tipos disponibles para crear en este nivel.
+                  </p>
+                )}
+
+                {addUbicacionError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {addUbicacionError}
+                  </p>
+                )}
               </div>
               <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
                 <button
-                  onClick={() => setShowAddUbicacionModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors"
+                  type="button"
+                  onClick={closeAddUbicacionModal}
+                  disabled={savingUbicacion}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => {
-                    if (newUbicacionName.trim()) {
-                      const newId = Math.max(0, ...ubicaciones.map(u => u.id)) + 1;
-                      setUbicaciones([...ubicaciones, { id: newId, name: newUbicacionName.trim(), items: 0 }]);
-                      setShowAddUbicacionModal(false);
-                    }
-                  }}
-                  disabled={!newUbicacionName.trim()}
+                  type="submit"
+                  disabled={!canCreateUbicacion || savingUbicacion || loadingTiposUbicacion}
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Crear Ubicación
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
 
