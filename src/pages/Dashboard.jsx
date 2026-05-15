@@ -370,8 +370,8 @@ function Dashboard({ setView }) {
     const payload = {
       nombre: newUbicacionData.nombre.trim(),
       descripcion: newUbicacionData.descripcion.trim(),
-      idTipoUbicacion: Number(newUbicacionData.idTipoUbicacion),
-      ...(currentUbicacion?.id ? { idUbicacionPadre: currentUbicacion.id } : {}),
+      idTipo: Number(newUbicacionData.idTipoUbicacion),
+      idPadre: currentUbicacion?.id ? Number(currentUbicacion.id) : 0,
     };
 
     setSavingUbicacion(true);
