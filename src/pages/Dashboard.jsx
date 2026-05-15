@@ -323,6 +323,7 @@ function Dashboard({ setView }) {
     id: tipo.idTipo || tipo.idTipoUbicacion || tipo.id,
     nombre: tipo.nombre || tipo.name || tipo.nombreTipo || 'Tipo de ubicacion',
     idCompania: tipo.idCompania,
+    esTipoRaiz: toBoolean(tipo.esTipoRaiz),
   });
 
   const loadTiposUbicacion = async () => {
@@ -355,7 +356,11 @@ function Dashboard({ setView }) {
       const data = await apiFetch(endpoint);
       const tipos = getArrayPayload(data, ['tipos', 'tipoUbicaciones', 'tiposUbicacion'])
         .map(mapTipoUbicacion)
-        .filter(tipo => tipo.id && tipo.nombre.toLowerCase() !== 'vehiculo');
+        .filter(tipo => (
+          tipo.id
+          && tipo.nombre.toLowerCase() !== 'vehiculo'
+          && (currentUbicacion || tipo.esTipoRaiz)
+        ));
 
       setTiposUbicacion(tipos);
       setNewUbicacionData(currentData => ({
