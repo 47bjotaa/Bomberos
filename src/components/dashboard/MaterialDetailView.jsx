@@ -193,6 +193,7 @@ function MaterialDetailView({ route, onBack }) {
   const [materialImageUploads, setMaterialImageUploads] = useState([]);
   const [materialImageSaving, setMaterialImageSaving] = useState(false);
   const [materialImageUploadError, setMaterialImageUploadError] = useState('');
+  const [deletingMaterialImageId, setDeletingMaterialImageId] = useState(null);
   const [showObservationForm, setShowObservationForm] = useState(false);
   const [observationText, setObservationText] = useState('');
   const [observationImages, setObservationImages] = useState([]);
@@ -691,6 +692,27 @@ function MaterialDetailView({ route, onBack }) {
     }
   };
 
+  const handleDeleteMaterialImage = async (event, image) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!image?.idArchivo || !materialImageBasePath) return;
+
+    setDeletingMaterialImageId(image.idArchivo);
+    setMaterialImagesError('');
+
+    try {
+      await apiFetch(`${materialImageBasePath}/${image.idArchivo}`, {
+        method: 'DELETE',
+      });
+      await fetchMaterialImages();
+    } catch (err) {
+      setMaterialImagesError(err.message || 'No se pudo eliminar la imagen.');
+    } finally {
+      setDeletingMaterialImageId(null);
+    }
+  };
+
   const handleCreateMaintenance = async (event) => {
     event.preventDefault();
 
@@ -921,7 +943,18 @@ function MaterialDetailView({ route, onBack }) {
                         Cargando imagen...
                       </div>
                     ) : primaryMaterialImage ? (
-                      <img src={primaryMaterialImage.url} alt={primaryMaterialImage.nombre} className="h-full w-full object-cover" />
+                      <div className="relative h-full w-full">
+                        <img src={primaryMaterialImage.url} alt={primaryMaterialImage.nombre} className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={(event) => handleDeleteMaterialImage(event, primaryMaterialImage)}
+                          disabled={String(deletingMaterialImageId) === String(primaryMaterialImage.idArchivo)}
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Eliminar foto"
+                        >
+                          x
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                   <button
@@ -949,10 +982,19 @@ function MaterialDetailView({ route, onBack }) {
                           href={image.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block aspect-square overflow-hidden rounded-lg border"
+                          className="relative block aspect-square overflow-hidden rounded-lg border"
                           style={{ borderColor: palette.border }}
                         >
                           <img src={image.url} alt={image.nombre} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(event) => handleDeleteMaterialImage(event, image)}
+                            disabled={String(deletingMaterialImageId) === String(image.idArchivo)}
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Eliminar foto"
+                          >
+                            x
+                          </button>
                         </a>
                       ))}
                     </div>
