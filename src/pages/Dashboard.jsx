@@ -12,6 +12,8 @@ import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
 
+const GENERAL_INVENTORY_ID = 'general-inventory';
+
 const getMaterialDetailRoute = (pathname) => {
   const itemMatch = pathname.match(/^\/dashboard\/materiales\/items\/([^/]+)$/);
   if (itemMatch) {
@@ -143,9 +145,9 @@ function Dashboard({ setView }) {
   };
 
   const mapMateriales = (dataMateriales) => getMaterialesPayload(dataMateriales).map(item => ({
-    id: item.idMaterial || item.idItem || item.idInventario || item.id,
+    id: item.idInventarioItem || item.idItem || item.idInventario || item.idMaterial || item.id,
     idItem: item.idItem,
-    idInventario: item.idInventario,
+    idInventario: item.idInventario || item.idInventarioItem,
     idMaterial: item.idMaterial || item.id,
     nombre: item.nombreMaterial || item.nombre || 'Material',
     categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
@@ -158,6 +160,24 @@ function Dashboard({ setView }) {
           (item.nombreTipoProducto || '').toLowerCase().includes('medic') ? 'medical' :
           (item.nombreTipoProducto || '').toLowerCase().includes('extin') ? 'fire' : 'package'
   }));
+
+  const selectGeneralInventario = async () => {
+    setLocationPath([]);
+    setSubUbicaciones([]);
+    setActiveUbicacion(GENERAL_INVENTORY_ID);
+    setLoadingItems(true);
+    setItemsUbicacion([]);
+
+    try {
+      const data = await apiFetch('/api/materiales/todos');
+      setItemsUbicacion(mapMateriales(data));
+    } catch (error) {
+      console.error("Error al cargar inventario general:", error);
+      setItemsUbicacion([]);
+    } finally {
+      setLoadingItems(false);
+    }
+  };
 
   const fetchItemsUbicacion = async (ubicacion, { updateChildren = true } = {}) => {
     const id = ubicacion.id;
@@ -308,10 +328,13 @@ function Dashboard({ setView }) {
   const currentUbicacion = locationPath[locationPath.length - 1] || null;
   const visibleUbicaciones = currentUbicacion ? subUbicaciones : ubicaciones;
   const selectedUbicacion = [...locationPath, ...subUbicaciones, ...ubicaciones].find(u => u.id === activeUbicacion);
-  const selectedUbicacionName = selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
+  const isGeneralInventario = activeUbicacion === GENERAL_INVENTORY_ID;
+  const selectedUbicacionName = isGeneralInventario ? 'General' : selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
   const selectedUbicacionTipo = selectedUbicacion?.nombreTipo || currentUbicacion?.nombreTipo || '';
   const isGeneralVehiculo = currentUbicacion?.id === activeUbicacion && selectedUbicacionTipo.toLowerCase() === 'vehiculo';
-  const addMaterialDisabledReason = isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
+  const addMaterialDisabledReason = isGeneralInventario
+    ? 'Selecciona una ubicacion especifica para añadir materiales.'
+    : isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
   const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
   const palette = getThemePalette(theme);
   const inventoryViews = [
@@ -321,6 +344,11 @@ function Dashboard({ setView }) {
   ];
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
+
+    if (isGeneralInventario) {
+      await selectGeneralInventario();
+      return;
+    }
 
     await fetchItemsUbicacion({ id: activeUbicacion, name: selectedUbicacionName }, { updateChildren: false });
   };
@@ -646,6 +674,25 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px' }}>
+                    {!currentUbicacion && (
+                      <button
+                        onClick={selectGeneralInventario}
+                        style={{
+                          minHeight: '150px',
+                          borderRadius: '14px',
+                          border: isGeneralInventario ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
+                          background: isGeneralInventario ? palette.cyanSoft : palette.card,
+                          color: palette.text,
+                          cursor: 'pointer',
+                          padding: '20px',
+                          textAlign: 'center',
+                          fontWeight: 700
+                        }}
+                      >
+                        <div style={{ marginBottom: '10px', color: palette.cyan }}>General</div>
+                        Todos los materiales
+                      </button>
+                    )}
                     {currentUbicacion && subUbicaciones.length > 0 && (
                       <button
                         onClick={selectGeneralUbicacion}
