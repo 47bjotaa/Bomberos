@@ -313,7 +313,7 @@ function Dashboard({ setView }) {
   };
 
   const mapTipoUbicacion = (tipo) => ({
-    id: tipo.idTipoUbicacion || tipo.idTipo || tipo.id,
+    id: tipo.idTipo || tipo.idTipoUbicacion || tipo.id,
     nombre: tipo.nombre || tipo.name || tipo.nombreTipo || 'Tipo de ubicacion',
     idCompania: tipo.idCompania,
   });
@@ -396,7 +396,6 @@ function Dashboard({ setView }) {
     setAddUbicacionError('');
 
     try {
-      console.info('Creando ubicacion', payload);
       await apiFetch('/api/ubicaciones', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -409,7 +408,6 @@ function Dashboard({ setView }) {
         await fetchUbicaciones();
       }
     } catch (error) {
-      console.error('Error al crear ubicacion', { payload, error });
       setAddUbicacionError(error.message || 'No se pudo crear la ubicacion.');
     } finally {
       setSavingUbicacion(false);
@@ -863,6 +861,11 @@ function Dashboard({ setView }) {
                     ))}
                   </select>
                 </div>
+                {currentUbicacion && (
+                  <p className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs text-text-muted">
+                    Se creara dentro de {currentUbicacion.name} (id {currentUbicacion.id}).
+                  </p>
+                )}
                 <label className="block text-sm font-medium text-text-muted mb-2">Nombre de la ubicación</label>
                 <input
                   type="text"
@@ -872,7 +875,6 @@ function Dashboard({ setView }) {
                   onChange={(e) => setNewUbicacionData({ ...newUbicacionData, nombre: e.target.value })}
                   disabled={savingUbicacion}
                 />
-
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
                   <textarea

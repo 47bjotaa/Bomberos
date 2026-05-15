@@ -42,6 +42,15 @@ export const apiFetch = async (endpoint, options = {}) => {
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
+        if (errorData.errors) {
+          const errorDetails = Array.isArray(errorData.errors)
+            ? errorData.errors
+            : Object.values(errorData.errors).flat();
+
+          if (errorDetails.length > 0) {
+            errorMessage = `${errorMessage}: ${errorDetails.join(' ')}`;
+          }
+        }
       } catch {
         errorMessage = errorText;
       }
