@@ -396,6 +396,7 @@ function Dashboard({ setView }) {
     setAddUbicacionError('');
 
     try {
+      console.info('Creando ubicacion', payload);
       await apiFetch('/api/ubicaciones', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -408,6 +409,7 @@ function Dashboard({ setView }) {
         await fetchUbicaciones();
       }
     } catch (error) {
+      console.error('Error al crear ubicacion', { payload, error });
       setAddUbicacionError(error.message || 'No se pudo crear la ubicacion.');
     } finally {
       setSavingUbicacion(false);
