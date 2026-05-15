@@ -324,9 +324,27 @@ function Dashboard({ setView }) {
     setTiposUbicacion([]);
 
     try {
-      const endpoint = currentUbicacion?.idTipo
-        ? `/api/tipoubicaciones/${currentUbicacion.idTipo}/hijos`
-        : '/api/tipoubicaciones';
+      let endpoint = '/api/tipoubicaciones';
+
+      if (currentUbicacion) {
+        let idTipoPadre = currentUbicacion.idTipo;
+
+        if (!idTipoPadre && currentUbicacion.nombreTipo) {
+          const rootTypesPayload = await apiFetch('/api/tipoubicaciones');
+          const rootTypes = getArrayPayload(rootTypesPayload, ['tipos', 'tipoUbicaciones', 'tiposUbicacion']).map(mapTipoUbicacion);
+          const parentType = rootTypes.find(tipo => (
+            tipo.nombre.toLowerCase() === currentUbicacion.nombreTipo.toLowerCase()
+          ));
+          idTipoPadre = parentType?.id;
+        }
+
+        if (!idTipoPadre) {
+          throw new Error('No se pudo identificar el tipo de la ubicacion padre.');
+        }
+
+        endpoint = `/api/tipoubicaciones/${idTipoPadre}/hijos`;
+      }
+
       const data = await apiFetch(endpoint);
       const tipos = getArrayPayload(data, ['tipos', 'tipoUbicaciones', 'tiposUbicacion'])
         .map(mapTipoUbicacion)
@@ -371,7 +389,7 @@ function Dashboard({ setView }) {
       nombre: newUbicacionData.nombre.trim(),
       descripcion: newUbicacionData.descripcion.trim(),
       idTipo: Number(newUbicacionData.idTipoUbicacion),
-      idPadre: currentUbicacion?.id ? Number(currentUbicacion.id) : 0,
+      idPadre: currentUbicacion?.id ? Number(currentUbicacion.id) : null,
     };
 
     setSavingUbicacion(true);
