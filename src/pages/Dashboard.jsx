@@ -29,6 +29,7 @@ const getMaterialDetailRoute = (pathname) => {
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('bodegas');
+  const [inventoryView, setInventoryView] = useState('ubicaciones');
   const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -313,6 +314,11 @@ function Dashboard({ setView }) {
   const addMaterialDisabledReason = isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
   const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
   const palette = getThemePalette(theme);
+  const inventoryViews = [
+    { id: 'ubicaciones', label: 'Ubicaciones Principales' },
+    { id: 'arbol', label: 'Arbol de Ubicaciones' },
+    { id: 'stocks', label: 'Stocks Minimos' },
+  ];
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -446,7 +452,7 @@ function Dashboard({ setView }) {
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
           <button onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Inventory /> <span className="hidden lg:inline">Ubicaciones Principales</span>
+            <Icons.Inventory /> <span className="hidden lg:inline">Inventario</span>
           </button>
           <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
@@ -507,14 +513,29 @@ function Dashboard({ setView }) {
                 {activeTab === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
-                <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                  {activeTab === 'bodegas' ? 'Ubicaciones Principales' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
-                </h2>
+                {activeTab === 'bodegas' ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {inventoryViews.map(view => (
+                      <button
+                        key={view.id}
+                        type="button"
+                        onClick={() => setInventoryView(view.id)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-dark-bg3 hover:text-white'}`}
+                      >
+                        {view.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
+                    {activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
+                  </h2>
+                )}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {activeTab === 'bodegas' && (
+              {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
                 <button onClick={openAddUbicacionModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
               )}
               {activeTab === 'catalogo' && (
@@ -547,7 +568,7 @@ function Dashboard({ setView }) {
             <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} onRemoved={refreshActiveUbicacion} />
           )}
 
-          {!materialDetailRoute && activeTab === 'bodegas' && (
+          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
             <div
               style={{
                 display: 'grid',
@@ -668,6 +689,57 @@ function Dashboard({ setView }) {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'arbol' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-6">
+                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Arbol de Ubicaciones</h3>
+                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Vista jerarquica de las ubicaciones principales y la ruta seleccionada.</p>
+              </div>
+
+              <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
+                {loadingUbicaciones ? (
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando ubicaciones desde el servidor...</p>
+                ) : ubicaciones.length > 0 ? (
+                  <div className="space-y-3">
+                    {ubicaciones.map(ubi => {
+                      const isInPath = locationPath.some(item => item.id === ubi.id);
+                      return (
+                        <button
+                          key={ubi.id}
+                          type="button"
+                          onClick={() => openUbicacion(ubi)}
+                          className="w-full rounded-lg border px-4 py-3 text-left transition-colors"
+                          style={{
+                            borderColor: isInPath ? palette.cyan : palette.borderStrong,
+                            background: isInPath ? palette.cyanSoft : palette.bg,
+                            color: palette.text,
+                          }}
+                        >
+                          <span className="font-semibold">{ubi.name}</span>
+                          {ubi.nombreTipo && <span className="ml-3 text-xs" style={{ color: palette.muted }}>{ubi.nombreTipo}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm" style={{ color: palette.muted }}>No se encontraron ubicaciones registradas.</p>
+                )}
+              </div>
+            </div>
+          )}
+          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'stocks' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-6">
+                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks Minimos</h3>
+                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposicion segun su stock minimo.</p>
+              </div>
+
+              <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+                <p className="font-semibold" style={{ color: palette.text }}>Sin alertas de stock minimo</p>
+                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Cuando existan materiales bajo el minimo configurado, apareceran aqui.</p>
               </div>
             </div>
           )}
