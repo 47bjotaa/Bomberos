@@ -115,13 +115,20 @@ function Dashboard({ setView }) {
     value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
   );
 
-  const mapUbicacion = (u) => ({
-    id: u.idUbicacion || u.id || u.idUbicacionHija || u.idUbicacionPadre,
-    name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
-    items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0,
-    idTipo: u.idTipo || u.idTipoUbicacion,
-    nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
-  });
+  const mapUbicacion = (u) => {
+    const idVehiculo = u.idVehiculo || u.idCarro || null;
+    const idUbicacion = u.idUbicacion || u.idUbicacionActual || u.idUbicacionHija || (!idVehiculo ? u.id : null);
+
+    return {
+      id: idUbicacion || u.id || idVehiculo,
+      idUbicacion,
+      idVehiculo,
+      name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
+      items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0,
+      idTipo: u.idTipo || u.idTipoUbicacion,
+      nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
+    };
+  };
 
   const getMaterialesPayload = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -379,17 +386,19 @@ function Dashboard({ setView }) {
 
   const canCreateUbicacion = newUbicacionData.nombre.trim()
     && newUbicacionData.descripcion.trim()
-    && newUbicacionData.idTipoUbicacion;
+    && newUbicacionData.idTipoUbicacion
+    && (!currentUbicacion || currentUbicacion.idUbicacion);
 
   const handleCreateUbicacion = async (event) => {
     event.preventDefault();
     if (!canCreateUbicacion || savingUbicacion) return;
 
+    const parentUbicacionId = currentUbicacion?.idUbicacion || null;
     const payload = {
       nombre: newUbicacionData.nombre.trim(),
       descripcion: newUbicacionData.descripcion.trim(),
       idTipo: Number(newUbicacionData.idTipoUbicacion),
-      idPadre: currentUbicacion?.id ? Number(currentUbicacion.id) : null,
+      idPadre: parentUbicacionId ? Number(parentUbicacionId) : null,
     };
 
     setSavingUbicacion(true);
@@ -863,7 +872,12 @@ function Dashboard({ setView }) {
                 </div>
                 {currentUbicacion && (
                   <p className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs text-text-muted">
-                    Se creara dentro de {currentUbicacion.name} (id {currentUbicacion.id}).
+                    Se creara dentro de {currentUbicacion.name} (id ubicacion {currentUbicacion.idUbicacion || 'no disponible'}).
+                  </p>
+                )}
+                {currentUbicacion && !currentUbicacion.idUbicacion && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    No se pudo identificar el IdUbicacion del padre.
                   </p>
                 )}
                 <label className="block text-sm font-medium text-text-muted mb-2">Nombre de la ubicación</label>
