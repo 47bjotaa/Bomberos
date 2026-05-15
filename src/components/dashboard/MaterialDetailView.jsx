@@ -33,6 +33,7 @@ const normalizeDetail = (data, fallback = {}) => {
     id: data.idItem || data.idMaterial || fallback.id,
     idItem: data.idItem || fallback.idItem,
     idMaterial: data.idMaterial || fallback.idMaterial,
+    idUbicacion: data.idUbicacion || data.idUbicacionActual || fallback.idUbicacion,
     nombre: data.nombreMaterial || data.nombre || fallback.nombre || 'Material',
     descripcion: data.descripcionMaterial || data.descripcion || 'Sin descripcion registrada.',
     tipo: data.nombreTipoProducto || fallback.categoria || 'Sin tipo',
@@ -40,11 +41,21 @@ const normalizeDetail = (data, fallback = {}) => {
     requiereMantencion: Boolean(data.requiereMantencion),
     codigoUnico: data.codigoUnico || fallback.codigo || '',
     valorUnitario: data.valorUnitario,
+    cantidad: data.cantidad || fallback.cantidad || 1,
     ubicacion: data.nombreUbicacion || fallback.ubicacion || '',
     estadoInventario: data.estadoInventario || '',
     observaciones: Array.isArray(data.observaciones) ? data.observaciones : [],
     mantenciones: Array.isArray(data.mantenciones) ? data.mantenciones : [],
   };
+};
+
+const getCurrentUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.idUsuario || user.id || 0;
+  } catch {
+    return 0;
+  }
 };
 
 const getObservationId = (payload) => {
@@ -180,7 +191,7 @@ function EmptyState({ children, palette }) {
   );
 }
 
-function MaterialDetailView({ route, onBack }) {
+function MaterialDetailView({ route, onBack, onRemoved }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
   const [detail, setDetail] = useState(null);
@@ -216,6 +227,10 @@ function MaterialDetailView({ route, onBack }) {
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const [deletingMaintenance, setDeletingMaintenance] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [deactivationForm, setDeactivationForm] = useState({ cantidad: '1', motivo: '' });
+  const [deactivationSaving, setDeactivationSaving] = useState(false);
+  const [deactivationError, setDeactivationError] = useState('');
   const observationImagesRef = useRef([]);
   const maintenanceFilesRef = useRef([]);
   const materialImageUploadsRef = useRef([]);
@@ -327,6 +342,22 @@ function MaterialDetailView({ route, onBack }) {
     });
   };
 
+  const openDeactivateModal = () => {
+    setDeactivationForm({
+      cantidad: '1',
+      motivo: '',
+    });
+    setDeactivationError('');
+    setShowDeactivateModal(true);
+  };
+
+  const closeDeactivateModal = () => {
+    if (deactivationSaving) return;
+
+    setShowDeactivateModal(false);
+    setDeactivationError('');
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -358,6 +389,9 @@ function MaterialDetailView({ route, onBack }) {
       });
       setMaintenanceNotice('');
       setSelectedMaintenance(null);
+      setShowDeactivateModal(false);
+      setDeactivationError('');
+      setDeactivationForm({ cantidad: '1', motivo: '' });
 
       try {
         const endpoint = route.type === 'item'
@@ -413,6 +447,10 @@ function MaterialDetailView({ route, onBack }) {
   const maintenanceTargetQuery = useMemo(() => getQueryString(maintenanceTargetIds), [maintenanceTargetIds]);
   const materialImageBasePath = useMemo(() => getMaterialImageBasePath(material, route), [material, route]);
   const primaryMaterialImage = materialImages[0] || null;
+  const availableQuantity = Math.max(1, Number(material.cantidad) || 1);
+  const deactivationQuantity = Number(deactivationForm.cantidad);
+  const canDeactivate = deactivationForm.motivo.trim()
+    && (material.esSerializacion || (deactivationQuantity > 0 && deactivationQuantity <= availableQuantity));
 
   const fetchMaterialImages = useCallback(async () => {
     if (!materialImageBasePath || loading || error) return;
@@ -692,6 +730,46 @@ function MaterialDetailView({ route, onBack }) {
     }
   };
 
+  const handleDeactivateMaterial = async (event) => {
+    event.preventDefault();
+    if (!canDeactivate || deactivationSaving) return;
+
+    const motivo = deactivationForm.motivo.trim();
+    const fecha = new Date().toISOString();
+    const endpoint = material.esSerializacion ? '/api/materiales/items/restar' : '/api/materiales/restar';
+    const payload = material.esSerializacion
+      ? {
+          idItem: Number(material.idItem || route.id),
+          motivo,
+          fecha,
+        }
+      : {
+          idMaterial: Number(material.idMaterial || route.id),
+          idUbicacion: Number(material.idUbicacion || route.fallback?.idUbicacion || 0),
+          idUsuario: getCurrentUserId(),
+          cantidad: deactivationQuantity,
+          motivo,
+          fecha,
+        };
+
+    setDeactivationSaving(true);
+    setDeactivationError('');
+
+    try {
+      await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setShowDeactivateModal(false);
+      await onRemoved?.();
+      onBack?.();
+    } catch (err) {
+      setDeactivationError(err.message || 'No se pudo dar de baja el material.');
+    } finally {
+      setDeactivationSaving(false);
+    }
+  };
+
   const handleDeleteMaterialImage = async (event, image) => {
     event.preventDefault();
     event.stopPropagation();
@@ -892,6 +970,8 @@ function MaterialDetailView({ route, onBack }) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={openDeactivateModal}
+              disabled={loading || Boolean(error)}
               className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               type="button"
             >
@@ -899,14 +979,6 @@ function MaterialDetailView({ route, onBack }) {
                 <Icons.AlertTriangle />
               </span>
               Dar de baja
-            </button>
-            <button
-              className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/50"
-              style={{ background: palette.card, borderColor: palette.border, color: palette.text }}
-              type="button"
-            >
-              <span className="text-base leading-none">&#9998;</span>
-              Editar
             </button>
           </div>
         </div>
@@ -1266,6 +1338,100 @@ function MaterialDetailView({ route, onBack }) {
                 className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {materialImageSaving ? 'Subiendo...' : 'Subir fotos'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showDeactivateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: palette.overlay }}
+          onClick={closeDeactivateModal}
+        >
+          <form
+            onSubmit={handleDeactivateMaterial}
+            className="w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl"
+            style={{ borderColor: palette.border, background: palette.surface }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold" style={{ color: palette.text }}>Dar de baja material</h3>
+                <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeactivateModal}
+                disabled={deactivationSaving}
+                className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="space-y-4 p-6">
+              {!material.esSerializacion && (
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>
+                    Cantidad
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={availableQuantity}
+                    value={deactivationForm.cantidad}
+                    onChange={(event) => setDeactivationForm((current) => ({ ...current, cantidad: event.target.value }))}
+                    disabled={deactivationSaving}
+                    className="mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan disabled:opacity-50"
+                    style={{ background: palette.card, borderColor: palette.border, color: palette.text }}
+                  />
+                  <span className="mt-1 block text-xs" style={{ color: palette.muted }}>
+                    Disponible: {availableQuantity}
+                  </span>
+                </label>
+              )}
+
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>
+                  Motivo
+                </span>
+                <textarea
+                  value={deactivationForm.motivo}
+                  onChange={(event) => setDeactivationForm((current) => ({ ...current, motivo: event.target.value }))}
+                  disabled={deactivationSaving}
+                  rows={4}
+                  className="mt-2 w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-50"
+                  style={{ background: palette.card, borderColor: palette.border, color: palette.text }}
+                  placeholder="Describe por que se da de baja"
+                />
+              </label>
+
+              {deactivationError && (
+                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                  {deactivationError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+              <button
+                type="button"
+                onClick={closeDeactivateModal}
+                disabled={deactivationSaving}
+                className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                style={{ color: palette.muted }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!canDeactivate || deactivationSaving}
+                className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deactivationSaving ? 'Procesando...' : 'Confirmar baja'}
               </button>
             </div>
           </form>

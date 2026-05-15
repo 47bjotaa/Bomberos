@@ -427,7 +427,7 @@ function Dashboard({ setView }) {
         {/* Content Body */}
         <div className="min-h-0 flex-1 overflow-hidden">
           {materialDetailRoute && (
-            <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} />
+            <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} onRemoved={refreshActiveUbicacion} />
           )}
 
           {!materialDetailRoute && activeTab === 'bodegas' && (
