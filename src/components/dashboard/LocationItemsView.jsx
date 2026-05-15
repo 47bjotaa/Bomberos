@@ -116,6 +116,11 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                           {item.categoria}
                         </span>
                         {item.codigo && <span className="font-mono text-[10px] text-brand-cyan/70">#{item.codigo}</span>}
+                        {item.ubicacionRaiz && (
+                          <span className="rounded border border-brand-red/10 bg-brand-red/5 px-1.5 py-0.5 text-[10px] text-brand-red/80">
+                            {item.ubicacionRaiz}
+                          </span>
+                        )}
                         <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-1.5 py-0.5 text-[10px] text-brand-cyan/80">
                           {item.ubicacion || locationName}
                         </span>

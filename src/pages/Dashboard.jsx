@@ -154,6 +154,8 @@ function Dashboard({ setView }) {
     cantidad: item.cantidad || 1,
     codigo: item.codigoUnico || null,
     idUbicacion: item.idUbicacion || item.idUbicacionActual,
+    idUbicacionRaiz: item.idUbicacionRaiz,
+    ubicacionRaiz: item.nombreUbicacionRaiz || item.ubicacionRaiz || '',
     ubicacion: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || '',
     serializado: Boolean(item.idItem || item.codigoUnico),
     icon: (item.nombreTipoProducto || '').toLowerCase().includes('comunic') ? 'radio' :
