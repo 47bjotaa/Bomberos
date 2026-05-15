@@ -670,15 +670,15 @@ function MaterialDetailView({ route, onBack }) {
     setMaterialImageUploadError('');
 
     try {
-      const imageFormData = new FormData();
-      materialImageUploads.forEach(({ file }) => {
-        imageFormData.append('imagenes', file);
-      });
+      await Promise.all(materialImageUploads.map(({ file }) => {
+        const imageFormData = new FormData();
+        imageFormData.append('archivo', file);
 
-      await apiFetch(materialImageBasePath, {
-        method: 'POST',
-        body: imageFormData,
-      });
+        return apiFetch(materialImageBasePath, {
+          method: 'POST',
+          body: imageFormData,
+        });
+      }));
 
       materialImageUploads.forEach((image) => URL.revokeObjectURL(image.preview));
       setMaterialImageUploads([]);
