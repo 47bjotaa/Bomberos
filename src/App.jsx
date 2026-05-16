@@ -3,11 +3,13 @@ import Landing from './pages/Landing';
 import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import PaginaDonacion from './pages/PaginaDonacion';
+import RetornoDonacion from './pages/RetornoDonacion';
 import './App.css';
 
 const hasAuthToken = () => Boolean(localStorage.getItem('token'));
 
 const getViewFromPath = (pathname) => {
+  if (pathname.startsWith('/donacion-gracias/')) return 'retorno-donacion';
   if (pathname.startsWith('/donar/')) return 'donacion';
   if (pathname.startsWith('/dashboard')) return 'dashboard';
   if (
@@ -107,6 +109,7 @@ export default function App() {
       {view === 'auth' && <AuthView initialMode={authMode} />}
       {view === 'dashboard' && <Dashboard setView={setView} />}
       {view === 'donacion' && <PaginaDonacion />}
+      {view === 'retorno-donacion' && <RetornoDonacion />}
     </div>
   );
 }
