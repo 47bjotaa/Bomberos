@@ -77,7 +77,10 @@ function Dashboard({ setView }) {
   const [loadingStockMinimos, setLoadingStockMinimos] = useState(false);
   const [stockMinimosError, setStockMinimosError] = useState('');
   const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
-  const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '' });
+  const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '', materiales: [] });
+  const [stockMateriales, setStockMateriales] = useState([]);
+  const [loadingStockMateriales, setLoadingStockMateriales] = useState(false);
+  const [stockMaterialesError, setStockMaterialesError] = useState('');
   const [savingStockMinimo, setSavingStockMinimo] = useState(false);
   const [addStockMinimoError, setAddStockMinimoError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
@@ -573,10 +576,39 @@ function Dashboard({ setView }) {
     }
   };
 
-  const openAddStockMinimoModal = () => {
-    setNewStockMinimoData({ nombre: '', idUbicacion: '' });
+  const mapStockMaterial = (material) => ({
+    id: material.idMaterial || material.id,
+    nombre: material.nombre || material.nombreMaterial || 'Material',
+    tipo: material.nombreTipoProducto || material.tipoMaterial || 'General',
+    descripcion: material.descripcion || material.descripcionMaterial || '',
+  });
+
+  const fetchStockMateriales = async () => {
+    setLoadingStockMateriales(true);
+    setStockMaterialesError('');
+
+    try {
+      const data = await apiFetch('/api/materiales/creados');
+      const materiales = getArrayPayload(data, ['materiales', 'items'])
+        .map(mapStockMaterial)
+        .filter(material => material.id);
+      setStockMateriales(materiales);
+      return materiales;
+    } catch (error) {
+      setStockMaterialesError(error.message || 'No se pudieron cargar los materiales.');
+      setStockMateriales([]);
+      return [];
+    } finally {
+      setLoadingStockMateriales(false);
+    }
+  };
+
+  const openAddStockMinimoModal = async () => {
+    setNewStockMinimoData({ nombre: '', idUbicacion: '', materiales: [] });
     setAddStockMinimoError('');
+    setStockMaterialesError('');
     setShowAddStockMinimoModal(true);
+    await fetchStockMateriales();
   };
 
   const closeAddStockMinimoModal = () => {
@@ -586,7 +618,38 @@ function Dashboard({ setView }) {
     setAddStockMinimoError('');
   };
 
-  const canCreateStockMinimo = newStockMinimoData.nombre.trim() && newStockMinimoData.idUbicacion;
+  const toggleStockMaterial = (materialId) => {
+    setNewStockMinimoData(currentData => {
+      const exists = currentData.materiales.some(material => String(material.idMaterial) === String(materialId));
+      return {
+        ...currentData,
+        materiales: exists
+          ? currentData.materiales.filter(material => String(material.idMaterial) !== String(materialId))
+          : [...currentData.materiales, { idMaterial: Number(materialId), cantidad: 1 }],
+      };
+    });
+  };
+
+  const updateStockMaterialCantidad = (materialId, cantidad) => {
+    const nextCantidad = Math.max(1, Number(cantidad) || 1);
+    setNewStockMinimoData(currentData => ({
+      ...currentData,
+      materiales: currentData.materiales.map(material => (
+        String(material.idMaterial) === String(materialId)
+          ? { ...material, cantidad: nextCantidad }
+          : material
+      )),
+    }));
+  };
+
+  const getSelectedStockMaterial = (materialId) => (
+    newStockMinimoData.materiales.find(material => String(material.idMaterial) === String(materialId))
+  );
+
+  const canCreateStockMinimo = newStockMinimoData.nombre.trim()
+    && newStockMinimoData.idUbicacion
+    && newStockMinimoData.materiales.length > 0
+    && newStockMinimoData.materiales.every(material => material.idMaterial && material.cantidad > 0);
 
   const handleCreateStockMinimo = async (event) => {
     event.preventDefault();
@@ -599,8 +662,12 @@ function Dashboard({ setView }) {
       await apiFetch('/api/stockminimos', {
         method: 'POST',
         body: JSON.stringify({
-          nombre: newStockMinimoData.nombre.trim(),
           idUbicacion: Number(newStockMinimoData.idUbicacion),
+          nombre: newStockMinimoData.nombre.trim(),
+          materiales: newStockMinimoData.materiales.map(material => ({
+            idMaterial: Number(material.idMaterial),
+            cantidad: Number(material.cantidad),
+          })),
         }),
       });
 
@@ -1532,39 +1599,113 @@ function Dashboard({ setView }) {
 
         {showAddStockMinimoModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <form onSubmit={handleCreateStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+            <form onSubmit={handleCreateStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white rajdhani">Agregar Stock Minimo</h3>
                 <button type="button" onClick={closeAddStockMinimoModal} disabled={savingStockMinimo} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Nombre</label>
-                  <input
-                    autoFocus
-                    type="text"
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="Ej. Stock Gaveta 1"
-                    value={newStockMinimoData.nombre}
-                    onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, nombre: e.target.value })}
-                    disabled={savingStockMinimo}
-                  />
+              <div className="max-h-[72vh] overflow-y-auto p-6 space-y-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Nombre</label>
+                    <input
+                      autoFocus
+                      type="text"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      placeholder="Ej. Stock Gaveta 1"
+                      value={newStockMinimoData.nombre}
+                      onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, nombre: e.target.value })}
+                      disabled={savingStockMinimo}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Ubicacion</label>
+                    <select
+                      value={newStockMinimoData.idUbicacion}
+                      onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, idUbicacion: e.target.value })}
+                      disabled={savingStockMinimo || ubicaciones.length === 0}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    >
+                      <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicacion' : 'No hay ubicaciones disponibles'}</option>
+                      {ubicaciones.map(ubicacion => (
+                        <option key={ubicacion.id} value={ubicacion.id}>{ubicacion.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Ubicacion</label>
-                  <select
-                    value={newStockMinimoData.idUbicacion}
-                    onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, idUbicacion: e.target.value })}
-                    disabled={savingStockMinimo || ubicaciones.length === 0}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                  >
-                    <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicacion' : 'No hay ubicaciones disponibles'}</option>
-                    {ubicaciones.map(ubicacion => (
-                      <option key={ubicacion.id} value={ubicacion.id}>{ubicacion.name}</option>
-                    ))}
-                  </select>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white">Materiales del stock</p>
+                      <p className="mt-1 text-xs text-text-muted">Selecciona materiales y define la cantidad minima de cada uno.</p>
+                    </div>
+                    <span className="rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-1 text-xs text-brand-cyan">
+                      {newStockMinimoData.materiales.length} seleccionados
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-dark-border bg-dark-bg p-3">
+                    {loadingStockMateriales ? (
+                      <p className="py-8 text-center text-sm text-text-muted">Cargando materiales...</p>
+                    ) : stockMaterialesError ? (
+                      <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-4 text-center">
+                        <p className="text-sm font-semibold text-brand-red">{stockMaterialesError}</p>
+                        <button
+                          type="button"
+                          onClick={fetchStockMateriales}
+                          className="mt-3 rounded-lg border border-brand-red/40 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-red/20"
+                        >
+                          Reintentar
+                        </button>
+                      </div>
+                    ) : stockMateriales.length > 0 ? (
+                      <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                        {stockMateriales.map(material => {
+                          const selectedMaterial = getSelectedStockMaterial(material.id);
+                          const isSelected = Boolean(selectedMaterial);
+                          return (
+                            <div
+                              key={material.id}
+                              className={`rounded-lg border px-3 py-3 transition-colors ${isSelected ? 'border-brand-cyan/40 bg-brand-cyan/10' : 'border-dark-border bg-dark-bg2'}`}
+                            >
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleStockMaterial(material.id)}
+                                  disabled={savingStockMinimo}
+                                  className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
+                                >
+                                  <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border ${isSelected ? 'border-brand-cyan bg-brand-cyan text-dark-bg' : 'border-dark-border bg-dark-bg3'}`}>
+                                    {isSelected && <span className="text-xs font-bold">+</span>}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-semibold text-white">{material.nombre}</span>
+                                    <span className="block truncate text-xs text-text-muted">{material.tipo}{material.descripcion ? ` - ${material.descripcion}` : ''}</span>
+                                  </span>
+                                </button>
+                                <label className="flex items-center gap-2 text-xs text-text-muted">
+                                  Cantidad
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={selectedMaterial?.cantidad || 1}
+                                    onChange={(e) => updateStockMaterialCantidad(material.id, e.target.value)}
+                                    disabled={!isSelected || savingStockMinimo}
+                                    className="w-20 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="py-8 text-center text-sm text-text-muted">No hay materiales creados disponibles.</p>
+                    )}
+                  </div>
                 </div>
 
                 {addStockMinimoError && (
