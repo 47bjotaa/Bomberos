@@ -109,6 +109,22 @@ function Dashboard({ setView }) {
     { id: 4, equipo: 'Guantes Estructurales Seiz', codigo: 'EPP-GUA-088', asignadoA: 'Ana Rojas', inicial: 'A', fecha: '22 Feb 2024', estado: 'Operativo' },
     { id: 5, equipo: 'Esclavina (Monja)', codigo: 'EPP-ESC-102', asignadoA: 'Luis Méndez', inicial: 'L', fecha: '01 Mar 2024', estado: 'Operativo' }
   ]);
+  const [campanasActivas, setCampanasActivas] = useState([]);
+  const [campanasFinalizadas, setCampanasFinalizadas] = useState([]);
+  const [loadingCampanas, setLoadingCampanas] = useState(false);
+  const [campanasError, setCampanasError] = useState('');
+  const [showCreateCampanaModal, setShowCreateCampanaModal] = useState(false);
+  const [savingCampana, setSavingCampana] = useState(false);
+  const [createCampanaError, setCreateCampanaError] = useState('');
+  const [newCampanaData, setNewCampanaData] = useState({
+    nombre: '',
+    descripcion: '',
+    metaMonto: '',
+    fechaInicio: '',
+    fechaFin: '',
+    slug: '',
+    imagenUrl: '',
+  });
 
   useEffect(() => {
     if (activeTab === 'bodegas') {
@@ -151,6 +167,12 @@ function Dashboard({ setView }) {
     }
   }, [activeTab, inventoryView]);
 
+  useEffect(() => {
+    if (activeTab === 'donaciones') {
+      fetchCampanasDonaciones();
+    }
+  }, [activeTab]);
+
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
 
@@ -188,6 +210,46 @@ function Dashboard({ setView }) {
   };
 
   const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
+
+  const formatDateChile = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'America/Santiago',
+    }).format(date);
+  };
+
+  const getChileIsoFromDateInput = (value, endOfDay = false) => {
+    if (!value) return '';
+    const time = endOfDay ? '23:59:59.000' : '00:00:00.000';
+    return `${value}T${time}-04:00`;
+  };
+
+  const mapCampana = (campana) => {
+    const meta = Number(campana.metaMonto || 0);
+    const recaudado = Number(campana.montoRecaudado || 0);
+    const progress = meta > 0 ? Math.min(100, Math.round((recaudado / meta) * 100)) : 0;
+
+    return {
+      id: campana.idCampanaDonacion || campana.id,
+      nombre: campana.nombre || 'Campana sin nombre',
+      descripcion: campana.descripcion || '',
+      metaMonto: meta,
+      montoRecaudado: recaudado,
+      fechaInicio: campana.fechaInicio,
+      fechaFin: campana.fechaFin,
+      estado: campana.estado || '',
+      slug: campana.slug || '',
+      imagenUrl: campana.imagenUrl || '',
+      totalDonaciones: campana.totalDonaciones || 0,
+      progress,
+    };
+  };
 
   const mapUbicacion = (u) => {
     const idVehiculo = u.idVehiculo || u.idCarro || null;
@@ -381,6 +443,89 @@ function Dashboard({ setView }) {
       setCatalogo([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCampanasDonaciones = async () => {
+    setLoadingCampanas(true);
+    setCampanasError('');
+
+    try {
+      const [activasData, finalizadasData] = await Promise.all([
+        apiFetch('/api/campanasdonaciones?estado=Activa'),
+        apiFetch('/api/campanasdonaciones?estado=Finalizada'),
+      ]);
+
+      setCampanasActivas(getArrayPayload(activasData).map(mapCampana));
+      setCampanasFinalizadas(getArrayPayload(finalizadasData).map(mapCampana));
+    } catch (error) {
+      console.error('Error al cargar campanas de donaciones:', error);
+      setCampanasError(error.message || 'No se pudieron cargar las campanas de donaciones.');
+      setCampanasActivas([]);
+      setCampanasFinalizadas([]);
+    } finally {
+      setLoadingCampanas(false);
+    }
+  };
+
+  const resetNewCampanaData = () => {
+    setNewCampanaData({
+      nombre: '',
+      descripcion: '',
+      metaMonto: '',
+      fechaInicio: '',
+      fechaFin: '',
+      slug: '',
+      imagenUrl: '',
+    });
+    setCreateCampanaError('');
+  };
+
+  const openCreateCampanaModal = () => {
+    resetNewCampanaData();
+    setShowCreateCampanaModal(true);
+  };
+
+  const closeCreateCampanaModal = () => {
+    if (savingCampana) return;
+    setShowCreateCampanaModal(false);
+    resetNewCampanaData();
+  };
+
+  const handleCreateCampana = async (event) => {
+    event.preventDefault();
+    setCreateCampanaError('');
+
+    const payload = {
+      nombre: newCampanaData.nombre.trim(),
+      descripcion: newCampanaData.descripcion.trim(),
+      metaMonto: parseCurrencyValue(newCampanaData.metaMonto),
+      fechaInicio: getChileIsoFromDateInput(newCampanaData.fechaInicio),
+      fechaFin: getChileIsoFromDateInput(newCampanaData.fechaFin, true),
+      slug: newCampanaData.slug.trim(),
+      imagenUrl: newCampanaData.imagenUrl.trim(),
+      estado: 'Activa',
+    };
+
+    if (!payload.nombre || !payload.descripcion || !payload.metaMonto || !payload.fechaInicio || !payload.fechaFin || !payload.slug) {
+      setCreateCampanaError('Completa nombre, descripcion, meta, fechas y slug para crear la campana.');
+      return;
+    }
+
+    setSavingCampana(true);
+
+    try {
+      await apiFetch('/api/campanasdonaciones', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setShowCreateCampanaModal(false);
+      resetNewCampanaData();
+      await fetchCampanasDonaciones();
+    } catch (error) {
+      setCreateCampanaError(error.message || 'No se pudo crear la campana.');
+    } finally {
+      setSavingCampana(false);
     }
   };
 
@@ -1004,7 +1149,7 @@ function Dashboard({ setView }) {
                 </button>
               )}
               {activeTab === 'donaciones' && (
-                <button className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
+                <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <span className="text-base leading-none">+</span>
                   Crear campaña
                 </button>
@@ -1470,17 +1615,27 @@ function Dashboard({ setView }) {
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campanas de recaudacion de fondos y genera enlaces de pago.</p>
               </div>
 
+              {loadingCampanas ? (
+                <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
+                  Cargando campanas de donaciones...
+                </div>
+              ) : campanasError ? (
+                <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-6 text-center">
+                  <p className="font-semibold text-brand-red">{campanasError}</p>
+                  <button onClick={fetchCampanasDonaciones} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20">
+                    Reintentar
+                  </button>
+                </div>
+              ) : (
+                <>
+
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-brand-green"></span>
                 <h4 className="text-sm font-bold text-white">Campanas Activas</h4>
               </div>
               <div className="mb-8 grid gap-5 lg:grid-cols-3">
-                {[
-                  { title: 'Campana Teleton Bomberos 2023', date: '01 Nov 2023 - 30 Nov 2023', raised: '$2.350.000', goal: '$5.000.000', progress: 47 },
-                  { title: 'Recaudacion Nuevo Carro de Rescate', date: '15 Ago 2023 - 31 Dic 2023', raised: '$45.000.000', goal: '$150.000.000', progress: 30 },
-                  { title: 'Campana Socios Colaboradores 2023', date: '01 Ene 2023 - 31 Dic 2023', raised: '120 Socios', goal: '500 Socios', progress: 24 },
-                ].map(campaign => (
-                  <article key={campaign.title} className="overflow-hidden rounded-xl border border-brand-cyan/40 bg-dark-surface shadow-lg">
+                {campanasActivas.length > 0 ? campanasActivas.map(campaign => (
+                  <article key={campaign.id} className="overflow-hidden rounded-xl border border-brand-cyan/40 bg-dark-surface shadow-lg">
                     <div className="p-5">
                       <div className="mb-5 flex items-start justify-between gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan">
@@ -1488,16 +1643,17 @@ function Dashboard({ setView }) {
                         </div>
                         <span className="rounded border border-brand-green/20 bg-brand-green/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-green">Activa</span>
                       </div>
-                      <h5 className="min-h-10 text-base font-bold leading-snug text-white">{campaign.title}</h5>
+                      <h5 className="min-h-10 text-base font-bold leading-snug text-white">{campaign.nombre}</h5>
                       <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted">
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"></path></svg>
-                        {campaign.date}
+                        {formatDateChile(campaign.fechaInicio)} - {formatDateChile(campaign.fechaFin)}
                       </p>
+                      {campaign.descripcion && <p className="mt-3 line-clamp-2 text-xs text-text-muted">{campaign.descripcion}</p>}
                       <div className="mt-7 flex items-end justify-between gap-4">
-                        <p className="text-2xl font-bold text-white">{campaign.raised}</p>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(campaign.montoRecaudado)}</p>
                         <div className="text-right text-xs text-text-muted">
                           <p>Meta</p>
-                          <p className="font-semibold text-white">{campaign.goal}</p>
+                          <p className="font-semibold text-white">{formatCurrency(campaign.metaMonto)}</p>
                         </div>
                       </div>
                       <div className="mt-2 h-2 overflow-hidden rounded-full bg-dark-bg3">
@@ -1507,10 +1663,14 @@ function Dashboard({ setView }) {
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
                       <button className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
-                      <button className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</button>
+                      <a href={campaign.slug || undefined} target="_blank" rel="noreferrer" className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</a>
                     </div>
                   </article>
-                ))}
+                )) : (
+                  <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
+                    No hay campanas activas.
+                  </div>
+                )}
               </div>
 
               <div className="mb-4 flex items-center gap-2">
@@ -1518,7 +1678,8 @@ function Dashboard({ setView }) {
                 <h4 className="text-sm font-bold text-white">Campanas Finalizadas</h4>
               </div>
               <div className="grid gap-5 lg:grid-cols-3">
-                <article className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface opacity-90 shadow-lg">
+                {campanasFinalizadas.length > 0 ? campanasFinalizadas.map(campaign => (
+                <article key={campaign.id} className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface opacity-90 shadow-lg">
                   <div className="p-5">
                     <div className="mb-5 flex items-start justify-between gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-dark-border bg-dark-bg3 text-text-muted">
@@ -1526,18 +1687,25 @@ function Dashboard({ setView }) {
                       </div>
                       <span className="rounded border border-dark-border bg-dark-bg3 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-text-muted">Finalizada</span>
                     </div>
-                    <h5 className="text-base font-bold leading-snug text-white">Reparacion Techo Cuartel General</h5>
+                    <h5 className="text-base font-bold leading-snug text-white">{campaign.nombre}</h5>
                     <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"></path></svg>
-                      Cerrada el 15 Jul 2023
+                      Cerrada el {formatDateChile(campaign.fechaFin)}
                     </p>
                     <div className="mt-6 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
                       <p className="text-xs text-text-muted">Total recaudado</p>
-                      <p className="mt-1 text-xl font-bold text-white">$12.000.000</p>
+                      <p className="mt-1 text-xl font-bold text-white">{formatCurrency(campaign.montoRecaudado)}</p>
                     </div>
                   </div>
                 </article>
+                )) : (
+                  <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
+                    No hay campanas finalizadas.
+                  </div>
+                )}
               </div>
+                </>
+              )}
             </div>
           )}
 
@@ -1555,6 +1723,125 @@ function Dashboard({ setView }) {
             </div>
           )}
         </div>
+
+        {showCreateCampanaModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleCreateCampana} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl fade-in">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white rajdhani">Crear campana de donaciones</h3>
+                <button type="button" onClick={closeCreateCampanaModal} disabled={savingCampana} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Nombre</label>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newCampanaData.nombre}
+                      onChange={(e) => setNewCampanaData({ ...newCampanaData, nombre: e.target.value })}
+                      disabled={savingCampana}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      placeholder="Ej. Compra carro"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Meta monto</label>
+                    <input
+                      type="text"
+                      value={newCampanaData.metaMonto}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setNewCampanaData({
+                          ...newCampanaData,
+                          metaMonto: rawValue ? '$' + parseInt(rawValue, 10).toLocaleString('es-CL') : '',
+                        });
+                      }}
+                      disabled={savingCampana}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      placeholder="$20.000"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <textarea
+                    rows="3"
+                    value={newCampanaData.descripcion}
+                    onChange={(e) => setNewCampanaData({ ...newCampanaData, descripcion: e.target.value })}
+                    disabled={savingCampana}
+                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Describe el objetivo de la campana..."
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Fecha inicio</label>
+                    <input
+                      type="date"
+                      value={newCampanaData.fechaInicio}
+                      onChange={(e) => setNewCampanaData({ ...newCampanaData, fechaInicio: e.target.value })}
+                      disabled={savingCampana}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Fecha fin</label>
+                    <input
+                      type="date"
+                      value={newCampanaData.fechaFin}
+                      onChange={(e) => setNewCampanaData({ ...newCampanaData, fechaFin: e.target.value })}
+                      disabled={savingCampana}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Slug o enlace de pago</label>
+                  <input
+                    type="text"
+                    value={newCampanaData.slug}
+                    onChange={(e) => setNewCampanaData({ ...newCampanaData, slug: e.target.value })}
+                    disabled={savingCampana}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Imagen URL</label>
+                  <input
+                    type="text"
+                    value={newCampanaData.imagenUrl}
+                    onChange={(e) => setNewCampanaData({ ...newCampanaData, imagenUrl: e.target.value })}
+                    disabled={savingCampana}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Opcional"
+                  />
+                </div>
+
+                {createCampanaError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {createCampanaError}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                <button type="button" onClick={closeCreateCampanaModal} disabled={savingCampana} className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={savingCampana} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                  {savingCampana ? 'Creando...' : 'Crear campana'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {showAddUbicacionModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
