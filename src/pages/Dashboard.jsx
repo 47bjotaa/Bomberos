@@ -123,7 +123,6 @@ function Dashboard({ setView }) {
   const [donacionesCampana, setDonacionesCampana] = useState([]);
   const [loadingDonacionesCampana, setLoadingDonacionesCampana] = useState(false);
   const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
-  const [estadoPagoDonaciones, setEstadoPagoDonaciones] = useState('Pagada');
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -182,9 +181,9 @@ function Dashboard({ setView }) {
 
   useEffect(() => {
     if (selectedCampanaDetalle) {
-      fetchDonacionesCampana(selectedCampanaDetalle, estadoPagoDonaciones);
+      fetchDonacionesCampana(selectedCampanaDetalle);
     }
-  }, [selectedCampanaDetalle, estadoPagoDonaciones]);
+  }, [selectedCampanaDetalle]);
 
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
@@ -546,7 +545,7 @@ function Dashboard({ setView }) {
     }
   };
 
-  const fetchDonacionesCampana = async (campana, estadoPago) => {
+  const fetchDonacionesCampana = async (campana) => {
     if (!campana?.idCompania || !campana?.idCampanaDonacion) {
       setDonacionesCampana([]);
       setDonacionesCampanaError('No se pudo identificar la compania o la campana.');
@@ -557,7 +556,7 @@ function Dashboard({ setView }) {
     setDonacionesCampanaError('');
 
     try {
-      const data = await apiFetch(`/api/companias/${campana.idCompania}/donaciones?idCampaniaDonacion=${campana.idCampanaDonacion}&estadoPago=${encodeURIComponent(estadoPago)}`);
+      const data = await apiFetch(`/api/companias/${campana.idCompania}/donaciones?idCampaniaDonacion=${campana.idCampanaDonacion}&estadoPago=Pagada`);
       setDonacionesCampana(getArrayPayload(data));
     } catch (error) {
       console.error('Error al cargar donaciones de campana:', error);
@@ -570,7 +569,6 @@ function Dashboard({ setView }) {
 
   const openCampanaDetalle = (campana) => {
     setSelectedCampanaDetalle(campana);
-    setEstadoPagoDonaciones('Pagada');
     setDonacionesCampana([]);
     setDonacionesCampanaError('');
   };
@@ -1753,22 +1751,7 @@ function Dashboard({ setView }) {
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h4 className="rajdhani text-2xl font-bold text-white">Donaciones</h4>
-                        <p className="mt-1 text-sm text-text-muted">Movimientos asociados a esta campana.</p>
-                      </div>
-                      <div className="flex rounded-lg border border-dark-border bg-dark-surface p-1">
-                        {[
-                          { label: 'Pagadas', value: 'Pagada' },
-                          { label: 'Pendientes', value: 'Pendiente' },
-                        ].map(option => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setEstadoPagoDonaciones(option.value)}
-                            className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${estadoPagoDonaciones === option.value ? 'bg-brand-red/10 text-brand-red' : 'text-text-muted hover:text-white'}`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
+                        <p className="mt-1 text-sm text-text-muted">Donaciones pagadas asociadas a esta campana.</p>
                       </div>
                     </div>
 
@@ -1776,10 +1759,11 @@ function Dashboard({ setView }) {
                       <table className="w-full text-left text-sm">
                         <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
                           <tr>
+                            <th className="px-5 py-4 font-semibold">Telefono</th>
                             <th className="px-5 py-4 font-semibold">Donante</th>
                             <th className="px-5 py-4 font-semibold">Email</th>
                             <th className="px-5 py-4 font-semibold">Monto</th>
-                            <th className="px-5 py-4 font-semibold">Codigo link</th>
+                            <th className="px-5 py-4 font-semibold">Bombero</th>
                             <th className="px-5 py-4 font-semibold">Estado</th>
                             <th className="px-5 py-4 font-semibold">Fecha</th>
                           </tr>
@@ -1787,23 +1771,24 @@ function Dashboard({ setView }) {
                         <tbody className="divide-y divide-dark-border">
                           {loadingDonacionesCampana ? (
                             <tr>
-                              <td colSpan="6" className="px-5 py-16 text-center text-text-muted">Cargando donaciones...</td>
+                              <td colSpan="7" className="px-5 py-16 text-center text-text-muted">Cargando donaciones...</td>
                             </tr>
                           ) : donacionesCampanaError ? (
                             <tr>
-                              <td colSpan="6" className="px-5 py-16 text-center">
+                              <td colSpan="7" className="px-5 py-16 text-center">
                                 <p className="font-semibold text-brand-red">{donacionesCampanaError}</p>
-                                <button onClick={() => fetchDonacionesCampana(selectedCampanaDetalle, estadoPagoDonaciones)} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20">
+                                <button onClick={() => fetchDonacionesCampana(selectedCampanaDetalle)} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20">
                                   Reintentar
                                 </button>
                               </td>
                             </tr>
                           ) : donacionesCampana.length > 0 ? donacionesCampana.map(donacion => (
                             <tr key={donacion.idDonacion} className="hover:bg-dark-bg3 transition-colors">
+                              <td className="px-5 py-4 text-text-muted">{donacion.telefonoDonante || donacion.telefono || '-'}</td>
                               <td className="px-5 py-4 font-semibold text-white">{donacion.nombreDonante}</td>
                               <td className="px-5 py-4 text-text-muted">{donacion.emailDonante}</td>
                               <td className="px-5 py-4 font-bold text-white">{formatCurrency(donacion.monto)}</td>
-                              <td className="px-5 py-4 font-mono text-xs text-brand-cyan">{donacion.codigoLink || '-'}</td>
+                              <td className="px-5 py-4 text-brand-cyan">{donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '-'}</td>
                               <td className="px-5 py-4">
                                 <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${donacion.estadoPago === 'Pagada' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-300'}`}>
                                   {donacion.estadoPago}
@@ -1813,8 +1798,8 @@ function Dashboard({ setView }) {
                             </tr>
                           )) : (
                             <tr>
-                              <td colSpan="6" className="px-5 py-16 text-center text-text-muted">
-                                No hay donaciones {estadoPagoDonaciones === 'Pagada' ? 'pagadas' : 'pendientes'} para esta campana.
+                              <td colSpan="7" className="px-5 py-16 text-center text-text-muted">
+                                No hay donaciones pagadas para esta campana.
                               </td>
                             </tr>
                           )}
