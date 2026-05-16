@@ -122,7 +122,6 @@ function Dashboard({ setView }) {
     metaMonto: '',
     fechaInicio: '',
     fechaFin: '',
-    slug: '',
     imagenUrl: '',
   });
 
@@ -475,7 +474,6 @@ function Dashboard({ setView }) {
       metaMonto: '',
       fechaInicio: '',
       fechaFin: '',
-      slug: '',
       imagenUrl: '',
     });
     setCreateCampanaError('');
@@ -502,13 +500,12 @@ function Dashboard({ setView }) {
       metaMonto: parseCurrencyValue(newCampanaData.metaMonto),
       fechaInicio: getChileIsoFromDateInput(newCampanaData.fechaInicio),
       fechaFin: getChileIsoFromDateInput(newCampanaData.fechaFin, true),
-      slug: newCampanaData.slug.trim(),
       imagenUrl: newCampanaData.imagenUrl.trim(),
       estado: 'Activa',
     };
 
-    if (!payload.nombre || !payload.descripcion || !payload.metaMonto || !payload.fechaInicio || !payload.fechaFin || !payload.slug) {
-      setCreateCampanaError('Completa nombre, descripcion, meta, fechas y slug para crear la campana.');
+    if (!payload.nombre || !payload.descripcion || !payload.metaMonto || !payload.fechaInicio || !payload.fechaFin) {
+      setCreateCampanaError('Completa nombre, descripcion, meta y fechas para crear la campana.');
       return;
     }
 
@@ -1799,18 +1796,6 @@ function Dashboard({ setView }) {
                       className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Slug o enlace de pago</label>
-                  <input
-                    type="text"
-                    value={newCampanaData.slug}
-                    onChange={(e) => setNewCampanaData({ ...newCampanaData, slug: e.target.value })}
-                    disabled={savingCampana}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="https://..."
-                  />
                 </div>
 
                 <div>
