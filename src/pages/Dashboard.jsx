@@ -180,6 +180,34 @@ function Dashboard({ setView }) {
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab !== 'donaciones') return undefined;
+
+    const refreshDonaciones = () => {
+      fetchCampanasDonaciones();
+      if (selectedCampanaDetalle) {
+        fetchDonacionesCampana(selectedCampanaDetalle);
+      }
+    };
+
+    const handleFocus = () => refreshDonaciones();
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshDonaciones();
+      }
+    };
+    const intervalId = window.setInterval(refreshDonaciones, 30000);
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activeTab, selectedCampanaDetalle]);
+
+  useEffect(() => {
     if (selectedCampanaDetalle) {
       fetchDonacionesCampana(selectedCampanaDetalle);
     }
@@ -528,13 +556,17 @@ function Dashboard({ setView }) {
     setCampanasError('');
 
     try {
-      const [activasData, finalizadasData] = await Promise.all([
+      const [activasData, finalizadasData, canceladasData] = await Promise.all([
         apiFetch('/api/campanasdonaciones?estado=Activa'),
         apiFetch('/api/campanasdonaciones?estado=Finalizada'),
+        apiFetch('/api/campanasdonaciones?estado=Cancelada'),
       ]);
 
       setCampanasActivas(getArrayPayload(activasData).map(mapCampana));
-      setCampanasFinalizadas(getArrayPayload(finalizadasData).map(mapCampana));
+      setCampanasFinalizadas([
+        ...getArrayPayload(finalizadasData).map(mapCampana),
+        ...getArrayPayload(canceladasData).map(mapCampana),
+      ]);
     } catch (error) {
       console.error('Error al cargar campanas de donaciones:', error);
       setCampanasError(error.message || 'No se pudieron cargar las campanas de donaciones.');
