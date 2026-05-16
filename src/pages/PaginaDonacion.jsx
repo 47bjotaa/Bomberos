@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../services/api';
 
 const getSlugFromPath = () => decodeURIComponent(window.location.pathname.replace(/^\/donar\/?/, '').split('/')[0] || '');
+const getRefFromSearch = () => new URLSearchParams(window.location.search).get('ref') || '';
 
 const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+const parseCurrencyValue = (value) => parseInt(String(value || '').replace(/\D/g, ''), 10) || 0;
 
 const formatDateChile = (value) => {
   if (!value) return '';
@@ -22,7 +24,13 @@ function PaginaDonacion() {
   const [campana, setCampana] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState(5000);
+  const [customAmount, setCustomAmount] = useState('');
+  const [donorData, setDonorData] = useState({ nombre: '', email: '', mensaje: '' });
+  const [paymentError, setPaymentError] = useState('');
+  const [creatingPayment, setCreatingPayment] = useState(false);
   const slug = useMemo(getSlugFromPath, []);
+  const codigoLink = useMemo(getRefFromSearch, []);
 
   useEffect(() => {
     let ignore = false;
@@ -67,6 +75,64 @@ function PaginaDonacion() {
   const meta = Number(campana?.metaMonto || 0);
   const recaudado = Number(campana?.montoRecaudado || 0);
   const progreso = meta > 0 ? Math.min(100, Math.round((recaudado / meta) * 100)) : 0;
+  const amount = customAmount ? parseCurrencyValue(customAmount) : selectedAmount;
+
+  const handleCustomAmountChange = (event) => {
+    const rawValue = event.target.value.replace(/\D/g, '');
+    setCustomAmount(rawValue ? '$' + parseInt(rawValue, 10).toLocaleString('es-CL') : '');
+    setSelectedAmount(null);
+  };
+
+  const handleCreatePaymentLink = async (event) => {
+    event.preventDefault();
+    setPaymentError('');
+
+    if (!donorData.nombre.trim() || !donorData.email.trim()) {
+      setPaymentError('Ingresa nombre y email para continuar.');
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(donorData.email.trim())) {
+      setPaymentError('Ingresa un email valido.');
+      return;
+    }
+
+    if (amount < 1000) {
+      setPaymentError('El monto minimo de donacion es $1.000.');
+      return;
+    }
+
+    setCreatingPayment(true);
+
+    try {
+      const response = await apiFetch('/api/donaciones/link-pago', {
+        method: 'POST',
+        skipAuth: true,
+        body: JSON.stringify({
+          idCompania: Number(campana.idCompania),
+          idCampaniaDonacion: Number(campana.idCampanaDonacion),
+          codigoLink,
+          monto: amount,
+          nombre: donorData.nombre.trim(),
+          email: donorData.email.trim(),
+          mensaje: donorData.mensaje.trim(),
+        }),
+      });
+
+      const paymentUrl = response.urlPago || response.url || response.linkPago || response.initPoint || response.redirectUrl;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      setPaymentError('La API no devolvio un link de pago.');
+    } catch (paymentLinkError) {
+      console.error('Error al crear link de pago:', paymentLinkError);
+      setPaymentError(paymentLinkError.message || 'No se pudo crear el link de pago.');
+    } finally {
+      setCreatingPayment(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-main">
@@ -135,20 +201,73 @@ function PaginaDonacion() {
                 </div>
               </div>
 
-              <div className="mt-6">
+              <form onSubmit={handleCreatePaymentLink} className="mt-6">
                 <label className="mb-2 block text-sm font-semibold text-white">Monto a donar</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {['$5.000', '$10.000', '$20.000'].map(amount => (
-                    <button key={amount} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50">
-                      {amount}
+                  {[5000, 10000, 20000].map(presetAmount => (
+                    <button
+                      type="button"
+                      key={presetAmount}
+                      onClick={() => {
+                        setSelectedAmount(presetAmount);
+                        setCustomAmount('');
+                      }}
+                      className={`rounded-lg border px-3 py-2 text-sm font-semibold text-white transition-colors ${selectedAmount === presetAmount && !customAmount ? 'border-brand-cyan bg-brand-cyan/10' : 'border-dark-border bg-dark-bg hover:border-brand-cyan/50'}`}
+                    >
+                      {formatCurrency(presetAmount)}
                     </button>
                   ))}
                 </div>
-                <button className="mt-4 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90">
-                  Donar ahora
+
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={customAmount}
+                    onChange={handleCustomAmountChange}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    placeholder="Monto personalizado minimo $1.000"
+                  />
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  <input
+                    type="text"
+                    value={donorData.nombre}
+                    onChange={(event) => setDonorData({ ...donorData, nombre: event.target.value })}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    placeholder="Nombre completo *"
+                  />
+                  <input
+                    type="email"
+                    value={donorData.email}
+                    onChange={(event) => setDonorData({ ...donorData, email: event.target.value })}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    placeholder="Email *"
+                  />
+                  <textarea
+                    rows="3"
+                    value={donorData.mensaje}
+                    onChange={(event) => setDonorData({ ...donorData, mensaje: event.target.value })}
+                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    placeholder="Mensaje opcional"
+                  />
+                </div>
+
+                {paymentError && (
+                  <p className="mt-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {paymentError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={creatingPayment}
+                  className="mt-4 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {creatingPayment ? 'Preparando pago...' : 'Donar ahora'}
                 </button>
                 <p className="mt-3 text-center text-xs text-text-muted">Inicio: {formatDateChile(campana.fechaInicio)}</p>
-              </div>
+              </form>
             </aside>
           </>
         )}
