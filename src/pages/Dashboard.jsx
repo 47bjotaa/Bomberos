@@ -251,21 +251,13 @@ function Dashboard({ setView }) {
         throw new Error('No se pudo identificar el bombero de la sesion.');
       }
 
-      const createLink = (urlBasePublica) => apiFetch(`/api/campanasdonaciones/${campaign.id}/bomberos/link`, {
+      const linkData = await apiFetch(`/api/campanasdonaciones/${campaign.id}/bomberos/link`, {
         method: 'POST',
         body: JSON.stringify({
           idBombero: Number(idBombero),
-          urlBasePublica,
+          urlBasePublica: 'https://cuartelamigo.cl',
         }),
       });
-
-      let linkData;
-      try {
-        linkData = await createLink('https://www.cuartelamigo.cl');
-      } catch (primaryError) {
-        console.warn('Fallo generando link con www, reintentando sin www:', primaryError);
-        linkData = await createLink('https://cuartelamigo.cl');
-      }
 
       if (!linkData.urlPublica) {
         throw new Error('La API no devolvio una urlPublica.');
