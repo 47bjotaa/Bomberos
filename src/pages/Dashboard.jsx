@@ -79,6 +79,7 @@ function Dashboard({ setView }) {
   const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
   const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '', materiales: [] });
   const [stockMateriales, setStockMateriales] = useState([]);
+  const [stockMaterialSearch, setStockMaterialSearch] = useState('');
   const [loadingStockMateriales, setLoadingStockMateriales] = useState(false);
   const [stockMaterialesError, setStockMaterialesError] = useState('');
   const [savingStockMinimo, setSavingStockMinimo] = useState(false);
@@ -605,6 +606,7 @@ function Dashboard({ setView }) {
 
   const openAddStockMinimoModal = async () => {
     setNewStockMinimoData({ nombre: '', idUbicacion: '', materiales: [] });
+    setStockMaterialSearch('');
     setAddStockMinimoError('');
     setStockMaterialesError('');
     setShowAddStockMinimoModal(true);
@@ -645,6 +647,10 @@ function Dashboard({ setView }) {
   const getSelectedStockMaterial = (materialId) => (
     newStockMinimoData.materiales.find(material => String(material.idMaterial) === String(materialId))
   );
+
+  const visibleStockMateriales = stockMateriales.filter(material => (
+    material.nombre.toLowerCase().includes(stockMaterialSearch.trim().toLowerCase())
+  ));
 
   const canCreateStockMinimo = newStockMinimoData.nombre.trim()
     && newStockMinimoData.idUbicacion
@@ -1648,6 +1654,16 @@ function Dashboard({ setView }) {
                   </div>
 
                   <div className="rounded-xl border border-dark-border bg-dark-bg p-3">
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        value={stockMaterialSearch}
+                        onChange={(e) => setStockMaterialSearch(e.target.value)}
+                        disabled={savingStockMinimo || loadingStockMateriales}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2.5 text-sm text-white placeholder-text-muted outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
+                        placeholder="Buscar material por nombre..."
+                      />
+                    </div>
                     {loadingStockMateriales ? (
                       <p className="py-8 text-center text-sm text-text-muted">Cargando materiales...</p>
                     ) : stockMaterialesError ? (
@@ -1661,9 +1677,9 @@ function Dashboard({ setView }) {
                           Reintentar
                         </button>
                       </div>
-                    ) : stockMateriales.length > 0 ? (
+                    ) : visibleStockMateriales.length > 0 ? (
                       <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                        {stockMateriales.map(material => {
+                        {visibleStockMateriales.map(material => {
                           const selectedMaterial = getSelectedStockMaterial(material.id);
                           const isSelected = Boolean(selectedMaterial);
                           return (
@@ -1683,7 +1699,7 @@ function Dashboard({ setView }) {
                                   </span>
                                   <span className="min-w-0">
                                     <span className="block truncate text-sm font-semibold text-white">{material.nombre}</span>
-                                    <span className="block truncate text-xs text-text-muted">{material.tipo}{material.descripcion ? ` - ${material.descripcion}` : ''}</span>
+                                    <span className="block truncate text-xs text-text-muted">{material.tipo}</span>
                                   </span>
                                 </button>
                                 <label className="flex items-center gap-2 text-xs text-text-muted">
@@ -1703,7 +1719,9 @@ function Dashboard({ setView }) {
                         })}
                       </div>
                     ) : (
-                      <p className="py-8 text-center text-sm text-text-muted">No hay materiales creados disponibles.</p>
+                      <p className="py-8 text-center text-sm text-text-muted">
+                        {stockMaterialSearch.trim() ? 'No se encontraron materiales con ese nombre.' : 'No hay materiales creados disponibles.'}
+                      </p>
                     )}
                   </div>
                 </div>
