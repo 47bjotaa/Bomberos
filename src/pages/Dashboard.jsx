@@ -76,6 +76,10 @@ function Dashboard({ setView }) {
   const [stockMinimos, setStockMinimos] = useState([]);
   const [loadingStockMinimos, setLoadingStockMinimos] = useState(false);
   const [stockMinimosError, setStockMinimosError] = useState('');
+  const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
+  const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '' });
+  const [savingStockMinimo, setSavingStockMinimo] = useState(false);
+  const [addStockMinimoError, setAddStockMinimoError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -569,6 +573,46 @@ function Dashboard({ setView }) {
     }
   };
 
+  const openAddStockMinimoModal = () => {
+    setNewStockMinimoData({ nombre: '', idUbicacion: '' });
+    setAddStockMinimoError('');
+    setShowAddStockMinimoModal(true);
+  };
+
+  const closeAddStockMinimoModal = () => {
+    if (savingStockMinimo) return;
+
+    setShowAddStockMinimoModal(false);
+    setAddStockMinimoError('');
+  };
+
+  const canCreateStockMinimo = newStockMinimoData.nombre.trim() && newStockMinimoData.idUbicacion;
+
+  const handleCreateStockMinimo = async (event) => {
+    event.preventDefault();
+    if (!canCreateStockMinimo || savingStockMinimo) return;
+
+    setSavingStockMinimo(true);
+    setAddStockMinimoError('');
+
+    try {
+      await apiFetch('/api/stockminimos', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: newStockMinimoData.nombre.trim(),
+          idUbicacion: Number(newStockMinimoData.idUbicacion),
+        }),
+      });
+
+      setShowAddStockMinimoModal(false);
+      await fetchStockMinimos();
+    } catch (error) {
+      setAddStockMinimoError(error.message || 'No se pudo crear el stock minimo.');
+    } finally {
+      setSavingStockMinimo(false);
+    }
+  };
+
   const loadTiposUbicacion = async () => {
     setLoadingTiposUbicacion(true);
     setAddUbicacionError('');
@@ -1014,9 +1058,18 @@ function Dashboard({ setView }) {
           )}
           {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'stocks' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
-              <div className="mb-6">
-                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks Minimos</h3>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposicion segun su stock minimo.</p>
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks Minimos</h3>
+                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposicion segun su stock minimo.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openAddStockMinimoModal}
+                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
+                >
+                  Agregar stock minimo
+                </button>
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
@@ -1471,6 +1524,70 @@ function Dashboard({ setView }) {
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingTipoRelations ? 'Guardando...' : 'Guardar relaciones'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showAddStockMinimoModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleCreateStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white rajdhani">Agregar Stock Minimo</h3>
+                <button type="button" onClick={closeAddStockMinimoModal} disabled={savingStockMinimo} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Nombre</label>
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Ej. Stock Gaveta 1"
+                    value={newStockMinimoData.nombre}
+                    onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, nombre: e.target.value })}
+                    disabled={savingStockMinimo}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Ubicacion</label>
+                  <select
+                    value={newStockMinimoData.idUbicacion}
+                    onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, idUbicacion: e.target.value })}
+                    disabled={savingStockMinimo || ubicaciones.length === 0}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  >
+                    <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicacion' : 'No hay ubicaciones disponibles'}</option>
+                    {ubicaciones.map(ubicacion => (
+                      <option key={ubicacion.id} value={ubicacion.id}>{ubicacion.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {addStockMinimoError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {addStockMinimoError}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeAddStockMinimoModal}
+                  disabled={savingStockMinimo}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!canCreateStockMinimo || savingStockMinimo}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingStockMinimo ? 'Creando...' : 'Crear Stock'}
                 </button>
               </div>
             </form>
