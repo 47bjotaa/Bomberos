@@ -261,7 +261,9 @@ function EppView({ eppData, setEppData }) {
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center border-2 border-dashed border-dark-border rounded-xl p-8">
-                      <Icons.Shield size={48} className="text-text-muted mb-4 opacity-20" />
+                      <div className="mb-4 h-12 w-12 text-text-muted opacity-20">
+                        <Icons.Shield />
+                      </div>
                       <p className="text-text-muted rajdhani text-lg">
                         No hay EPP {activeEppTab === 'asignados' ? 'asignados' : 'no asignados'} con ese criterio.
                       </p>

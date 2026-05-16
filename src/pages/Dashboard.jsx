@@ -1996,7 +1996,13 @@ function Dashboard({ setView }) {
           <AssignEppModal 
             onClose={() => setShowAssignEppModal(false)}
             onAssign={(newAssignments) => {
-              setEppData(prev => [...newAssignments, ...prev]);
+              setEppData(prev => {
+                const assignmentIds = new Set(newAssignments.map(item => item.id));
+                return [
+                  ...newAssignments,
+                  ...prev.filter(item => !assignmentIds.has(item.id)),
+                ];
+              });
             }}
           />
         )}
