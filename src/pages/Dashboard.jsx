@@ -116,6 +116,9 @@ function Dashboard({ setView }) {
   const [showCreateCampanaModal, setShowCreateCampanaModal] = useState(false);
   const [savingCampana, setSavingCampana] = useState(false);
   const [createCampanaError, setCreateCampanaError] = useState('');
+  const [copiedDonationSlug, setCopiedDonationSlug] = useState('');
+  const [generatingDonationLinkId, setGeneratingDonationLinkId] = useState(null);
+  const [donationLinkError, setDonationLinkError] = useState('');
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -209,6 +212,69 @@ function Dashboard({ setView }) {
   };
 
   const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
+
+  const getCurrentBomberoId = async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.idBombero) return user.idBombero;
+
+    const bomberosData = await apiFetch('/api/bomberos');
+    const currentBombero = getArrayPayload(bomberosData).find(bombero => (
+      Number(bombero.idUsuario) === Number(user.idUsuario)
+      || String(bombero.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+    ));
+
+    return currentBombero?.idBombero || currentBombero?.id;
+  };
+
+  const copyTextToClipboard = async (text) => {
+    if (!text) return false;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (error) {
+      console.error('No se pudo copiar el link de donacion:', error);
+      window.prompt('Copia el link de donacion:', text);
+      return false;
+    }
+  };
+
+  const generateAndCopyDonationLink = async (campaign) => {
+    if (!campaign?.id || generatingDonationLinkId) return;
+
+    setGeneratingDonationLinkId(campaign.id);
+    setDonationLinkError('');
+
+    try {
+      const idBombero = await getCurrentBomberoId();
+      if (!idBombero) {
+        throw new Error('No se pudo identificar el bombero de la sesion.');
+      }
+
+      const linkData = await apiFetch(`/api/campanasdonaciones/${campaign.id}/bomberos/link`, {
+        method: 'POST',
+        body: JSON.stringify({
+          idBombero: Number(idBombero),
+          urlBasePublica: 'https://cuartelamigo.cl',
+        }),
+      });
+
+      if (!linkData.urlPublica) {
+        throw new Error('La API no devolvio una urlPublica.');
+      }
+
+      await copyTextToClipboard(linkData.urlPublica);
+      setCopiedDonationSlug(campaign.slug || String(campaign.id));
+      window.setTimeout(() => setCopiedDonationSlug(currentSlug => (
+        currentSlug === (campaign.slug || String(campaign.id)) ? '' : currentSlug
+      )), 2200);
+    } catch (error) {
+      console.error('No se pudo generar el link de donacion:', error);
+      setDonationLinkError(error.message || 'No se pudo generar el link de donacion.');
+    } finally {
+      setGeneratingDonationLinkId(null);
+    }
+  };
 
   const formatDateChile = (value) => {
     if (!value) return '';
@@ -1625,6 +1691,11 @@ function Dashboard({ setView }) {
                 </div>
               ) : (
                 <>
+              {donationLinkError && (
+                <div className="mb-6 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                  {donationLinkError}
+                </div>
+              )}
 
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-brand-green"></span>
@@ -1660,7 +1731,14 @@ function Dashboard({ setView }) {
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
                       <button className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
-                      <a href={campaign.slug ? `/donar/${campaign.slug}` : undefined} target="_blank" rel="noreferrer" className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</a>
+                      <button
+                        type="button"
+                        onClick={() => generateAndCopyDonationLink(campaign)}
+                        disabled={generatingDonationLinkId === campaign.id}
+                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
+                      </button>
                     </div>
                   </article>
                 )) : (
