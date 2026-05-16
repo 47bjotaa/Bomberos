@@ -73,6 +73,9 @@ function Dashboard({ setView }) {
   const [selectedTipoPadreIds, setSelectedTipoPadreIds] = useState([]);
   const [savingTipoRelations, setSavingTipoRelations] = useState(false);
   const [tipoRelationsError, setTipoRelationsError] = useState('');
+  const [stockMinimos, setStockMinimos] = useState([]);
+  const [loadingStockMinimos, setLoadingStockMinimos] = useState(false);
+  const [stockMinimosError, setStockMinimosError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -108,6 +111,12 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (activeTab === 'bodegas' && inventoryView === 'arbol') {
       fetchTiposArbolUbicacion();
+    }
+  }, [activeTab, inventoryView]);
+
+  useEffect(() => {
+    if (activeTab === 'bodegas' && inventoryView === 'stocks') {
+      fetchStockMinimos();
     }
   }, [activeTab, inventoryView]);
 
@@ -532,6 +541,31 @@ function Dashboard({ setView }) {
       setTipoRelationsError(error.message || 'No se pudieron crear las relaciones del tipo de ubicacion.');
     } finally {
       setSavingTipoRelations(false);
+    }
+  };
+
+  const mapStockMinimo = (stock) => ({
+    id: stock.idStockMinimo || stock.id,
+    idUbicacion: stock.idUbicacion,
+    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicacion',
+    nombre: stock.nombre || stock.name || 'Stock minimo',
+  });
+
+  const fetchStockMinimos = async () => {
+    setLoadingStockMinimos(true);
+    setStockMinimosError('');
+
+    try {
+      const data = await apiFetch('/api/stockminimos');
+      const stocks = getArrayPayload(data, ['stockMinimos', 'stocks', 'stock'])
+        .map(mapStockMinimo)
+        .filter(stock => stock.id);
+      setStockMinimos(stocks);
+    } catch (error) {
+      setStockMinimosError(error.message || 'No se pudieron cargar los stocks minimos.');
+      setStockMinimos([]);
+    } finally {
+      setLoadingStockMinimos(false);
     }
   };
 
@@ -985,9 +1019,56 @@ function Dashboard({ setView }) {
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposicion segun su stock minimo.</p>
               </div>
 
-              <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.borderStrong, background: palette.card }}>
-                <p className="font-semibold" style={{ color: palette.text }}>Sin alertas de stock minimo</p>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Cuando existan materiales bajo el minimo configurado, apareceran aqui.</p>
+              <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
+                {loadingStockMinimos ? (
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando stocks minimos...</p>
+                ) : stockMinimosError ? (
+                  <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
+                    <p className="font-semibold text-brand-red">{stockMinimosError}</p>
+                    <button
+                      type="button"
+                      onClick={fetchStockMinimos}
+                      className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                ) : stockMinimos.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {stockMinimos.map(stock => (
+                      <div
+                        key={stock.id}
+                        className="rounded-xl border p-5"
+                        style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{stock.nombre}</p>
+                            <p className="mt-1 text-sm" style={{ color: palette.muted }}>{stock.nombreUbicacion}</p>
+                          </div>
+                          <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
+                            Stock
+                          </span>
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
+                            ID stock {stock.id}
+                          </span>
+                          {stock.idUbicacion && (
+                            <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
+                              ID ubicacion {stock.idUbicacion}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.borderStrong }}>
+                    <p className="font-semibold" style={{ color: palette.text }}>No hay stocks minimos registrados</p>
+                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>Cuando se creen configuraciones de stock minimo, apareceran aqui.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
