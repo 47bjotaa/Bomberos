@@ -15,6 +15,37 @@ const getInitial = (name) => (name?.trim()?.charAt(0) || '?').toUpperCase();
 
 const isAssigned = (item) => Boolean(item.idBomberoAsignado || item.nombreBomberoAsignado);
 
+const getChileIsoString = (date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  const chileAsUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+    Number(milliseconds)
+  );
+  const offsetMinutes = Math.round((chileAsUtc - date.getTime()) / 60000);
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteOffset = Math.abs(offsetMinutes);
+  const offsetHours = String(Math.floor(absoluteOffset / 60)).padStart(2, '0');
+  const offsetRemainder = String(absoluteOffset % 60).padStart(2, '0');
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${milliseconds}${sign}${offsetHours}:${offsetRemainder}`;
+};
+
 const mapEppItem = (item) => ({
   ...item,
   id: item.idInventarioItem || item.idItem || item.idDetalleEpp || item.id,
@@ -108,7 +139,7 @@ function AssignEppModal({ onClose, onAssign }) {
     const selectedItems = selectedEppIds
       .map(id => eppDisponibles.find(item => item.id === id))
       .filter(Boolean);
-    const now = new Date().toISOString();
+    const now = getChileIsoString();
 
     setSaving(true);
     setError('');
@@ -130,7 +161,7 @@ function AssignEppModal({ onClose, onAssign }) {
         nombreBomberoAsignado: selectedBombero.nombre,
         asignadoA: selectedBombero.nombre,
         inicial: getInitial(selectedBombero.nombre),
-        fecha: new Date(now).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' }),
+        fecha: new Date(now).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Santiago' }),
       })));
       onClose();
     } catch (assignError) {

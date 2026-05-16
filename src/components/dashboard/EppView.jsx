@@ -21,11 +21,43 @@ const formatDate = (value) => {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    timeZone: 'America/Santiago',
   }).format(date);
 };
 
 const getInitial = (name) => (name?.trim()?.charAt(0) || '-').toUpperCase();
 const isAssigned = (item) => Boolean(item.idBomberoAsignado || item.nombreBomberoAsignado || item.asignadoA);
+
+const getChileIsoString = (date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  const chileAsUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+    Number(milliseconds)
+  );
+  const offsetMinutes = Math.round((chileAsUtc - date.getTime()) / 60000);
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteOffset = Math.abs(offsetMinutes);
+  const offsetHours = String(Math.floor(absoluteOffset / 60)).padStart(2, '0');
+  const offsetRemainder = String(absoluteOffset % 60).padStart(2, '0');
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${milliseconds}${sign}${offsetHours}:${offsetRemainder}`;
+};
 
 const mapEppItem = (item) => {
   const assignedName = item.nombreBomberoAsignado || item.asignadoA || '';
@@ -48,6 +80,8 @@ function EppView({ eppData, setEppData }) {
   const [filtroEstado, setFiltroEstado] = useState('Filtrar');
   const [loadingEpp, setLoadingEpp] = useState(false);
   const [eppError, setEppError] = useState('');
+  const [eppActionError, setEppActionError] = useState('');
+  const [unassigningEppId, setUnassigningEppId] = useState(null);
 
   const [editingEppId, setEditingEppId] = useState(null);
   const [editEppData, setEditEppData] = useState({});
@@ -106,6 +140,42 @@ function EppView({ eppData, setEppData }) {
     return textMatch && stateMatch;
   });
 
+  const handleUnassign = async (item) => {
+    const itemId = item.idItem || item.id;
+    if (!itemId || unassigningEppId) return;
+
+    setUnassigningEppId(item.id);
+    setEppActionError('');
+
+    try {
+      await apiFetch(`/api/bomberos/items/${itemId}/asignacion`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          fechaFin: getChileIsoString(),
+        }),
+      });
+
+      setEppData(prev => prev.map(e => (
+        e.id === item.id
+          ? {
+              ...e,
+              idBomberoAsignado: null,
+              nombreBomberoAsignado: null,
+              fechaAsignacion: null,
+              asignadoA: '',
+              inicial: '-',
+              fecha: '-',
+            }
+          : e
+      )));
+    } catch (error) {
+      console.error('Error al desasignar EPP:', error);
+      setEppActionError(error.message || 'No se pudo desasignar el EPP.');
+    } finally {
+      setUnassigningEppId(null);
+    }
+  };
+
   return (
     <div className="p-8 flex flex-col h-full fade-in">
       <div className="flex gap-3 mb-6">
@@ -151,6 +221,12 @@ function EppView({ eppData, setEppData }) {
           <svg className="w-4 h-4 absolute right-3 top-2.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
         </div>
       </div>
+
+      {eppActionError && (
+        <div className="mb-4 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+          {eppActionError}
+        </div>
+      )}
 
       <div className="border border-dark-border rounded-xl overflow-hidden bg-dark-surface shadow-lg flex-1 flex flex-col">
         <div className="overflow-x-auto flex-1">
@@ -236,6 +312,16 @@ function EppView({ eppData, setEppData }) {
                           </>
                         ) : (
                           <>
+                            {activeEppTab === 'asignados' && isAssigned(item) && (
+                              <button
+                                onClick={() => handleUnassign(item)}
+                                disabled={unassigningEppId === item.id}
+                                title="Desasignar EPP"
+                                className="text-text-muted hover:text-brand-red transition-colors disabled:opacity-50"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM3 21a6 6 0 0112 0M16 11h6"></path></svg>
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setEditingEppId(item.id);
