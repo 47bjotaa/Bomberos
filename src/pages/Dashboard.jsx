@@ -119,6 +119,11 @@ function Dashboard({ setView }) {
   const [copiedDonationSlug, setCopiedDonationSlug] = useState('');
   const [generatingDonationLinkId, setGeneratingDonationLinkId] = useState(null);
   const [donationLinkError, setDonationLinkError] = useState('');
+  const [selectedCampanaDetalle, setSelectedCampanaDetalle] = useState(null);
+  const [donacionesCampana, setDonacionesCampana] = useState([]);
+  const [loadingDonacionesCampana, setLoadingDonacionesCampana] = useState(false);
+  const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
+  const [estadoPagoDonaciones, setEstadoPagoDonaciones] = useState('Pagada');
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -174,6 +179,12 @@ function Dashboard({ setView }) {
       fetchCampanasDonaciones();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedCampanaDetalle) {
+      fetchDonacionesCampana(selectedCampanaDetalle, estadoPagoDonaciones);
+    }
+  }, [selectedCampanaDetalle, estadoPagoDonaciones]);
 
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
@@ -302,6 +313,8 @@ function Dashboard({ setView }) {
 
     return {
       id: campana.idCampanaDonacion || campana.id,
+      idCampanaDonacion: campana.idCampanaDonacion || campana.id,
+      idCompania: campana.idCompania,
       nombre: campana.nombre || 'Campana sin nombre',
       descripcion: campana.descripcion || '',
       metaMonto: meta,
@@ -531,6 +544,41 @@ function Dashboard({ setView }) {
     } finally {
       setLoadingCampanas(false);
     }
+  };
+
+  const fetchDonacionesCampana = async (campana, estadoPago) => {
+    if (!campana?.idCompania || !campana?.idCampanaDonacion) {
+      setDonacionesCampana([]);
+      setDonacionesCampanaError('No se pudo identificar la compania o la campana.');
+      return;
+    }
+
+    setLoadingDonacionesCampana(true);
+    setDonacionesCampanaError('');
+
+    try {
+      const data = await apiFetch(`/api/companias/${campana.idCompania}/donaciones?idCampaniaDonacion=${campana.idCampanaDonacion}&estadoPago=${encodeURIComponent(estadoPago)}`);
+      setDonacionesCampana(getArrayPayload(data));
+    } catch (error) {
+      console.error('Error al cargar donaciones de campana:', error);
+      setDonacionesCampanaError(error.message || 'No se pudieron cargar las donaciones.');
+      setDonacionesCampana([]);
+    } finally {
+      setLoadingDonacionesCampana(false);
+    }
+  };
+
+  const openCampanaDetalle = (campana) => {
+    setSelectedCampanaDetalle(campana);
+    setEstadoPagoDonaciones('Pagada');
+    setDonacionesCampana([]);
+    setDonacionesCampanaError('');
+  };
+
+  const closeCampanaDetalle = () => {
+    setSelectedCampanaDetalle(null);
+    setDonacionesCampana([]);
+    setDonacionesCampanaError('');
   };
 
   const resetNewCampanaData = () => {
@@ -1673,6 +1721,110 @@ function Dashboard({ setView }) {
 
           {!materialDetailRoute && activeTab === 'donaciones' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              {selectedCampanaDetalle ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={closeCampanaDetalle}
+                    className="mb-6 inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Volver a campanas
+                  </button>
+
+                  <div className="mb-8 rounded-xl border border-dark-border bg-dark-surface p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <span className={`mb-3 inline-flex rounded border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${selectedCampanaDetalle.estado === 'Activa' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
+                          {selectedCampanaDetalle.estado}
+                        </span>
+                        <h3 className="rajdhani text-3xl font-bold text-white">{selectedCampanaDetalle.nombre}</h3>
+                        <p className="mt-2 max-w-3xl text-sm text-text-muted">{selectedCampanaDetalle.descripcion}</p>
+                      </div>
+                      <div className="min-w-52 rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-right">
+                        <p className="text-xs text-text-muted">Recaudado</p>
+                        <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(selectedCampanaDetalle.montoRecaudado)}</p>
+                        <p className="mt-1 text-xs text-text-muted">Meta {formatCurrency(selectedCampanaDetalle.metaMonto)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <section>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="rajdhani text-2xl font-bold text-white">Donaciones</h4>
+                        <p className="mt-1 text-sm text-text-muted">Movimientos asociados a esta campana.</p>
+                      </div>
+                      <div className="flex rounded-lg border border-dark-border bg-dark-surface p-1">
+                        {[
+                          { label: 'Pagadas', value: 'Pagada' },
+                          { label: 'Pendientes', value: 'Pendiente' },
+                        ].map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setEstadoPagoDonaciones(option.value)}
+                            className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${estadoPagoDonaciones === option.value ? 'bg-brand-red/10 text-brand-red' : 'text-text-muted hover:text-white'}`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
+                          <tr>
+                            <th className="px-5 py-4 font-semibold">Donante</th>
+                            <th className="px-5 py-4 font-semibold">Email</th>
+                            <th className="px-5 py-4 font-semibold">Monto</th>
+                            <th className="px-5 py-4 font-semibold">Codigo link</th>
+                            <th className="px-5 py-4 font-semibold">Estado</th>
+                            <th className="px-5 py-4 font-semibold">Fecha</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dark-border">
+                          {loadingDonacionesCampana ? (
+                            <tr>
+                              <td colSpan="6" className="px-5 py-16 text-center text-text-muted">Cargando donaciones...</td>
+                            </tr>
+                          ) : donacionesCampanaError ? (
+                            <tr>
+                              <td colSpan="6" className="px-5 py-16 text-center">
+                                <p className="font-semibold text-brand-red">{donacionesCampanaError}</p>
+                                <button onClick={() => fetchDonacionesCampana(selectedCampanaDetalle, estadoPagoDonaciones)} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20">
+                                  Reintentar
+                                </button>
+                              </td>
+                            </tr>
+                          ) : donacionesCampana.length > 0 ? donacionesCampana.map(donacion => (
+                            <tr key={donacion.idDonacion} className="hover:bg-dark-bg3 transition-colors">
+                              <td className="px-5 py-4 font-semibold text-white">{donacion.nombreDonante}</td>
+                              <td className="px-5 py-4 text-text-muted">{donacion.emailDonante}</td>
+                              <td className="px-5 py-4 font-bold text-white">{formatCurrency(donacion.monto)}</td>
+                              <td className="px-5 py-4 font-mono text-xs text-brand-cyan">{donacion.codigoLink || '-'}</td>
+                              <td className="px-5 py-4">
+                                <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${donacion.estadoPago === 'Pagada' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-300'}`}>
+                                  {donacion.estadoPago}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-text-muted">{formatDateChile(donacion.fechaPago || donacion.fechaCreacion)}</td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan="6" className="px-5 py-16 text-center text-text-muted">
+                                No hay donaciones {estadoPagoDonaciones === 'Pagada' ? 'pagadas' : 'pendientes'} para esta campana.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              ) : (
+                <>
               <div className="mb-8">
                 <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campanas</h3>
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campanas de recaudacion de fondos y genera enlaces de pago.</p>
@@ -1730,7 +1882,7 @@ function Dashboard({ setView }) {
                       <p className="mt-2 text-right text-xs text-brand-cyan">{campaign.progress}% logrado</p>
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
-                      <button className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
+                      <button onClick={() => openCampanaDetalle(campaign)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
                       <button
                         type="button"
                         onClick={() => generateAndCopyDonationLink(campaign)}
@@ -1771,6 +1923,9 @@ function Dashboard({ setView }) {
                       <p className="text-xs text-text-muted">Total recaudado</p>
                       <p className="mt-1 text-xl font-bold text-white">{formatCurrency(campaign.montoRecaudado)}</p>
                     </div>
+                    <button onClick={() => openCampanaDetalle(campaign)} className="mt-4 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">
+                      Ver detalles
+                    </button>
                   </div>
                 </article>
                 )) : (
@@ -1779,6 +1934,8 @@ function Dashboard({ setView }) {
                   </div>
                 )}
               </div>
+                </>
+              )}
                 </>
               )}
             </div>
