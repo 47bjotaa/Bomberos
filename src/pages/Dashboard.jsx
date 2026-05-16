@@ -898,14 +898,14 @@ function Dashboard({ setView }) {
           <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
           </button>
+          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
+          </button>
           <button onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Traceability /> <span className="hidden lg:inline">Libro Guardia</span>
           </button>
           <button onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
-          </button>
-          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
         </nav>
 
@@ -954,7 +954,7 @@ function Dashboard({ setView }) {
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
-                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : <Icons.Inventory />}
+                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
                 {activeTab === 'bodegas' ? (
@@ -972,10 +972,11 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
+                    {activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
+                {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -1000,6 +1001,12 @@ function Dashboard({ setView }) {
                 <button onClick={() => setShowAssignEppModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                   Asignar EPP
+                </button>
+              )}
+              {activeTab === 'donaciones' && (
+                <button className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
+                  <span className="text-base leading-none">+</span>
+                  Crear campaña
                 </button>
               )}
             </div>
@@ -1456,6 +1463,84 @@ function Dashboard({ setView }) {
             </div>
           )}
 
+          {!materialDetailRoute && activeTab === 'donaciones' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-8">
+                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campanas</h3>
+                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campanas de recaudacion de fondos y genera enlaces de pago.</p>
+              </div>
+
+              <div className="mb-4 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-brand-green"></span>
+                <h4 className="text-sm font-bold text-white">Campanas Activas</h4>
+              </div>
+              <div className="mb-8 grid gap-5 lg:grid-cols-3">
+                {[
+                  { title: 'Campana Teleton Bomberos 2023', date: '01 Nov 2023 - 30 Nov 2023', raised: '$2.350.000', goal: '$5.000.000', progress: 47 },
+                  { title: 'Recaudacion Nuevo Carro de Rescate', date: '15 Ago 2023 - 31 Dic 2023', raised: '$45.000.000', goal: '$150.000.000', progress: 30 },
+                  { title: 'Campana Socios Colaboradores 2023', date: '01 Ene 2023 - 31 Dic 2023', raised: '120 Socios', goal: '500 Socios', progress: 24 },
+                ].map(campaign => (
+                  <article key={campaign.title} className="overflow-hidden rounded-xl border border-brand-cyan/40 bg-dark-surface shadow-lg">
+                    <div className="p-5">
+                      <div className="mb-5 flex items-start justify-between gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan">
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592L5.5 14H4a2 2 0 01-2-2V9a2 2 0 012-2h1.5l2.083-5.832A1.76 1.76 0 0111 1.76v4.122zM19 7v10M15 10v4"></path></svg>
+                        </div>
+                        <span className="rounded border border-brand-green/20 bg-brand-green/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-green">Activa</span>
+                      </div>
+                      <h5 className="min-h-10 text-base font-bold leading-snug text-white">{campaign.title}</h5>
+                      <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"></path></svg>
+                        {campaign.date}
+                      </p>
+                      <div className="mt-7 flex items-end justify-between gap-4">
+                        <p className="text-2xl font-bold text-white">{campaign.raised}</p>
+                        <div className="text-right text-xs text-text-muted">
+                          <p>Meta</p>
+                          <p className="font-semibold text-white">{campaign.goal}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-dark-bg3">
+                        <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-brand-cyan" style={{ width: `${campaign.progress}%` }}></div>
+                      </div>
+                      <p className="mt-2 text-right text-xs text-brand-cyan">{campaign.progress}% logrado</p>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
+                      <button className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
+                      <button className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mb-4 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-text-muted"></span>
+                <h4 className="text-sm font-bold text-white">Campanas Finalizadas</h4>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-3">
+                <article className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface opacity-90 shadow-lg">
+                  <div className="p-5">
+                    <div className="mb-5 flex items-start justify-between gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-dark-border bg-dark-bg3 text-text-muted">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      </div>
+                      <span className="rounded border border-dark-border bg-dark-bg3 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-text-muted">Finalizada</span>
+                    </div>
+                    <h5 className="text-base font-bold leading-snug text-white">Reparacion Techo Cuartel General</h5>
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"></path></svg>
+                      Cerrada el 15 Jul 2023
+                    </p>
+                    <div className="mt-6 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                      <p className="text-xs text-text-muted">Total recaudado</p>
+                      <p className="mt-1 text-xl font-bold text-white">$12.000.000</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          )}
+
           {!materialDetailRoute && activeTab === 'vehiculos' && (
             <VehiculosView />
           )}
@@ -1464,7 +1549,7 @@ function Dashboard({ setView }) {
             <EppView eppData={eppData} setEppData={setEppData} />
           )}
 
-          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && (
+          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>
