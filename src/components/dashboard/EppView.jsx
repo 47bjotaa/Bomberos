@@ -70,6 +70,7 @@ const mapEppItem = (item) => {
     asignadoA: assignedName,
     inicial: getInitial(assignedName),
     fecha: formatDate(item.fechaAsignacion || item.fecha),
+    fechaVencimientoFormateada: formatDate(item.fechaVencimiento),
     estado: item.estadoInventario || item.estadoEpp || item.estado || 'Sin estado',
   };
 };
@@ -82,6 +83,10 @@ function EppView({ eppData, setEppData }) {
   const [eppError, setEppError] = useState('');
   const [eppActionError, setEppActionError] = useState('');
   const [unassigningEppId, setUnassigningEppId] = useState(null);
+  const [decommissionItem, setDecommissionItem] = useState(null);
+  const [decommissionReason, setDecommissionReason] = useState('');
+  const [confirmDecommission, setConfirmDecommission] = useState(false);
+  const [decommissioning, setDecommissioning] = useState(false);
 
   const [editingEppId, setEditingEppId] = useState(null);
   const [editEppData, setEditEppData] = useState({});
@@ -176,6 +181,54 @@ function EppView({ eppData, setEppData }) {
     }
   };
 
+  const openDecommissionModal = (item) => {
+    setDecommissionItem(item);
+    setDecommissionReason('');
+    setConfirmDecommission(false);
+    setEppActionError('');
+  };
+
+  const closeDecommissionModal = () => {
+    if (decommissioning) return;
+    setDecommissionItem(null);
+    setDecommissionReason('');
+    setConfirmDecommission(false);
+  };
+
+  const handleDecommission = async () => {
+    if (!decommissionItem || !decommissionReason.trim() || decommissioning) return;
+
+    const itemId = decommissionItem.idItem || decommissionItem.id;
+    if (!itemId) {
+      setEppActionError('No se pudo identificar el idItem del EPP.');
+      return;
+    }
+
+    setDecommissioning(true);
+    setEppActionError('');
+
+    try {
+      await apiFetch('/api/materiales/items/restar', {
+        method: 'POST',
+        body: JSON.stringify({
+          idItem: Number(itemId),
+          motivo: decommissionReason.trim(),
+          fecha: getChileIsoString(),
+        }),
+      });
+
+      setEppData(prev => prev.filter(item => item.id !== decommissionItem.id));
+      setDecommissionItem(null);
+      setDecommissionReason('');
+      setConfirmDecommission(false);
+    } catch (error) {
+      console.error('Error al dar de baja EPP:', error);
+      setEppActionError(error.message || 'No se pudo dar de baja el EPP.');
+    } finally {
+      setDecommissioning(false);
+    }
+  };
+
   return (
     <div className="p-8 flex flex-col h-full fade-in">
       <div className="flex gap-3 mb-6">
@@ -236,7 +289,7 @@ function EppView({ eppData, setEppData }) {
                 <th className="px-6 py-4 font-semibold">EQUIPO</th>
                 <th className="px-6 py-4 font-semibold">CODIGO UNICO</th>
                 <th className="px-6 py-4 font-semibold">ASIGNADO A</th>
-                <th className="px-6 py-4 font-semibold">FECHA ASIGNACION</th>
+                <th className="px-6 py-4 font-semibold">{activeEppTab === 'asignados' ? 'FECHA ASIGNACION' : 'FECHA VENCIMIENTO'}</th>
                 <th className="px-6 py-4 font-semibold">ESTADO</th>
                 <th className="px-6 py-4 font-semibold text-right">ACCIONES</th>
               </tr>
@@ -275,7 +328,9 @@ function EppView({ eppData, setEppData }) {
                         <span className={item.asignadoA ? 'text-white' : 'text-text-muted'}>{item.asignadoA || 'Sin asignar'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-text-muted">{item.fecha}</td>
+                    <td className="px-6 py-4 text-text-muted">
+                      {activeEppTab === 'asignados' ? item.fecha : item.fechaVencimientoFormateada}
+                    </td>
                     <td className="px-6 py-4">
                       {isEditing ? (
                         <select
@@ -303,6 +358,14 @@ function EppView({ eppData, setEppData }) {
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM3 21a6 6 0 0112 0M16 11h6"></path></svg>
                             {unassigningEppId === item.id ? 'Desasignando...' : 'Desasignar'}
+                          </button>
+                        ) : activeEppTab === 'no-asignados' && !isAssigned(item) ? (
+                          <button
+                            onClick={() => openDecommissionModal(item)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                            Dar de baja
                           </button>
                         ) : (
                           <span className="text-xs text-text-muted">-</span>
@@ -374,6 +437,104 @@ function EppView({ eppData, setEppData }) {
                 Confirmar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {decommissionItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl fade-in">
+            <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white rajdhani">
+                {confirmDecommission ? 'Confirmar baja' : 'Dar de baja EPP'}
+              </h3>
+              <button
+                onClick={closeDecommissionModal}
+                disabled={decommissioning}
+                className="text-text-muted hover:text-white transition-colors disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            {!confirmDecommission ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (decommissionReason.trim()) {
+                    setConfirmDecommission(true);
+                  }
+                }}
+              >
+                <div className="p-6 space-y-4">
+                  <div className="rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                    <p className="text-sm font-semibold text-white">{decommissionItem.equipo}</p>
+                    <p className="mt-1 text-xs text-text-muted font-mono">{decommissionItem.codigo}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2 rajdhani tracking-wide">
+                      Motivo de la baja <span className="text-brand-red">*</span>
+                    </label>
+                    <textarea
+                      autoFocus
+                      rows="4"
+                      value={decommissionReason}
+                      onChange={(event) => setDecommissionReason(event.target.value)}
+                      disabled={decommissioning}
+                      className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      placeholder="Ej. Equipo deteriorado, vencido o fuera de servicio..."
+                    />
+                  </div>
+                </div>
+                <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeDecommissionModal}
+                    disabled={decommissioning}
+                    className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!decommissionReason.trim() || decommissioning}
+                    className="px-4 py-2 text-sm font-medium text-white bg-brand-red rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Dar de baja
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="p-6">
+                  <p className="text-sm leading-relaxed text-text-muted">
+                    Estas a punto de dar de baja "{decommissionItem.equipo}". Esta accion registrara el motivo y quitara el EPP de la lista disponible.
+                  </p>
+                  <div className="mt-4 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Motivo</p>
+                    <p className="mt-1 text-sm text-white">{decommissionReason.trim()}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDecommission(false)}
+                    disabled={decommissioning}
+                    className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDecommission}
+                    disabled={decommissioning}
+                    className="px-4 py-2 text-sm font-medium text-white bg-brand-red rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {decommissioning ? 'Dando de baja...' : 'Si, dar de baja'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
