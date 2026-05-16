@@ -14,24 +14,25 @@ const redirectToLogin = () => {
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
+  const { skipAuth = false, ...fetchOptions } = options;
   const token = localStorage.getItem('token');
-  const isFormData = options.body instanceof FormData;
+  const isFormData = fetchOptions.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    ...options.headers,
+    ...fetchOptions.headers,
   };
 
-  if (token) {
+  if (token && !skipAuth) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !skipAuth) {
       clearSession();
       redirectToLogin();
     }
@@ -97,6 +98,22 @@ export const authService = {
     const data = await apiFetch('/api/Companias/registrar-compania', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+    return data;
+  },
+  recoverPassword: async (rut) => {
+    const data = await apiFetch('/api/Auth/recuperar-password', {
+      method: 'POST',
+      skipAuth: true,
+      body: JSON.stringify({ rut }),
+    });
+    return data;
+  },
+  resetPassword: async ({ token, passwordNueva, confirmarPasswordNueva }) => {
+    const data = await apiFetch('/api/Auth/restablecer-password', {
+      method: 'POST',
+      skipAuth: true,
+      body: JSON.stringify({ token, passwordNueva, confirmarPasswordNueva }),
     });
     return data;
   },

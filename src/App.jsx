@@ -8,13 +8,21 @@ const hasAuthToken = () => Boolean(localStorage.getItem('token'));
 
 const getViewFromPath = (pathname) => {
   if (pathname.startsWith('/dashboard')) return 'dashboard';
-  if (pathname.startsWith('/login') || pathname.startsWith('/register')) return 'auth';
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/recuperar-password') ||
+    pathname.startsWith('/restablecer-password')
+  ) return 'auth';
   return 'landing';
 };
 
-const getAuthModeFromPath = (pathname) => (
-  pathname.startsWith('/login') ? 'login' : 'register'
-);
+const getAuthModeFromPath = (pathname) => {
+  if (pathname.startsWith('/login')) return 'login';
+  if (pathname.startsWith('/recuperar-password')) return 'recover';
+  if (pathname.startsWith('/restablecer-password')) return 'reset';
+  return 'register';
+};
 
 const pathByView = {
   landing: '/',

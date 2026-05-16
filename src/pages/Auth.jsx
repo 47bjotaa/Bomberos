@@ -4,15 +4,33 @@ import { cuerposBomberos } from '../utils/constants';
 import { useTheme } from '../context/ThemeContext';
 import { Icons } from '../components/ui/Icons';
 
+const authPathByMode = {
+  login: '/login',
+  register: '/register',
+  recover: '/recuperar-password',
+  reset: '/restablecer-password',
+};
+
 function AuthView({ initialMode = 'register' }) {
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState(initialMode);
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [cuerpoSearch, setCuerpoSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [formData, setFormData] = useState({
-    rut: '', password: '', confirmPassword: '', nombre: '', telefono: '', correo: '', cuartel: '', cuerpoBomberos: ''
+    rut: '',
+    password: '',
+    confirmPassword: '',
+    passwordNueva: '',
+    confirmarPasswordNueva: '',
+    nombre: '',
+    telefono: '',
+    correo: '',
+    cuartel: '',
+    cuerpoBomberos: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -26,8 +44,22 @@ function AuthView({ initialMode = 'register' }) {
     return `${digits.slice(0, -1)}-${digits.slice(-1)}`;
   };
 
+  const navigateToMode = (nextMode) => {
+    const nextPath = authPathByMode[nextMode] || '/login';
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+
+    setMode(nextMode);
+    setStep(1);
+    setErrors({});
+    setSuccessMessage('');
+  };
+
   useEffect(() => {
     setMode(initialMode);
+    setErrors({});
+    setSuccessMessage('');
   }, [initialMode]);
 
   const validate = () => {
@@ -48,9 +80,21 @@ function AuthView({ initialMode = 'register' }) {
         if (!formData.password) newErrors.password = "Obligatorio";
         if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Las contraseñas no coinciden";
       }
-    } else {
+    } else if (mode === 'login') {
       if (!formData.rut) newErrors.rut = "Obligatorio";
       if (!formData.password) newErrors.password = "Obligatorio";
+    } else if (mode === 'recover') {
+      if (!formData.rut) newErrors.rut = "Obligatorio";
+      else if (!rutRegex.test(formData.rut)) newErrors.rut = "Inválido";
+    } else if (mode === 'reset') {
+      const token = new URLSearchParams(window.location.search).get("token");
+
+      if (!token) newErrors.token = "El enlace de restablecimiento no incluye un token válido.";
+      if (!formData.passwordNueva) newErrors.passwordNueva = "Obligatorio";
+      if (!formData.confirmarPasswordNueva) newErrors.confirmarPasswordNueva = "Obligatorio";
+      else if (formData.passwordNueva !== formData.confirmarPasswordNueva) {
+        newErrors.confirmarPasswordNueva = "Las contraseñas no coinciden";
+      }
     }
 
     setErrors(newErrors);
@@ -67,6 +111,43 @@ function AuthView({ initialMode = 'register' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
+    if (mode === 'recover') {
+      setIsSubmitting(true);
+      setSuccessMessage('');
+      try {
+        await authService.recoverPassword(formData.rut);
+        setSuccessMessage("Si el RUT existe, enviaremos un correo con el enlace para restablecer tu contraseña.");
+      } catch (error) {
+        setErrors(prev => ({ ...prev, api: error.message || "Error al solicitar la recuperación de contraseña." }));
+        console.error("Error API Recuperar Password:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    if (mode === 'reset') {
+      setIsSubmitting(true);
+      setSuccessMessage('');
+      try {
+        const token = new URLSearchParams(window.location.search).get("token");
+        await authService.resetPassword({
+          token,
+          passwordNueva: formData.passwordNueva,
+          confirmarPasswordNueva: formData.confirmarPasswordNueva,
+        });
+        setSuccessMessage("Contraseña restablecida correctamente. Ya puedes iniciar sesión.");
+      } catch (error) {
+        setErrors(prev => ({ ...prev, api: error.message || "Error al restablecer la contraseña." }));
+        console.error("Error API Restablecer Password:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (validate()) {
       if (mode === 'login') {
         try {
@@ -110,6 +191,9 @@ function AuthView({ initialMode = 'register' }) {
     const nextValue = name === 'rut' ? formatRut(value) : value;
 
     setFormData({ ...formData, [name]: nextValue });
+    if (successMessage) {
+      setSuccessMessage('');
+    }
     if (errors[name]) {
       setErrors({ ...errors, [name]: null });
     }
@@ -136,6 +220,86 @@ function AuthView({ initialMode = 'register' }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (mode === 'recover') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg p-4 relative">
+        <div className="absolute top-8 right-8">
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle"
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+        </div>
+        <div className="bg-dark-surface rounded-xl shadow-lg border border-dark-border p-8 w-full max-w-md">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2 rajdhani">Recuperar contraseña</h2>
+            <p className="text-text-muted text-sm">Ingresa el RUT de tu cuenta para recibir el enlace por correo</p>
+          </div>
+          {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
+          {successMessage && <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">{successMessage}</div>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-main mb-1">RUT</label>
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12345678-9" />
+              {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
+            </div>
+            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+              {isSubmitting ? 'Enviando...' : 'Enviar enlace'}
+            </button>
+          </form>
+          <div className="mt-6 text-center text-sm text-text-muted">
+            <button onClick={() => navigateToMode('login')} className="text-brand-cyan font-medium hover:text-white transition-colors">Volver a iniciar sesión</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'reset') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg p-4 relative">
+        <div className="absolute top-8 right-8">
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle"
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+        </div>
+        <div className="bg-dark-surface rounded-xl shadow-lg border border-dark-border p-8 w-full max-w-md">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2 rajdhani">Restablecer contraseña</h2>
+            <p className="text-text-muted text-sm">Crea una nueva contraseña para recuperar el acceso</p>
+          </div>
+          {errors.token && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.token}</div>}
+          {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
+          {successMessage && <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">{successMessage}</div>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-main mb-1">Nueva contraseña</label>
+              <input type="password" name="passwordNueva" value={formData.passwordNueva} onChange={handleChange} autoComplete="new-password" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="••••••••" />
+              {errors.passwordNueva && <p className="text-brand-red text-xs mt-1">{errors.passwordNueva}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-main mb-1">Confirmar nueva contraseña</label>
+              <input type="password" name="confirmarPasswordNueva" value={formData.confirmarPasswordNueva} onChange={handleChange} autoComplete="new-password" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="••••••••" />
+              {errors.confirmarPasswordNueva && <p className="text-brand-red text-xs mt-1">{errors.confirmarPasswordNueva}</p>}
+            </div>
+            <button type="submit" disabled={isSubmitting || Boolean(successMessage)} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+              {isSubmitting ? 'Guardando...' : 'Restablecer contraseña'}
+            </button>
+          </form>
+          <div className="mt-6 text-center text-sm text-text-muted">
+            <button onClick={() => navigateToMode('login')} className="text-brand-cyan font-medium hover:text-white transition-colors">Ir a iniciar sesión</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (mode === 'login') {
     return (
@@ -166,12 +330,17 @@ function AuthView({ initialMode = 'register' }) {
               <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="••••••••" />
               {errors.password && <p className="text-brand-red text-xs mt-1">{errors.password}</p>}
             </div>
+            <div className="text-right">
+              <button type="button" onClick={() => navigateToMode('recover')} className="text-brand-cyan text-sm font-medium hover:text-white transition-colors">
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
             <button type="submit" className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
               Iniciar Sesión
             </button>
           </form>
           <div className="mt-6 text-center text-sm text-text-muted">
-            ¿No tienes una cuenta? <button onClick={() => { setMode('register'); setStep(1); setErrors({}); }} className="text-brand-cyan font-medium hover:text-white transition-colors">Regístrate</button>
+            ¿No tienes una cuenta? <button onClick={() => navigateToMode('register')} className="text-brand-cyan font-medium hover:text-white transition-colors">Regístrate</button>
           </div>
         </div>
       </div>
@@ -413,7 +582,7 @@ function AuthView({ initialMode = 'register' }) {
           </div>
 
           <div className="mt-8 text-center text-sm text-text-muted font-medium">
-            ¿Ya tienes una cuenta? <button onClick={() => { setMode('login'); setErrors({}); }} className="text-brand-cyan hover:text-white transition-colors">Inicia sesión</button>
+            ¿Ya tienes una cuenta? <button onClick={() => navigateToMode('login')} className="text-brand-cyan hover:text-white transition-colors">Inicia sesión</button>
           </div>
           </div>
         </div>
