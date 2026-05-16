@@ -139,6 +139,9 @@ function AuthView({ initialMode = 'register' }) {
           confirmarPasswordNueva: formData.confirmarPasswordNueva,
         });
         setSuccessMessage("Contraseña restablecida correctamente. Ya puedes iniciar sesión.");
+        window.setTimeout(() => {
+          navigateToMode('login');
+        }, 1500);
       } catch (error) {
         setErrors(prev => ({ ...prev, api: error.message || "Error al restablecer la contraseña." }));
         console.error("Error API Restablecer Password:", error);
