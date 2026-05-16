@@ -255,7 +255,7 @@ function Dashboard({ setView }) {
         method: 'POST',
         body: JSON.stringify({
           idBombero: Number(idBombero),
-          urlBasePublica: 'https://cuartelamigo.cl',
+          urlBasePublica: 'https://www.cuartelamigo.cl',
         }),
       });
 
