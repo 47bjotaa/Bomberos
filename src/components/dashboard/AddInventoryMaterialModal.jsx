@@ -3,6 +3,28 @@ import { apiFetch } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemePalette } from '../../utils/themePalette';
 
+const getArrayPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.materiales)) return payload.materiales;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (payload?.data && typeof payload.data === 'object') return getArrayPayload(payload.data);
+  return [];
+};
+
+const toBoolean = (value) => (
+  value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
+);
+
+const mapMaterial = (material) => ({
+  id: material.idMaterial || material.id,
+  idTipoProducto: material.idTipoProducto,
+  nombre: material.nombre || material.nombreMaterial || material.name || 'Material',
+  tipo: material.tipoMaterial || material.nombreTipoProducto || material.tipo || 'General',
+  serializado: toBoolean(material.serializado) || toBoolean(material.esSerializado) || toBoolean(material.esSerializacion) || toBoolean(material.requiereCodigoUnico),
+});
+
 function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
@@ -16,28 +38,9 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     cantidad: 1,
     codigoUnico: '',
     estado: 'Operativo',
-    motivo: ''
-  });
-
-  const getArrayPayload = (payload) => {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.data)) return payload.data;
-    if (Array.isArray(payload?.materiales)) return payload.materiales;
-    if (Array.isArray(payload?.items)) return payload.items;
-    if (Array.isArray(payload?.result)) return payload.result;
-    if (payload?.data && typeof payload.data === 'object') return getArrayPayload(payload.data);
-    return [];
-  };
-
-  const toBoolean = (value) => (
-    value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
-  );
-
-  const mapMaterial = (material) => ({
-    id: material.idMaterial || material.id,
-    nombre: material.nombre || material.nombreMaterial || material.name || 'Material',
-    tipo: material.tipoMaterial || material.nombreTipoProducto || material.tipo || 'General',
-    serializado: toBoolean(material.serializado) || toBoolean(material.esSerializado) || toBoolean(material.esSerializacion) || toBoolean(material.requiereCodigoUnico),
+    motivo: '',
+    talla: '',
+    fechaVencimiento: ''
   });
 
   useEffect(() => {
@@ -74,18 +77,41 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     }
   }, []);
 
-  const isSerializado = Boolean(selectedMaterial?.serializado);
-  const canSubmit = selectedMaterial && idUbicacion && formData.motivo.trim() &&
-    (isSerializado ? formData.codigoUnico.trim() : Number(formData.cantidad) > 0);
+  const isEpp = Number(selectedMaterial?.idTipoProducto) === 1 || selectedMaterial?.tipo?.trim().toLowerCase() === 'epp';
+  const usesItemEndpoint = Boolean(selectedMaterial?.serializado || isEpp);
+  const canSubmit = selectedMaterial && idUbicacion &&
+    (usesItemEndpoint ? formData.codigoUnico.trim() : Number(formData.cantidad) > 0) &&
+    (!isEpp || (formData.talla.trim() && formData.fechaVencimiento));
+
+  const getCreatedItemId = (payload) => {
+    if (typeof payload === 'number' || typeof payload === 'string') return payload;
+    if (!payload || typeof payload !== 'object') return null;
+
+    if (payload.idItem || payload.idInventarioItem || payload.id) {
+      return payload.idItem || payload.idInventarioItem || payload.id;
+    }
+
+    if (Array.isArray(payload)) return getCreatedItemId(payload[0]);
+    if (payload.item && typeof payload.item === 'object') return getCreatedItemId(payload.item);
+    if (payload.data && typeof payload.data === 'object') return getCreatedItemId(payload.data);
+    if (payload.result && typeof payload.result === 'object') return getCreatedItemId(payload.result);
+
+    return null;
+  };
 
   const selectMaterial = (material) => {
+    const materialIsEpp = Number(material.idTipoProducto) === 1 || material.tipo?.trim().toLowerCase() === 'epp';
+    const materialRequiresItem = material.serializado || materialIsEpp;
+
     setSelectedMaterial(material);
     setError('');
     setFormData(prev => ({
       ...prev,
-      cantidad: material.serializado ? 1 : Math.max(1, Number(prev.cantidad) || 1),
-      codigoUnico: material.serializado ? prev.codigoUnico : '',
-      estado: material.serializado ? prev.estado : 'Operativo'
+      cantidad: materialRequiresItem ? 1 : Math.max(1, Number(prev.cantidad) || 1),
+      codigoUnico: materialRequiresItem ? prev.codigoUnico : '',
+      estado: materialRequiresItem ? prev.estado : 'Operativo',
+      talla: materialIsEpp ? prev.talla : '',
+      fechaVencimiento: materialIsEpp ? prev.fechaVencimiento : ''
     }));
   };
 
@@ -97,15 +123,16 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     setError('');
 
     const fecha = new Date().toISOString();
-    const endpoint = isSerializado ? '/api/materiales/items/anadir' : '/api/materiales/anadir';
-    const payload = isSerializado
+    const endpoint = usesItemEndpoint ? '/api/materiales/items/anadir' : '/api/materiales/anadir';
+    const motivo = formData.motivo.trim();
+    const payload = usesItemEndpoint
       ? {
           idMaterial: selectedMaterial.id,
           idUbicacion,
           idUsuario,
           codigoUnico: formData.codigoUnico.trim(),
           estado: formData.estado,
-          motivo: formData.motivo.trim(),
+          motivo: motivo || null,
           fecha
         }
       : {
@@ -113,15 +140,33 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
           idUbicacion,
           idUsuario,
           cantidad: Number(formData.cantidad),
-          motivo: formData.motivo.trim(),
+          motivo: motivo || null,
           fecha
         };
 
     try {
-      await apiFetch(endpoint, {
+      const createdItem = await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload)
       });
+
+      if (isEpp) {
+        const idItem = getCreatedItemId(createdItem);
+
+        if (!idItem) {
+          throw new Error('El material fue creado, pero no se recibio el idItem para guardar el detalle EPP.');
+        }
+
+        await apiFetch(`/api/materiales/items/${idItem}/detalle-epp`, {
+          method: 'POST',
+          body: JSON.stringify({
+            talla: formData.talla.trim(),
+            estadoEpp: formData.estado,
+            fechaVencimiento: new Date(formData.fechaVencimiento).toISOString()
+          })
+        });
+      }
+
       await onAdded?.();
       onClose();
     } catch (err) {
@@ -198,7 +243,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                 <p className="mb-1 text-xs font-bold uppercase tracking-wider text-text-muted">Material seleccionado</p>
                 <h4 className="mb-3 text-2xl font-bold text-white">{selectedMaterial.nombre}</h4>
 
-                {isSerializado && (
+                {usesItemEndpoint && (
                   <div className="mb-6 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 p-4 text-sm text-brand-cyan">
                     Este material requiere control individualizado. La cantidad se fija en 1 y debes ingresar su codigo unico.
                   </div>
@@ -211,18 +256,18 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                       type="number"
                       min="1"
                       value={formData.cantidad}
-                      disabled={isSerializado}
+                      disabled={usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, cantidad: e.target.value }))}
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Codigo Unico {isSerializado && <span className="text-brand-red">*</span>}</span>
+                    <span className="mb-2 block text-sm font-medium text-text-main">Codigo Unico {usesItemEndpoint && <span className="text-brand-red">*</span>}</span>
                     <input
                       type="text"
                       value={formData.codigoUnico}
-                      disabled={!isSerializado}
+                      disabled={!usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, codigoUnico: e.target.value }))}
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                       placeholder="Ej: EXT-MANG-001"
@@ -233,7 +278,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                     <span className="mb-2 block text-sm font-medium text-text-main">Estado</span>
                     <select
                       value={formData.estado}
-                      disabled={!isSerializado}
+                      disabled={!usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                     >
@@ -243,8 +288,33 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                     </select>
                   </label>
 
+                  {isEpp && (
+                    <>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-medium text-text-main">Talla <span className="text-brand-red">*</span></span>
+                        <input
+                          type="text"
+                          value={formData.talla}
+                          onChange={(e) => setFormData(prev => ({ ...prev, talla: e.target.value }))}
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                          placeholder="Ej: M, L, 42..."
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-medium text-text-main">Fecha de vencimiento <span className="text-brand-red">*</span></span>
+                        <input
+                          type="date"
+                          value={formData.fechaVencimiento}
+                          onChange={(e) => setFormData(prev => ({ ...prev, fechaVencimiento: e.target.value }))}
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan"
+                        />
+                      </label>
+                    </>
+                  )}
+
                   <label className="block sm:col-span-2">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Motivo <span className="text-brand-red">*</span></span>
+                    <span className="mb-2 block text-sm font-medium text-text-main">Motivo</span>
                     <textarea
                       value={formData.motivo}
                       onChange={(e) => setFormData(prev => ({ ...prev, motivo: e.target.value }))}
