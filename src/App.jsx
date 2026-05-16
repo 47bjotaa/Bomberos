@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import Landing from './pages/Landing';
 import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import PaginaDonacion from './pages/PaginaDonacion';
 import './App.css';
 
 const hasAuthToken = () => Boolean(localStorage.getItem('token'));
 
 const getViewFromPath = (pathname) => {
+  if (pathname.startsWith('/donar/')) return 'donacion';
   if (pathname.startsWith('/dashboard')) return 'dashboard';
   if (
     pathname.startsWith('/login') ||
@@ -104,6 +106,7 @@ export default function App() {
       {view === 'landing' && <Landing />}
       {view === 'auth' && <AuthView initialMode={authMode} />}
       {view === 'dashboard' && <Dashboard setView={setView} />}
+      {view === 'donacion' && <PaginaDonacion />}
     </div>
   );
 }

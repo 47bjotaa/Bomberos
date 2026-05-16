@@ -1660,7 +1660,7 @@ function Dashboard({ setView }) {
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
                       <button className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
-                      <a href={campaign.slug || undefined} target="_blank" rel="noreferrer" className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</a>
+                      <a href={campaign.slug ? `/donar/${campaign.slug}` : undefined} target="_blank" rel="noreferrer" className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30">Generar Link</a>
                     </div>
                   </article>
                 )) : (
