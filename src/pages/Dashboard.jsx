@@ -61,6 +61,13 @@ function Dashboard({ setView }) {
   const [loadingTiposUbicacion, setLoadingTiposUbicacion] = useState(false);
   const [addUbicacionError, setAddUbicacionError] = useState('');
   const [savingUbicacion, setSavingUbicacion] = useState(false);
+  const [tiposArbolUbicacion, setTiposArbolUbicacion] = useState([]);
+  const [loadingTiposArbol, setLoadingTiposArbol] = useState(false);
+  const [tiposArbolError, setTiposArbolError] = useState('');
+  const [showAddTipoUbicacionModal, setShowAddTipoUbicacionModal] = useState(false);
+  const [newTipoUbicacionData, setNewTipoUbicacionData] = useState({ nombre: '', esTipoRaiz: false });
+  const [savingTipoUbicacion, setSavingTipoUbicacion] = useState(false);
+  const [addTipoUbicacionError, setAddTipoUbicacionError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -86,6 +93,18 @@ function Dashboard({ setView }) {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'bodegas' && inventoryView === 'ubicaciones' && !activeUbicacion) {
+      selectGeneralInventario();
+    }
+  }, [activeTab, inventoryView, activeUbicacion]);
+
+  useEffect(() => {
+    if (activeTab === 'bodegas' && inventoryView === 'arbol') {
+      fetchTiposArbolUbicacion();
+    }
+  }, [activeTab, inventoryView]);
 
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
@@ -361,6 +380,64 @@ function Dashboard({ setView }) {
     idCompania: tipo.idCompania,
     esTipoRaiz: toBoolean(tipo.esTipoRaiz),
   });
+
+  const fetchTiposArbolUbicacion = async () => {
+    setLoadingTiposArbol(true);
+    setTiposArbolError('');
+
+    try {
+      const data = await apiFetch('/api/tipoubicaciones');
+      const tipos = getArrayPayload(data, ['tipos', 'tipoUbicaciones', 'tiposUbicacion'])
+        .map(mapTipoUbicacion)
+        .filter(tipo => tipo.id);
+      setTiposArbolUbicacion(tipos);
+    } catch (error) {
+      setTiposArbolError(error.message || 'No se pudieron cargar los tipos de ubicacion.');
+      setTiposArbolUbicacion([]);
+    } finally {
+      setLoadingTiposArbol(false);
+    }
+  };
+
+  const openAddTipoUbicacionModal = () => {
+    setNewTipoUbicacionData({ nombre: '', esTipoRaiz: false });
+    setAddTipoUbicacionError('');
+    setShowAddTipoUbicacionModal(true);
+  };
+
+  const closeAddTipoUbicacionModal = () => {
+    if (savingTipoUbicacion) return;
+
+    setShowAddTipoUbicacionModal(false);
+    setAddTipoUbicacionError('');
+  };
+
+  const canCreateTipoUbicacion = newTipoUbicacionData.nombre.trim();
+
+  const handleCreateTipoUbicacion = async (event) => {
+    event.preventDefault();
+    if (!canCreateTipoUbicacion || savingTipoUbicacion) return;
+
+    setSavingTipoUbicacion(true);
+    setAddTipoUbicacionError('');
+
+    try {
+      await apiFetch('/api/tipoubicaciones', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: newTipoUbicacionData.nombre.trim(),
+          esTipoRaiz: Boolean(newTipoUbicacionData.esTipoRaiz),
+        }),
+      });
+
+      setShowAddTipoUbicacionModal(false);
+      await fetchTiposArbolUbicacion();
+    } catch (error) {
+      setAddTipoUbicacionError(error.message || 'No se pudo crear el tipo de ubicacion.');
+    } finally {
+      setSavingTipoUbicacion(false);
+    }
+  };
 
   const loadTiposUbicacion = async () => {
     setLoadingTiposUbicacion(true);
@@ -743,38 +820,64 @@ function Dashboard({ setView }) {
           )}
           {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'arbol' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
-              <div className="mb-6">
-                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Arbol de Ubicaciones</h3>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Vista jerarquica de las ubicaciones principales y la ruta seleccionada.</p>
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Arbol de Ubicaciones</h3>
+                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>Tipos disponibles para construir ubicaciones principales y sububicaciones.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openAddTipoUbicacionModal}
+                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
+                >
+                  Agregar tipo de ubicacion
+                </button>
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
-                {loadingUbicaciones ? (
-                  <p className="text-sm" style={{ color: palette.muted }}>Cargando ubicaciones desde el servidor...</p>
-                ) : ubicaciones.length > 0 ? (
-                  <div className="space-y-3">
-                    {ubicaciones.map(ubi => {
-                      const isInPath = locationPath.some(item => item.id === ubi.id);
-                      return (
-                        <button
-                          key={ubi.id}
-                          type="button"
-                          onClick={() => openUbicacion(ubi)}
-                          className="w-full rounded-lg border px-4 py-3 text-left transition-colors"
-                          style={{
-                            borderColor: isInPath ? palette.cyan : palette.borderStrong,
-                            background: isInPath ? palette.cyanSoft : palette.bg,
-                            color: palette.text,
-                          }}
-                        >
-                          <span className="font-semibold">{ubi.name}</span>
-                          {ubi.nombreTipo && <span className="ml-3 text-xs" style={{ color: palette.muted }}>{ubi.nombreTipo}</span>}
-                        </button>
-                      );
-                    })}
+                {loadingTiposArbol ? (
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando tipos de ubicacion...</p>
+                ) : tiposArbolError ? (
+                  <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
+                    <p className="font-semibold text-brand-red">{tiposArbolError}</p>
+                    <button
+                      type="button"
+                      onClick={fetchTiposArbolUbicacion}
+                      className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                ) : tiposArbolUbicacion.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {tiposArbolUbicacion.map(tipo => (
+                      <div
+                        key={tipo.id}
+                        className="rounded-xl border p-5"
+                        style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{tipo.nombre}</p>
+                            <p className="mt-1 text-xs" style={{ color: palette.muted }}>ID tipo {tipo.id}</p>
+                          </div>
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tipo.esTipoRaiz ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}
+                          >
+                            {tipo.esTipoRaiz ? 'Raiz' : 'Sububicacion'}
+                          </span>
+                        </div>
+                        {tipo.idCompania && (
+                          <p className="mt-4 text-xs" style={{ color: palette.muted }}>Compania {tipo.idCompania}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-sm" style={{ color: palette.muted }}>No se encontraron ubicaciones registradas.</p>
+                  <div className="rounded-xl border border-dashed px-6 py-14 text-center" style={{ borderColor: palette.borderStrong }}>
+                    <p className="font-semibold" style={{ color: palette.text }}>No hay tipos de ubicacion registrados.</p>
+                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>Crea el primer tipo para usarlo al agregar ubicaciones.</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1054,6 +1157,69 @@ function Dashboard({ setView }) {
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Crear Ubicación
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showAddTipoUbicacionModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleCreateTipoUbicacion} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white rajdhani">Agregar Tipo de Ubicacion</h3>
+                <button type="button" onClick={closeAddTipoUbicacionModal} disabled={savingTipoUbicacion} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Nombre del tipo</label>
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Ej. Bodega, Caja, Gaveta..."
+                    value={newTipoUbicacionData.nombre}
+                    onChange={(e) => setNewTipoUbicacionData({ ...newTipoUbicacionData, nombre: e.target.value })}
+                    disabled={savingTipoUbicacion}
+                  />
+                </div>
+                <label className="flex items-center justify-between gap-4 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                  <span>
+                    <span className="block text-sm font-semibold text-white">Tipo raiz</span>
+                    <span className="block text-xs text-text-muted">Aparecera como opcion para crear ubicaciones principales.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 accent-brand-red"
+                    checked={newTipoUbicacionData.esTipoRaiz}
+                    onChange={(e) => setNewTipoUbicacionData({ ...newTipoUbicacionData, esTipoRaiz: e.target.checked })}
+                    disabled={savingTipoUbicacion}
+                  />
+                </label>
+
+                {addTipoUbicacionError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {addTipoUbicacionError}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeAddTipoUbicacionModal}
+                  disabled={savingTipoUbicacion}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!canCreateTipoUbicacion || savingTipoUbicacion}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Crear Tipo
                 </button>
               </div>
             </form>
