@@ -13,6 +13,13 @@ import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
 
 const GENERAL_INVENTORY_ID = 'general-inventory';
+const TIPOS_PRODUCTO = [
+  { id: 1, nombre: 'EPP' },
+  { id: 2, nombre: 'Material de agua' },
+  { id: 3, nombre: 'Material de rescate' },
+  { id: 4, nombre: 'Acceso y ventilacion' },
+  { id: 5, nombre: 'Material especifico' },
+];
 
 const getMaterialDetailRoute = (pathname) => {
   const itemMatch = pathname.match(/^\/dashboard\/materiales\/items\/([^/]+)$/);
@@ -46,9 +53,19 @@ function Dashboard({ setView }) {
   const [filtroTipo, setFiltroTipo] = useState('Todos los tipos');
   const [filtroNombre, setFiltroNombre] = useState('');
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [savingMaterial, setSavingMaterial] = useState(false);
+  const [addMaterialError, setAddMaterialError] = useState('');
   const [showInventoryMaterialModal, setShowInventoryMaterialModal] = useState(false);
   const [movingMaterial, setMovingMaterial] = useState(null);
-  const [newMaterialData, setNewMaterialData] = useState({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
+  const [newMaterialData, setNewMaterialData] = useState({
+    idTipoProducto: '',
+    nombre: '',
+    descripcion: '',
+    esConsumible: false,
+    esSerializacion: false,
+    requiereMantencion: false,
+    valorUnitario: ''
+  });
   const [activeUbicacion, setActiveUbicacion] = useState(null);
   const [locationPath, setLocationPath] = useState([]);
   const [itemsUbicacion, setItemsUbicacion] = useState([]);
@@ -158,6 +175,13 @@ function Dashboard({ setView }) {
   const toBoolean = (value) => (
     value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
   );
+
+  const parseCurrencyValue = (value) => {
+    if (typeof value === 'number') return value;
+    return parseInt(String(value || '').replace(/\D/g, ''), 10) || 0;
+  };
+
+  const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
 
   const mapUbicacion = (u) => {
     const idVehiculo = u.idVehiculo || u.idCarro || null;
@@ -327,28 +351,84 @@ function Dashboard({ setView }) {
     }
   };
 
+
   const fetchCatalogo = async () => {
     setLoading(true);
     try {
       const data = await apiFetch('/api/materiales/creados');
-      const mappedData = data.map(m => {
-        const val = m.valor || m.precio || '0';
-        const numericVal = typeof val === 'number' ? val : parseInt(String(val).replace(/\D/g, '')) || 0;
-        return {
-          id: m.idMaterial || m.id,
-          nombre: m.nombre || m.name || 'Sin nombre',
-          tipo: m.tipoMaterial || m.tipo || 'General',
-          valor: `$${numericVal.toLocaleString('es-CL')}`,
-          desechable: m.desechable || false,
-          serializado: toBoolean(m.serializado) || toBoolean(m.esSerializado) || toBoolean(m.esSerializacion),
-          mantencion: m.requiereMantencion || m.mantencion || false
-        };
-      });
+      const mappedData = getArrayPayload(data, ['materiales', 'items']).map(m => ({
+        id: m.idMaterial || m.id,
+        idMaterial: m.idMaterial || m.id,
+        idTipoProducto: m.idTipoProducto,
+        nombre: m.nombre || m.name || 'Sin nombre',
+        descripcion: m.descripcion || '',
+        tipo: m.nombreTipoProducto || m.tipoMaterial || m.tipo || TIPOS_PRODUCTO.find(tipo => tipo.id === Number(m.idTipoProducto))?.nombre || 'General',
+        valor: formatCurrency(m.valorUnitario ?? m.valor ?? m.precio ?? 0),
+        valorUnitario: parseCurrencyValue(m.valorUnitario ?? m.valor ?? m.precio ?? 0),
+        desechable: toBoolean(m.esConsumible) || toBoolean(m.desechable),
+        serializado: toBoolean(m.serializado) || toBoolean(m.esSerializado) || toBoolean(m.esSerializacion),
+        mantencion: toBoolean(m.requiereMantencion) || toBoolean(m.mantencion)
+      })).filter(material => material.id);
       setCatalogo(mappedData);
     } catch (error) {
-      console.error("Error al cargar catálogo:", error);
+      console.error("Error al cargar catalogo:", error);
+      setCatalogo([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetNewMaterialData = () => {
+    setNewMaterialData({
+      idTipoProducto: '',
+      nombre: '',
+      descripcion: '',
+      esConsumible: false,
+      esSerializacion: false,
+      requiereMantencion: false,
+      valorUnitario: ''
+    });
+    setAddMaterialError('');
+  };
+
+  const closeAddMaterialModal = () => {
+    if (savingMaterial) return;
+    setShowAddMaterialModal(false);
+    resetNewMaterialData();
+  };
+
+  const handleCreateMaterial = async (event) => {
+    event.preventDefault();
+    setAddMaterialError('');
+
+    const payload = {
+      idTipoProducto: Number(newMaterialData.idTipoProducto),
+      nombre: newMaterialData.nombre.trim(),
+      descripcion: newMaterialData.descripcion.trim(),
+      esConsumible: Boolean(newMaterialData.esConsumible),
+      esSerializacion: Boolean(newMaterialData.esSerializacion),
+      requiereMantencion: Boolean(newMaterialData.requiereMantencion),
+      valorUnitario: parseCurrencyValue(newMaterialData.valorUnitario)
+    };
+
+    if (!payload.idTipoProducto || !payload.nombre || !payload.descripcion) {
+      setAddMaterialError('Completa tipo, nombre y descripcion para crear el material.');
+      return;
+    }
+
+    setSavingMaterial(true);
+    try {
+      await apiFetch('/api/materiales', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      await fetchCatalogo();
+      setShowAddMaterialModal(false);
+      resetNewMaterialData();
+    } catch (error) {
+      setAddMaterialError(error.message || 'No se pudo crear el material.');
+    } finally {
+      setSavingMaterial(false);
     }
   };
 
@@ -899,7 +979,7 @@ function Dashboard({ setView }) {
                     Importar catalogo
                   </button>
                   <button onClick={() => {
-                    setNewMaterialData({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
+                    resetNewMaterialData();
                     setShowAddMaterialModal(true);
                   }} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
                     <span>+</span> Agregar material
@@ -1803,10 +1883,10 @@ function Dashboard({ setView }) {
 
         {showAddMaterialModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl fade-in">
+            <form onSubmit={handleCreateMaterial} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white rajdhani">Agregar Nuevo Material</h3>
-                <button onClick={() => setShowAddMaterialModal(false)} className="text-text-muted hover:text-white transition-colors">
+                <button type="button" onClick={closeAddMaterialModal} disabled={savingMaterial} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
@@ -1819,86 +1899,96 @@ function Dashboard({ setView }) {
                     className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
                     placeholder="Ej. Esmeril Angular..."
                     value={newMaterialData.nombre}
+                    disabled={savingMaterial}
                     onChange={(e) => setNewMaterialData({...newMaterialData, nombre: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Tipo de material</label>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Tipo de producto</label>
                   <select
-                    value={newMaterialData.tipo}
-                    onChange={(e) => setNewMaterialData({...newMaterialData, tipo: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none"
+                    value={newMaterialData.idTipoProducto}
+                    onChange={(e) => setNewMaterialData({...newMaterialData, idTipoProducto: e.target.value})}
+                    disabled={savingMaterial}
+                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none disabled:opacity-50"
                   >
                     <option value="">Seleccionar tipo...</option>
-                    {Array.from(new Set(catalogo.map(item => item.tipo))).map(tipo => (
-                      <option key={tipo} value={tipo}>{tipo}</option>
+                    {TIPOS_PRODUCTO.map(tipo => (
+                      <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                     ))}
-                    <option value="otro">+ Agregar nuevo tipo...</option>
                   </select>
                 </div>
-                {newMaterialData.tipo === 'otro' && (
-                  <div>
-                    <label className="block text-sm font-medium text-brand-cyan mb-2">Nuevo tipo de material</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2.5 bg-dark-bg border border-brand-cyan/50 rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
-                      placeholder="Ej. Electrónico"
-                      value={newMaterialData.nuevoTipo}
-                      onChange={(e) => setNewMaterialData({...newMaterialData, nuevoTipo: e.target.value})}
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <textarea
+                    rows="3"
+                    className="w-full resize-none px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    placeholder="Ej. Herramienta para corte y desbaste..."
+                    value={newMaterialData.descripcion}
+                    disabled={savingMaterial}
+                    onChange={(e) => setNewMaterialData({...newMaterialData, descripcion: e.target.value})}
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-2">Valor Unitario</label>
                   <input
                     type="text"
                     className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
                     placeholder="Ej. $15.000"
-                    value={newMaterialData.valor}
+                    value={newMaterialData.valorUnitario}
+                    disabled={savingMaterial}
                     onChange={(e) => {
                       let rawValue = e.target.value.replace(/\D/g, '');
                       if (rawValue === '') {
-                        setNewMaterialData({...newMaterialData, valor: ''});
+                        setNewMaterialData({...newMaterialData, valorUnitario: ''});
                       } else {
                         const numValue = parseInt(rawValue, 10);
-                        setNewMaterialData({...newMaterialData, valor: '$' + numValue.toLocaleString('es-CL')});
+                        setNewMaterialData({...newMaterialData, valorUnitario: '$' + numValue.toLocaleString('es-CL')});
                       }
                     }}
                   />
                 </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { key: 'esConsumible', label: 'Consumible' },
+                    { key: 'esSerializacion', label: 'Serializado' },
+                    { key: 'requiereMantencion', label: 'Mantencion' },
+                  ].map(option => (
+                    <label key={option.key} className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main">
+                      <input
+                        type="checkbox"
+                        checked={newMaterialData[option.key]}
+                        disabled={savingMaterial}
+                        onChange={(e) => setNewMaterialData({...newMaterialData, [option.key]: e.target.checked})}
+                        className="h-4 w-4 accent-brand-cyan"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+                {addMaterialError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {addMaterialError}
+                  </p>
+                )}
               </div>
               <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
                 <button
-                  onClick={() => setShowAddMaterialModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors"
+                  type="button"
+                  onClick={closeAddMaterialModal}
+                  disabled={savingMaterial}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => {
-                    const finalTipo = newMaterialData.tipo === 'otro' ? newMaterialData.nuevoTipo.trim() : newMaterialData.tipo;
-                    if (newMaterialData.nombre.trim() && finalTipo) {
-                      const newId = Math.max(0, ...catalogo.map(c => c.id)) + 1;
-                      setCatalogo([{
-                        id: newId,
-                        nombre: newMaterialData.nombre.trim(),
-                        tipo: finalTipo,
-                        valor: newMaterialData.valor || '$0',
-                        desechable: false,
-                        serializado: false,
-                        mantencion: false
-                      }, ...catalogo]);
-                      setShowAddMaterialModal(false);
-                      setNewMaterialData({ nombre: '', tipo: '', nuevoTipo: '', valor: '' });
-                    }
-                  }}
-                  disabled={!newMaterialData.nombre.trim() || (!newMaterialData.tipo) || (newMaterialData.tipo === 'otro' && !newMaterialData.nuevoTipo.trim())}
+                  type="submit"
+                  disabled={savingMaterial || !newMaterialData.nombre.trim() || !newMaterialData.descripcion.trim() || !newMaterialData.idTipoProducto}
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_15px_rgba(232,55,42,0.3)]"
                 >
-                  Agregar Material
+                  {savingMaterial ? 'Guardando...' : 'Agregar Material'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
 
