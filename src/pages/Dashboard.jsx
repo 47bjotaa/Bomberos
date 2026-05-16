@@ -68,6 +68,11 @@ function Dashboard({ setView }) {
   const [newTipoUbicacionData, setNewTipoUbicacionData] = useState({ nombre: '', esTipoRaiz: false });
   const [savingTipoUbicacion, setSavingTipoUbicacion] = useState(false);
   const [addTipoUbicacionError, setAddTipoUbicacionError] = useState('');
+  const [showTipoRelationsModal, setShowTipoRelationsModal] = useState(false);
+  const [createdTipoUbicacion, setCreatedTipoUbicacion] = useState(null);
+  const [selectedTipoPadreIds, setSelectedTipoPadreIds] = useState([]);
+  const [savingTipoRelations, setSavingTipoRelations] = useState(false);
+  const [tipoRelationsError, setTipoRelationsError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -391,9 +396,11 @@ function Dashboard({ setView }) {
         .map(mapTipoUbicacion)
         .filter(tipo => tipo.id);
       setTiposArbolUbicacion(tipos);
+      return tipos;
     } catch (error) {
       setTiposArbolError(error.message || 'No se pudieron cargar los tipos de ubicacion.');
       setTiposArbolUbicacion([]);
+      return [];
     } finally {
       setLoadingTiposArbol(false);
     }
@@ -402,6 +409,9 @@ function Dashboard({ setView }) {
   const openAddTipoUbicacionModal = () => {
     setNewTipoUbicacionData({ nombre: '', esTipoRaiz: false });
     setAddTipoUbicacionError('');
+    setTipoRelationsError('');
+    setCreatedTipoUbicacion(null);
+    setSelectedTipoPadreIds([]);
     setShowAddTipoUbicacionModal(true);
   };
 
@@ -414,6 +424,27 @@ function Dashboard({ setView }) {
 
   const canCreateTipoUbicacion = newTipoUbicacionData.nombre.trim();
 
+  const getTipoFromCreateResponse = (payload) => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+
+    const candidates = [
+      payload,
+      payload.data,
+      payload.result,
+      payload.value,
+      payload.tipoUbicacion,
+      payload.tipo,
+    ];
+
+    const tipo = candidates.find(candidate => (
+      candidate
+      && typeof candidate === 'object'
+      && (candidate.idTipoUbicacion || candidate.idTipo || candidate.id)
+    ));
+
+    return tipo ? mapTipoUbicacion(tipo) : null;
+  };
+
   const handleCreateTipoUbicacion = async (event) => {
     event.preventDefault();
     if (!canCreateTipoUbicacion || savingTipoUbicacion) return;
@@ -422,7 +453,8 @@ function Dashboard({ setView }) {
     setAddTipoUbicacionError('');
 
     try {
-      await apiFetch('/api/tipoubicaciones', {
+      const previousTipoIds = new Set(tiposArbolUbicacion.map(tipo => String(tipo.id)));
+      const response = await apiFetch('/api/tipoubicaciones', {
         method: 'POST',
         body: JSON.stringify({
           nombre: newTipoUbicacionData.nombre.trim(),
@@ -430,12 +462,76 @@ function Dashboard({ setView }) {
         }),
       });
 
+      const updatedTipos = await fetchTiposArbolUbicacion();
+      const createdFromResponse = getTipoFromCreateResponse(response);
+      const createdFromList = updatedTipos.find(tipo => (
+        !previousTipoIds.has(String(tipo.id))
+        && tipo.nombre.toLowerCase() === newTipoUbicacionData.nombre.trim().toLowerCase()
+      )) || updatedTipos.find(tipo => (
+        tipo.nombre.toLowerCase() === newTipoUbicacionData.nombre.trim().toLowerCase()
+        && tipo.esTipoRaiz === Boolean(newTipoUbicacionData.esTipoRaiz)
+      ));
+      const nextCreatedTipo = createdFromResponse?.id ? createdFromResponse : createdFromList;
+
+      if (!nextCreatedTipo?.id) {
+        throw new Error('El tipo fue creado, pero no se pudo identificar su ID para crear relaciones.');
+      }
+
+      setCreatedTipoUbicacion(nextCreatedTipo);
+      setSelectedTipoPadreIds([]);
+      setTipoRelationsError('');
       setShowAddTipoUbicacionModal(false);
-      await fetchTiposArbolUbicacion();
+      setShowTipoRelationsModal(true);
     } catch (error) {
       setAddTipoUbicacionError(error.message || 'No se pudo crear el tipo de ubicacion.');
     } finally {
       setSavingTipoUbicacion(false);
+    }
+  };
+
+  const toggleTipoPadreSelection = (tipoId) => {
+    setSelectedTipoPadreIds(prev => (
+      prev.includes(tipoId)
+        ? prev.filter(id => id !== tipoId)
+        : [...prev, tipoId]
+    ));
+  };
+
+  const closeTipoRelationsModal = () => {
+    if (savingTipoRelations) return;
+
+    setShowTipoRelationsModal(false);
+    setTipoRelationsError('');
+    setCreatedTipoUbicacion(null);
+    setSelectedTipoPadreIds([]);
+  };
+
+  const handleCreateTipoRelations = async (event) => {
+    event.preventDefault();
+    if (!createdTipoUbicacion?.id || savingTipoRelations || selectedTipoPadreIds.length === 0) return;
+
+    setSavingTipoRelations(true);
+    setTipoRelationsError('');
+
+    try {
+      const selectedTipos = tiposArbolUbicacion.filter(tipo => selectedTipoPadreIds.includes(tipo.id));
+      await Promise.all(selectedTipos.map(tipoPadre => apiFetch('/api/relaciontipoubicaciones', {
+        method: 'POST',
+        body: JSON.stringify({
+          idCompania: Number(tipoPadre.idCompania || createdTipoUbicacion.idCompania || 0),
+          idTipoUbicacionPadre: Number(tipoPadre.id),
+          idTipoUbicacionHijo: Number(createdTipoUbicacion.id),
+        }),
+      })));
+
+      setShowTipoRelationsModal(false);
+      setTipoRelationsError('');
+      setCreatedTipoUbicacion(null);
+      setSelectedTipoPadreIds([]);
+    } catch (error) {
+      setTipoRelationsError(error.message || 'No se pudieron crear las relaciones del tipo de ubicacion.');
+    } finally {
+      setSavingTipoRelations(false);
     }
   };
 
@@ -1219,7 +1315,81 @@ function Dashboard({ setView }) {
                   disabled={!canCreateTipoUbicacion || savingTipoUbicacion}
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Crear Tipo
+                  {savingTipoUbicacion ? 'Creando...' : 'Siguiente'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showTipoRelationsModal && createdTipoUbicacion && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleCreateTipoRelations} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-white rajdhani">Relacionar Tipo de Ubicacion</h3>
+                  <p className="mt-1 text-xs text-text-muted">Tipo creado: {createdTipoUbicacion.nombre}</p>
+                </div>
+                <button type="button" onClick={closeTipoRelationsModal} disabled={savingTipoRelations} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Que tipos pueden contener este tipo?</p>
+                  <p className="mt-1 text-xs text-text-muted">Se creara una relacion por cada tipo seleccionado.</p>
+                </div>
+
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {tiposArbolUbicacion.filter(tipo => String(tipo.id) !== String(createdTipoUbicacion.id)).map(tipo => {
+                    const isSelected = selectedTipoPadreIds.includes(tipo.id);
+                    return (
+                      <button
+                        key={tipo.id}
+                        type="button"
+                        onClick={() => toggleTipoPadreSelection(tipo.id)}
+                        disabled={savingTipoRelations}
+                        className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-3 text-left transition-colors disabled:opacity-50 ${isSelected ? 'border-brand-cyan/40 bg-brand-cyan/10' : 'border-dark-border bg-dark-bg hover:border-brand-cyan/30'}`}
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold text-white">{tipo.nombre}</span>
+                          <span className="block text-xs text-text-muted">{tipo.esTipoRaiz ? 'Tipo raiz' : 'Sububicacion'}{tipo.idCompania ? ` - Compania ${tipo.idCompania}` : ''}</span>
+                        </span>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded border ${isSelected ? 'border-brand-cyan bg-brand-cyan text-dark-bg' : 'border-dark-border bg-dark-bg3'}`}>
+                          {isSelected && <span className="text-xs font-bold">+</span>}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {tiposArbolUbicacion.filter(tipo => String(tipo.id) !== String(createdTipoUbicacion.id)).length === 0 && (
+                  <p className="rounded-lg border border-dark-border bg-dark-bg px-3 py-3 text-sm text-text-muted">
+                    No hay otros tipos disponibles para relacionar.
+                  </p>
+                )}
+
+                {tipoRelationsError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {tipoRelationsError}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeTipoRelationsModal}
+                  disabled={savingTipoRelations}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Omitir
+                </button>
+                <button
+                  type="submit"
+                  disabled={selectedTipoPadreIds.length === 0 || savingTipoRelations}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingTipoRelations ? 'Guardando...' : 'Guardar relaciones'}
                 </button>
               </div>
             </form>
