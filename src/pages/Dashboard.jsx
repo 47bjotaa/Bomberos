@@ -145,6 +145,12 @@ function Dashboard({ setView }) {
     }
   }, [activeTab, inventoryView]);
 
+  useEffect(() => {
+    if (activeTab === 'bodegas' && inventoryView === 'catalogo') {
+      fetchCatalogo();
+    }
+  }, [activeTab, inventoryView]);
+
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
 
@@ -464,6 +470,7 @@ function Dashboard({ setView }) {
     { id: 'ubicaciones', label: 'Ubicaciones Principales' },
     { id: 'arbol', label: 'Arbol de Ubicaciones' },
     { id: 'stocks', label: 'Stocks Minimos' },
+    { id: 'catalogo', label: 'Catalogo' },
   ];
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
@@ -891,9 +898,6 @@ function Dashboard({ setView }) {
           <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
           </button>
-          <button onClick={() => selectDashboardTab('catalogo')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'catalogo' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Traceability /> <span className="hidden lg:inline">Catálogo</span>
-          </button>
           <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
@@ -944,7 +948,7 @@ function Dashboard({ setView }) {
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
-                {activeTab === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : <Icons.Inventory />}
+                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
                 {activeTab === 'bodegas' ? (
@@ -972,7 +976,7 @@ function Dashboard({ setView }) {
               {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
                 <button onClick={openAddUbicacionModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
               )}
-              {activeTab === 'catalogo' && (
+              {activeTab === 'bodegas' && inventoryView === 'catalogo' && (
                 <>
                   <button className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
@@ -1278,7 +1282,7 @@ function Dashboard({ setView }) {
               </div>
             </div>
           )}
-          {!materialDetailRoute && activeTab === 'catalogo' && (
+          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'catalogo' && (
             <div className="p-8">
               <div className="flex gap-4 mb-6">
                 <div className="flex-1 relative">
