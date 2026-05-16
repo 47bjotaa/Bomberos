@@ -120,7 +120,7 @@ function AssignEppModal({ onClose, onAssign }) {
           idBombero: Number(selectedBombero.id),
           idItem: Number(item.idItem),
           fechaInicio: now,
-          fechaFin: now,
+          fechaFin: null,
         }),
       })));
 
