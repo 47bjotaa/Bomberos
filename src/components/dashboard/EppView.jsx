@@ -295,49 +295,17 @@ function EppView({ eppData, setEppData }) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        {isEditing ? (
-                          <>
-                            <button
-                              onClick={() => setConfirmEppAction({ type: 'edit', item: editEppData })}
-                              className="text-brand-green hover:opacity-80 transition-opacity"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                            </button>
-                            <button
-                              onClick={() => setEditingEppId(null)}
-                              className="text-brand-red hover:opacity-80 transition-opacity"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                          </>
+                        {activeEppTab === 'asignados' && isAssigned(item) ? (
+                          <button
+                            onClick={() => handleUnassign(item)}
+                            disabled={unassigningEppId === item.id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM3 21a6 6 0 0112 0M16 11h6"></path></svg>
+                            {unassigningEppId === item.id ? 'Desasignando...' : 'Desasignar'}
+                          </button>
                         ) : (
-                          <>
-                            {activeEppTab === 'asignados' && isAssigned(item) && (
-                              <button
-                                onClick={() => handleUnassign(item)}
-                                disabled={unassigningEppId === item.id}
-                                title="Desasignar EPP"
-                                className="text-text-muted hover:text-brand-red transition-colors disabled:opacity-50"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM3 21a6 6 0 0112 0M16 11h6"></path></svg>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => {
-                                setEditingEppId(item.id);
-                                setEditEppData({ ...item });
-                              }}
-                              className="text-text-muted hover:text-brand-cyan transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            </button>
-                            <button
-                              onClick={() => setConfirmEppAction({ type: 'delete', item })}
-                              className="text-text-muted hover:text-brand-red transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                          </>
+                          <span className="text-xs text-text-muted">-</span>
                         )}
                       </div>
                     </td>
