@@ -38,6 +38,17 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
     nombrePadre: ubicacion.nombrePadre
   });
 
+  const normalizeText = (value = '') => value
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  const isVehiculoLocation = (ubicacion) => (
+    [ubicacion?.nombreTipo, ubicacion?.name].some(value => normalizeText(value).includes('vehiculo'))
+  );
+
   useEffect(() => {
     const fetchUbicaciones = async () => {
       setLoading(true);
@@ -56,9 +67,19 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
     fetchUbicaciones();
   }, []);
 
+  const canUseGeneralAsTarget = selectedGeneral && !isVehiculoLocation(selectedGeneral);
+  const targetOptions = useMemo(() => {
+    if (!selectedGeneral) return [];
+
+    const options = canUseGeneralAsTarget
+      ? [{ ...selectedGeneral, isGeneralTarget: true }, ...subUbicaciones]
+      : subUbicaciones;
+
+    return options.filter(ubi => ubi.id);
+  }, [canUseGeneralAsTarget, selectedGeneral, subUbicaciones]);
   const selectedTarget = useMemo(() => (
-    subUbicaciones.find(ubi => String(ubi.id) === String(selectedTargetId)) || null
-  ), [subUbicaciones, selectedTargetId]);
+    targetOptions.find(ubi => String(ubi.id) === String(selectedTargetId)) || null
+  ), [targetOptions, selectedTargetId]);
 
   const targetName = selectedTarget?.name || '';
   const originId = material?.idUbicacion || origen?.id;
@@ -193,17 +214,17 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
               </div>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-text-main">Ubicacion hija objetivo</span>
+                <span className="mb-2 block text-sm font-medium text-text-main">Ubicacion objetivo</span>
                 <select
                   value={selectedTargetId}
-                  disabled={loadingHijas || subUbicaciones.length === 0}
+                  disabled={loadingHijas || targetOptions.length === 0}
                   onChange={(event) => setSelectedTargetId(event.target.value)}
                   className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-50 focus:border-brand-cyan"
                 >
-                  <option value="">{loadingHijas ? 'Cargando...' : 'Seleccionar ubicacion hija...'}</option>
-                  {subUbicaciones.map(ubicacion => (
+                  <option value="">{loadingHijas ? 'Cargando...' : 'Seleccionar ubicacion...'}</option>
+                  {targetOptions.map(ubicacion => (
                     <option key={ubicacion.id} value={ubicacion.id} disabled={originId && String(ubicacion.id) === String(originId)}>
-                      {ubicacion.name}{originId && String(ubicacion.id) === String(originId) ? ' (ubicacion actual)' : ''}
+                      {ubicacion.name}{ubicacion.isGeneralTarget ? ' (ubicacion general)' : ''}{originId && String(ubicacion.id) === String(originId) ? ' (ubicacion actual)' : ''}
                     </option>
                   ))}
                 </select>
@@ -215,9 +236,9 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
                 </div>
               )}
 
-              {subUbicaciones.length === 0 && !loadingHijas && (
+              {targetOptions.length === 0 && !loadingHijas && (
                 <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">
-                  Esta ubicacion no tiene ubicaciones hijas disponibles para mover el material.
+                  Esta ubicacion no tiene destinos disponibles para mover el material.
                 </div>
               )}
 
