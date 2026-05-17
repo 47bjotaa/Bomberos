@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
+import MaterialDetailView from './MaterialDetailView';
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
@@ -154,6 +155,18 @@ function EppDetailView({ itemId, onBack }) {
                 </div>
               </dl>
             </div>
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface">
+            <div className="border-b border-dark-border bg-dark-bg2 px-5 py-4">
+              <h3 className="rajdhani text-xl font-bold text-white">Observaciones y mantenciones</h3>
+              <p className="mt-1 text-sm text-text-muted">Gestiona el historial del item conservando las funciones del detalle general.</p>
+            </div>
+            <MaterialDetailView
+              route={{ type: 'item', id: itemId, fallback: detail }}
+              onBack={onBack}
+              embedded
+            />
           </section>
         </div>
       )}

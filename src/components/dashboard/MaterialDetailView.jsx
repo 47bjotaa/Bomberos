@@ -191,7 +191,7 @@ function EmptyState({ children, palette }) {
   );
 }
 
-function MaterialDetailView({ route, onBack, onRemoved }) {
+function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
   const [detail, setDetail] = useState(null);
@@ -954,34 +954,36 @@ function MaterialDetailView({ route, onBack, onRemoved }) {
   };
 
   return (
-    <section className="themed-ui h-full overflow-y-auto" style={{ background: palette.isLight ? '#FFFFFF' : palette.bg, color: palette.text }}>
+    <section className={`themed-ui ${embedded ? '' : 'h-full overflow-y-auto'}`} style={{ background: palette.isLight ? '#FFFFFF' : palette.bg, color: palette.text }}>
       <div className="mx-auto max-w-7xl px-6 py-5">
-        <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: palette.border }}>
-          <div className="flex min-w-0 items-center gap-4">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 border-r pr-4 text-sm font-medium transition-colors hover:text-brand-cyan"
-              style={{ borderColor: palette.border, color: palette.muted }}
-            >
-              <span className="text-lg leading-none">&larr;</span>
-              Volver
-            </button>
-            <h2 className="truncate text-lg font-bold" style={{ color: palette.text }}>Detalle del Item</h2>
+        {!embedded && (
+          <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: palette.border }}>
+            <div className="flex min-w-0 items-center gap-4">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 border-r pr-4 text-sm font-medium transition-colors hover:text-brand-cyan"
+                style={{ borderColor: palette.border, color: palette.muted }}
+              >
+                <span className="text-lg leading-none">&larr;</span>
+                Volver
+              </button>
+              <h2 className="truncate text-lg font-bold" style={{ color: palette.text }}>Detalle del Item</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openDeactivateModal}
+                disabled={loading || Boolean(error)}
+                className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                type="button"
+              >
+                <span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">
+                  <Icons.AlertTriangle />
+                </span>
+                Dar de baja
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={openDeactivateModal}
-              disabled={loading || Boolean(error)}
-              className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              type="button"
-            >
-              <span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">
-                <Icons.AlertTriangle />
-              </span>
-              Dar de baja
-            </button>
-          </div>
-        </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">

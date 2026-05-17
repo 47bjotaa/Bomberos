@@ -321,19 +321,17 @@ function EppView({ eppData, setEppData }) {
               ) : filteredData.length > 0 ? filteredData.map(item => {
                 const isEditing = editingEppId === item.id;
                 return (
-                  <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
+                  <tr
+                    key={item.id}
+                    onClick={() => setSelectedEppDetailId(item.idItem || item.id)}
+                    className="group cursor-pointer hover:bg-dark-bg3 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-text-muted border border-dark-border shadow-[0_0_10px_rgba(0,0,0,0.2)]">
                           <Icons.Shield className="w-4 h-4" />
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedEppDetailId(item.idItem || item.id)}
-                          className="font-medium text-white transition-colors hover:text-brand-cyan"
-                        >
-                          {item.equipo}
-                        </button>
+                        <span className="font-medium text-white transition-colors group-hover:text-brand-cyan">{item.equipo}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-text-muted font-mono text-xs">{item.codigo}</td>
@@ -369,7 +367,10 @@ function EppView({ eppData, setEppData }) {
                       <div className="flex items-center justify-end gap-3">
                         {activeEppTab === 'asignados' && isAssigned(item) ? (
                           <button
-                            onClick={() => handleUnassign(item)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleUnassign(item);
+                            }}
                             disabled={unassigningEppId === item.id}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:opacity-50"
                           >
@@ -378,7 +379,10 @@ function EppView({ eppData, setEppData }) {
                           </button>
                         ) : activeEppTab === 'no-asignados' && !isAssigned(item) ? (
                           <button
-                            onClick={() => openDecommissionModal(item)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openDecommissionModal(item);
+                            }}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
