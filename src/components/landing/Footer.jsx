@@ -11,8 +11,8 @@ function Footer() {
           <p className="footer-slogan">Transformando la infraestructura digital para un futuro escalable.</p>
         </div>
         <div className="footer-credits">
-          Desarrollado para 1ª Cía. Bomberos Coquimbo<br />
-          © 2026 SYNETIX · Ingeniería en Informática · Santo Tomás Coquimbo
+          Desarrollado para 1a Cia. Bomberos Coquimbo<br />
+          © 2026 Cuartel Amigo
         </div>
       </div>
     </footer>
