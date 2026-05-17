@@ -41,6 +41,11 @@ function Dashboard({ setView }) {
   const [inventoryView, setInventoryView] = useState('ubicaciones');
   const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
+  const [markingNotificationId, setMarkingNotificationId] = useState(null);
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -147,6 +152,13 @@ function Dashboard({ setView }) {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+
+    const intervalId = window.setInterval(fetchNotifications, 60000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -323,6 +335,21 @@ function Dashboard({ setView }) {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      timeZone: 'America/Santiago',
+    }).format(date);
+  };
+
+  const formatDateTimeChile = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
       timeZone: 'America/Santiago',
     }).format(date);
   };
@@ -518,6 +545,7 @@ function Dashboard({ setView }) {
   const selectDashboardTab = (tab) => {
     setActiveTab(tab);
     setMaterialDetailRoute(null);
+    setShowNotificationsMenu(false);
 
     if (window.location.pathname.startsWith('/dashboard/materiales/')) {
       window.history.pushState({}, '', '/dashboard');
@@ -548,6 +576,41 @@ function Dashboard({ setView }) {
       setCatalogo([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    setNotificationsError('');
+
+    try {
+      const data = await apiFetch('/api/notificaciones?leida=false');
+      setNotifications(getArrayPayload(data));
+    } catch (error) {
+      console.error('Error al cargar notificaciones:', error);
+      setNotificationsError(error.message || 'No se pudieron cargar las notificaciones.');
+      setNotifications([]);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const markNotificationAsRead = async (notification) => {
+    if (!notification?.idNotificacion || markingNotificationId) return;
+
+    setMarkingNotificationId(notification.idNotificacion);
+    setNotificationsError('');
+
+    try {
+      await apiFetch(`/api/notificaciones/${notification.idNotificacion}/leer`, {
+        method: 'PATCH',
+      });
+      setNotifications(prev => prev.filter(item => item.idNotificacion !== notification.idNotificacion));
+    } catch (error) {
+      console.error('Error al marcar notificacion como leida:', error);
+      setNotificationsError(error.message || 'No se pudo marcar la notificacion como leida.');
+    } finally {
+      setMarkingNotificationId(null);
     }
   };
 
@@ -1204,10 +1267,91 @@ function Dashboard({ setView }) {
           >
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
           </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowNotificationsMenu(prev => !prev);
+                setShowProfileMenu(false);
+                if (!showNotificationsMenu) {
+                  fetchNotifications();
+                }
+              }}
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
+              title="Notificaciones"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"></path></svg>
+              {notifications.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-dark-surface bg-brand-red px-1 text-[10px] font-bold text-white">
+                  {notifications.length > 9 ? '9+' : notifications.length}
+                </span>
+              )}
+            </button>
+
+            {showNotificationsMenu && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-96 overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+                <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-4 py-3">
+                  <div>
+                    <p className="rajdhani text-base font-bold text-white">Notificaciones</p>
+                    <p className="text-xs text-text-muted">{notifications.length} sin leer</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchNotifications}
+                    disabled={loadingNotifications}
+                    className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white disabled:opacity-50"
+                  >
+                    Actualizar
+                  </button>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
+                  {loadingNotifications ? (
+                    <div className="px-4 py-8 text-center text-sm text-text-muted">Cargando notificaciones...</div>
+                  ) : notificationsError ? (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm font-semibold text-brand-red">{notificationsError}</p>
+                    </div>
+                  ) : notifications.length > 0 ? notifications.map(notification => (
+                    <div key={notification.idNotificacion} className="border-b border-dark-border px-4 py-3 last:border-b-0">
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-white">{notification.titulo}</p>
+                          <p className="mt-1 text-xs text-text-muted">{notification.mensaje}</p>
+                        </div>
+                        <span className="shrink-0 rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-semibold text-brand-cyan">
+                          {notification.tipo}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-text-muted">{formatDateTimeChile(notification.fechaCreacion)}</span>
+                        <button
+                          type="button"
+                          onClick={() => markNotificationAsRead(notification)}
+                          disabled={markingNotificationId === notification.idNotificacion}
+                          className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-brand-green/40 hover:text-brand-green disabled:opacity-50"
+                        >
+                          {markingNotificationId === notification.idNotificacion ? 'Marcando...' : 'Marcar leida'}
+                        </button>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-10 text-center text-sm text-text-muted">
+                      No tienes notificaciones sin leer.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           
           <div
             className="flex items-center gap-3 cursor-pointer hover:bg-dark-bg3 p-1.5 rounded-lg transition-colors"
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            onClick={() => {
+              setShowProfileMenu(!showProfileMenu);
+              setShowNotificationsMenu(false);
+            }}
           >
             <div className="text-right hidden md:block">
               <div className="text-sm font-semibold" style={{ color: palette.text }}>Nicolás C.</div>
@@ -1234,7 +1378,10 @@ function Dashboard({ setView }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-dark-bg relative" onClick={() => showProfileMenu && setShowProfileMenu(false)}>
+      <main className="flex-1 flex flex-col overflow-hidden bg-dark-bg relative" onClick={() => {
+        if (showProfileMenu) setShowProfileMenu(false);
+        if (showNotificationsMenu) setShowNotificationsMenu(false);
+      }}>
         {/* Sub Header (Actions specific to active tab) */}
         {activeTab !== 'vehiculos' && !materialDetailRoute && (
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
