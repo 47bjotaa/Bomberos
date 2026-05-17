@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
-import MaterialDetailView from './MaterialDetailView';
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
@@ -15,6 +14,88 @@ const formatDate = (value) => {
     timeZone: 'America/Santiago',
   }).format(date);
 };
+
+const getChileDateTime = () => {
+  const date = new Date();
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date).replace(' ', 'T');
+};
+
+const getArrayPayload = (payload, keys = []) => {
+  if (Array.isArray(payload)) return payload;
+
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (payload?.data && typeof payload.data === 'object') return getArrayPayload(payload.data, keys);
+  if (payload?.result && typeof payload.result === 'object') return getArrayPayload(payload.result, keys);
+
+  return [];
+};
+
+const getObservationId = (payload) => {
+  if (!payload) return null;
+  if (typeof payload === 'number' || typeof payload === 'string') return payload;
+  return payload.idObservacion || payload.id || payload.data?.idObservacion || payload.data?.id || payload.result?.idObservacion || payload.result?.id || null;
+};
+
+const getMaintenanceId = (payload) => {
+  if (!payload) return null;
+  if (typeof payload === 'number' || typeof payload === 'string') return payload;
+  return payload.idMantencion || payload.id || payload.data?.idMantencion || payload.data?.id || payload.result?.idMantencion || payload.result?.id || null;
+};
+
+const getImageFileId = (image) => {
+  if (typeof image === 'number' || typeof image === 'string') return image;
+  return image?.idArchivo || image?.id || null;
+};
+
+const getTemporaryImageUrl = (payload) => {
+  if (typeof payload === 'string') return payload;
+  return payload?.url || payload?.data?.url || '';
+};
+
+const getQueryString = (params) => {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value));
+    }
+  });
+  return searchParams.toString();
+};
+
+const isImageFile = (file) => {
+  const contentType = file?.contentType || file?.file?.type || '';
+  const name = file?.nombre || file?.nombreOriginal || file?.file?.name || '';
+  return contentType.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name);
+};
+
+const isMaintenancePending = (maintenance) => (
+  String(maintenance?.estadoMantencion || '').toLowerCase().includes('pendiente')
+  || String(maintenance?.estadoMantencion || '').toLowerCase().includes('programada')
+);
+
+const sortMaintenances = (maintenances = []) => (
+  [...maintenances].sort((a, b) => {
+    const aPending = isMaintenancePending(a);
+    const bPending = isMaintenancePending(b);
+    if (aPending !== bPending) return aPending ? -1 : 1;
+    return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
+  })
+);
 
 function DetailCard({ label, value, tone = 'default' }) {
   const toneClass = tone === 'cyan'
@@ -31,10 +112,151 @@ function DetailCard({ label, value, tone = 'default' }) {
   );
 }
 
+function EmptyState({ children }) {
+  return (
+    <div className="rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
+      {children}
+    </div>
+  );
+}
+
+function Modal({ title, subtitle, children, footer, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+            {subtitle && <p className="mt-0.5 truncate text-xs text-text-muted">{subtitle}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red"
+          >
+            x
+          </button>
+        </div>
+        <div className="max-h-[calc(90vh-140px)] overflow-y-auto p-6">{children}</div>
+        {footer && (
+          <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EppDetailView({ itemId, onBack }) {
   const [detail, setDetail] = useState(null);
+  const [history, setHistory] = useState({ observaciones: [], mantenciones: [], requiereMantencion: true });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [materialImages, setMaterialImages] = useState([]);
+  const [loadingMaterialImages, setLoadingMaterialImages] = useState(false);
+  const [materialImagesError, setMaterialImagesError] = useState('');
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageUploads, setImageUploads] = useState([]);
+  const [imageSaving, setImageSaving] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState('');
+
+  const [showObservationForm, setShowObservationForm] = useState(false);
+  const [observationText, setObservationText] = useState('');
+  const [observationImages, setObservationImages] = useState([]);
+  const [observationSaving, setObservationSaving] = useState(false);
+  const [observationError, setObservationError] = useState('');
+  const [observationNotice, setObservationNotice] = useState('');
+  const [selectedObservation, setSelectedObservation] = useState(null);
+  const [observationDetailImages, setObservationDetailImages] = useState([]);
+  const [loadingObservationImages, setLoadingObservationImages] = useState(false);
+  const [observationImagesError, setObservationImagesError] = useState('');
+
+  const [maintenanceModalMode, setMaintenanceModalMode] = useState(null);
+  const [maintenanceForm, setMaintenanceForm] = useState({ fecha: '', descripcion: '', tipo: '' });
+  const [maintenanceFiles, setMaintenanceFiles] = useState([]);
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState('');
+  const [maintenanceNotice, setMaintenanceNotice] = useState('');
+  const [markingMaintenanceId, setMarkingMaintenanceId] = useState(null);
+  const [selectedMaintenance, setSelectedMaintenance] = useState(null);
+  const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
+  const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
+  const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
+
+  const imageUploadsRef = useRef([]);
+  const observationImagesRef = useRef([]);
+  const maintenanceFilesRef = useRef([]);
+
+  const targetIds = useMemo(() => ({ idItem: Number(itemId || detail?.idItem || 0) }), [detail?.idItem, itemId]);
+  const targetQuery = useMemo(() => getQueryString(targetIds), [targetIds]);
+  const materialImageBasePath = useMemo(() => (
+    itemId ? `/api/materiales/items/${itemId}/imagenes` : ''
+  ), [itemId]);
+  const sortedMaintenances = useMemo(() => sortMaintenances(history.mantenciones), [history.mantenciones]);
+  const primaryImage = materialImages[0] || null;
+
+  const resetImageDraft = useCallback(() => {
+    setShowImageModal(false);
+    imageUploads.forEach((image) => URL.revokeObjectURL(image.preview));
+    setImageUploads([]);
+    setImageUploadError('');
+  }, [imageUploads]);
+
+  const resetObservationDraft = useCallback(() => {
+    setShowObservationForm(false);
+    setObservationText('');
+    observationImages.forEach((image) => URL.revokeObjectURL(image.preview));
+    setObservationImages([]);
+    setObservationError('');
+  }, [observationImages]);
+
+  const resetMaintenanceDraft = useCallback(() => {
+    setMaintenanceModalMode(null);
+    setMaintenanceForm({ fecha: '', descripcion: '', tipo: '' });
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
+    setMaintenanceError('');
+  }, [maintenanceFiles]);
+
+  const fetchMaterialImages = useCallback(async () => {
+    if (!materialImageBasePath) return;
+
+    setLoadingMaterialImages(true);
+    setMaterialImagesError('');
+
+    try {
+      const payload = await apiFetch(materialImageBasePath);
+      const imageList = getArrayPayload(payload, ['imagenes', 'archivos', 'files']);
+      const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
+        const idArchivo = getImageFileId(image);
+        if (!idArchivo) return null;
+        const urlPayload = await apiFetch(`${materialImageBasePath}/${idArchivo}/url`);
+        const url = getTemporaryImageUrl(urlPayload);
+        return {
+          idArchivo,
+          nombre: image?.nombreOriginal || image?.nombre || `Imagen ${idArchivo}`,
+          contentType: image?.contentType || '',
+          fechaSubida: image?.fechaSubida || '',
+          url,
+        };
+      }));
+
+      setMaterialImages(imagesWithUrls.filter((image) => image?.url));
+    } catch (fetchError) {
+      setMaterialImages([]);
+      setMaterialImagesError(fetchError.message || 'No se pudieron cargar las fotos.');
+    } finally {
+      setLoadingMaterialImages(false);
+    }
+  }, [materialImageBasePath]);
 
   useEffect(() => {
     let ignore = false;
@@ -50,9 +272,18 @@ function EppDetailView({ itemId, onBack }) {
       setError('');
 
       try {
-        const data = await apiFetch(`/api/materiales/items/${itemId}/detalle-epp`);
+        const [eppData, generalData] = await Promise.all([
+          apiFetch(`/api/materiales/items/${itemId}/detalle-epp`),
+          apiFetch(`/api/materiales/items/${itemId}`).catch(() => null),
+        ]);
+
         if (!ignore) {
-          setDetail(data);
+          setDetail(eppData);
+          setHistory({
+            observaciones: Array.isArray(generalData?.observaciones) ? generalData.observaciones : [],
+            mantenciones: Array.isArray(generalData?.mantenciones) ? generalData.mantenciones : [],
+            requiereMantencion: generalData?.requiereMantencion !== false,
+          });
         }
       } catch (fetchError) {
         console.error('Error al cargar detalle EPP:', fetchError);
@@ -72,6 +303,373 @@ function EppDetailView({ itemId, onBack }) {
       ignore = true;
     };
   }, [itemId]);
+
+  useEffect(() => {
+    if (!loading && !error) fetchMaterialImages();
+  }, [error, fetchMaterialImages, loading]);
+
+  useEffect(() => {
+    imageUploadsRef.current = imageUploads;
+  }, [imageUploads]);
+
+  useEffect(() => {
+    observationImagesRef.current = observationImages;
+  }, [observationImages]);
+
+  useEffect(() => {
+    maintenanceFilesRef.current = maintenanceFiles;
+  }, [maintenanceFiles]);
+
+  useEffect(() => () => {
+    imageUploadsRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
+    observationImagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
+    maintenanceFilesRef.current.forEach((file) => URL.revokeObjectURL(file.preview));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedObservation) return;
+
+    let mounted = true;
+    const idObservacion = getObservationId(selectedObservation);
+
+    const fetchObservationImages = async () => {
+      if (!idObservacion) {
+        setObservationDetailImages([]);
+        return;
+      }
+
+      setLoadingObservationImages(true);
+      setObservationImagesError('');
+      setObservationDetailImages([]);
+
+      try {
+        const payload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${targetQuery}`);
+        const imageList = getArrayPayload(payload, ['imagenes', 'archivos', 'files']);
+        const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
+          const idArchivo = getImageFileId(image);
+          if (!idArchivo) return null;
+          const urlPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes/${idArchivo}/url?${targetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+          return {
+            idArchivo,
+            nombre: image?.nombreOriginal || image?.nombre || `Imagen ${idArchivo}`,
+            contentType: image?.contentType || '',
+            fechaSubida: image?.fechaSubida || '',
+            url,
+          };
+        }));
+
+        if (mounted) setObservationDetailImages(imagesWithUrls.filter((image) => image?.url));
+      } catch (fetchError) {
+        if (mounted) setObservationImagesError(fetchError.message || 'No se pudieron cargar las imagenes.');
+      } finally {
+        if (mounted) setLoadingObservationImages(false);
+      }
+    };
+
+    fetchObservationImages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedObservation, targetQuery]);
+
+  useEffect(() => {
+    if (!selectedMaintenance) return;
+
+    let mounted = true;
+    const idMantencion = getMaintenanceId(selectedMaintenance);
+
+    const fetchMaintenanceFiles = async () => {
+      if (!idMantencion) {
+        setMaintenanceDetailFiles([]);
+        return;
+      }
+
+      setLoadingMaintenanceFiles(true);
+      setMaintenanceFilesError('');
+      setMaintenanceDetailFiles([]);
+
+      try {
+        const payload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos?${targetQuery}`);
+        const fileList = getArrayPayload(payload, ['archivos', 'imagenes', 'files']);
+        const filesWithUrls = await Promise.all(fileList.map(async (file) => {
+          const idArchivo = getImageFileId(file);
+          if (!idArchivo) return null;
+          const urlPayload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos/${idArchivo}/url?${targetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+          return {
+            idArchivo,
+            nombre: file?.nombreOriginal || file?.nombre || `Archivo ${idArchivo}`,
+            contentType: file?.contentType || '',
+            fechaSubida: file?.fechaSubida || '',
+            url,
+          };
+        }));
+
+        if (mounted) setMaintenanceDetailFiles(filesWithUrls.filter((file) => file?.url));
+      } catch (fetchError) {
+        if (mounted) setMaintenanceFilesError(fetchError.message || 'No se pudieron cargar los archivos.');
+      } finally {
+        if (mounted) setLoadingMaintenanceFiles(false);
+      }
+    };
+
+    fetchMaintenanceFiles();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedMaintenance, targetQuery]);
+
+  const handleImageChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setImageUploads((current) => [
+      ...current,
+      ...selectedFiles.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
+    setImageUploadError('');
+    event.target.value = '';
+  };
+
+  const handleObservationImageChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setObservationImages((current) => {
+      const availableSlots = Math.max(0, 3 - current.length);
+      const nextFiles = selectedFiles.slice(0, availableSlots).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+
+      if (selectedFiles.length > availableSlots) {
+        setObservationError('Solo puedes subir hasta 3 imagenes por observacion.');
+      } else {
+        setObservationError('');
+      }
+
+      return [...current, ...nextFiles];
+    });
+    event.target.value = '';
+  };
+
+  const handleMaintenanceFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setMaintenanceFiles((current) => [
+      ...current,
+      ...selectedFiles.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
+    event.target.value = '';
+  };
+
+  const removeDraftFile = (setter, indexToRemove) => {
+    setter((current) => {
+      const fileToRemove = current[indexToRemove];
+      if (fileToRemove) URL.revokeObjectURL(fileToRemove.preview);
+      return current.filter((_, index) => index !== indexToRemove);
+    });
+  };
+
+  const handleUploadImages = async (event) => {
+    event.preventDefault();
+    if (imageUploads.length === 0 || !materialImageBasePath) return;
+
+    setImageSaving(true);
+    setImageUploadError('');
+
+    try {
+      await Promise.all(imageUploads.map(({ file }) => {
+        const formData = new FormData();
+        formData.append('archivo', file);
+        return apiFetch(materialImageBasePath, { method: 'POST', body: formData });
+      }));
+
+      resetImageDraft();
+      await fetchMaterialImages();
+    } catch (saveError) {
+      setImageUploadError(saveError.message || 'No se pudieron subir las fotos.');
+    } finally {
+      setImageSaving(false);
+    }
+  };
+
+  const handleCreateObservation = async (event) => {
+    event.preventDefault();
+    const trimmedObservation = observationText.trim();
+    if (!trimmedObservation) return;
+
+    const payload = {
+      ...targetIds,
+      observacion: trimmedObservation,
+      fecha: getChileDateTime(),
+    };
+
+    setObservationSaving(true);
+    setObservationError('');
+    setObservationNotice('');
+
+    try {
+      const createdObservation = await apiFetch('/api/observaciones', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const idObservacion = getObservationId(createdObservation);
+      let imageUploadError = null;
+
+      if (observationImages.length > 0) {
+        if (!idObservacion) {
+          imageUploadError = new Error('La respuesta no incluyo idObservacion para subir imagenes.');
+        } else {
+          const formData = new FormData();
+          observationImages.forEach(({ file }) => formData.append('imagenes', file));
+          try {
+            await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${targetQuery}`, {
+              method: 'POST',
+              body: formData,
+            });
+          } catch (uploadError) {
+            imageUploadError = uploadError;
+          }
+        }
+      }
+
+      const nextObservation = {
+        ...payload,
+        ...(createdObservation || {}),
+        idObservacion: idObservacion || createdObservation?.idObservacion || Date.now(),
+        observacion: createdObservation?.observacion || payload.observacion,
+        fecha: createdObservation?.fecha || payload.fecha,
+      };
+
+      setHistory((current) => ({
+        ...current,
+        observaciones: [nextObservation, ...(current.observaciones || [])],
+      }));
+      resetObservationDraft();
+
+      if (imageUploadError) {
+        setObservationNotice(`La observacion fue creada, pero no se pudieron subir sus imagenes: ${imageUploadError.message}`);
+      }
+    } catch (saveError) {
+      setObservationError(saveError.message || 'No se pudo crear la observacion.');
+    } finally {
+      setObservationSaving(false);
+    }
+  };
+
+  const openMaintenanceModal = (mode) => {
+    setMaintenanceModalMode(mode);
+    setMaintenanceNotice('');
+    setMaintenanceError('');
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
+    setMaintenanceForm({
+      fecha: mode === 'programada' ? getChileDateTime().slice(0, 10) : '',
+      descripcion: '',
+      tipo: 'Preventiva',
+    });
+  };
+
+  const handleCreateMaintenance = async (event) => {
+    event.preventDefault();
+    const descripcion = maintenanceForm.descripcion.trim();
+    const tipo = maintenanceForm.tipo.trim();
+    const isProgramada = maintenanceModalMode === 'programada';
+    if (!descripcion || !tipo || (isProgramada && !maintenanceForm.fecha)) return;
+
+    const payload = {
+      ...targetIds,
+      ...(isProgramada ? { fecha: maintenanceForm.fecha } : {}),
+      descripcion,
+      tipo,
+    };
+
+    setMaintenanceSaving(true);
+    setMaintenanceError('');
+    setMaintenanceNotice('');
+
+    try {
+      const endpoint = isProgramada ? '/api/mantenciones/programadas' : '/api/mantenciones/realizadas';
+      const createdMaintenance = await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const idMantencion = getMaintenanceId(createdMaintenance);
+      let fileUploadError = null;
+
+      if (maintenanceFiles.length > 0) {
+        if (!idMantencion) {
+          fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
+        } else {
+          try {
+            await Promise.all(maintenanceFiles.map(({ file }) => {
+              const formData = new FormData();
+              formData.append('archivo', file);
+              return apiFetch(`/api/mantenciones/${idMantencion}/archivos?${targetQuery}`, {
+                method: 'POST',
+                body: formData,
+              });
+            }));
+          } catch (uploadError) {
+            fileUploadError = uploadError;
+          }
+        }
+      }
+
+      const nextMaintenance = {
+        ...payload,
+        ...(createdMaintenance || {}),
+        idMantencion: idMantencion || createdMaintenance?.idMantencion || Date.now(),
+        estadoMantencion: createdMaintenance?.estadoMantencion || (isProgramada ? 'Programada' : 'Realizada'),
+        fecha: createdMaintenance?.fecha || payload.fecha || getChileDateTime(),
+      };
+
+      setHistory((current) => ({
+        ...current,
+        mantenciones: [nextMaintenance, ...(current.mantenciones || [])],
+      }));
+      resetMaintenanceDraft();
+
+      if (fileUploadError) {
+        setMaintenanceNotice(`La mantencion fue creada, pero no se pudieron subir sus archivos: ${fileUploadError.message}`);
+      }
+    } catch (saveError) {
+      setMaintenanceError(saveError.message || 'No se pudo crear la mantencion.');
+    } finally {
+      setMaintenanceSaving(false);
+    }
+  };
+
+  const handleMarkMaintenanceAsDone = async (event, maintenance) => {
+    event.stopPropagation();
+    const idMantencion = getMaintenanceId(maintenance);
+    if (!idMantencion) return;
+
+    setMarkingMaintenanceId(idMantencion);
+    setMaintenanceNotice('');
+
+    try {
+      const updatedMaintenance = await apiFetch(`/api/mantenciones/${idMantencion}/realizada`, {
+        method: 'PATCH',
+        body: JSON.stringify(targetIds),
+      });
+
+      setHistory((current) => ({
+        ...current,
+        mantenciones: (current.mantenciones || []).map((item) => (
+          String(getMaintenanceId(item)) === String(idMantencion)
+            ? { ...item, ...(updatedMaintenance || {}), estadoMantencion: updatedMaintenance?.estadoMantencion || 'Realizada' }
+            : item
+        )),
+      }));
+    } catch (saveError) {
+      setMaintenanceNotice(saveError.message || 'No se pudo marcar la mantencion como realizada.');
+    } finally {
+      setMarkingMaintenanceId(null);
+    }
+  };
 
   return (
     <div className="h-full overflow-auto bg-dark-bg p-8 text-text-main fade-in">
@@ -157,18 +755,352 @@ function EppDetailView({ itemId, onBack }) {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface">
-            <div className="border-b border-dark-border bg-dark-bg2 px-5 py-4">
-              <h3 className="rajdhani text-xl font-bold text-white">Observaciones y mantenciones</h3>
-              <p className="mt-1 text-sm text-text-muted">Gestiona el historial del item conservando las funciones del detalle general.</p>
+          <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
+            <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="rajdhani text-xl font-bold text-white">Fotos del EPP</h3>
+                  <p className="mt-1 text-sm text-text-muted">Registro visual del item.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowImageModal(true)}
+                  className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
+                >
+                  + Agregar fotos
+                </button>
+              </div>
+
+              {loadingMaterialImages ? (
+                <EmptyState>Cargando fotos...</EmptyState>
+              ) : materialImagesError ? (
+                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{materialImagesError}</p>
+              ) : primaryImage ? (
+                <div className="space-y-3">
+                  <a href={primaryImage.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border">
+                    <img src={primaryImage.url} alt={primaryImage.nombre} className="h-64 w-full object-cover" />
+                  </a>
+                  {materialImages.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {materialImages.slice(1, 5).map((image) => (
+                        <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border">
+                          <img src={image.url} alt={image.nombre} className="h-20 w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <EmptyState>No hay fotos registradas para este EPP.</EmptyState>
+              )}
             </div>
-            <MaterialDetailView
-              route={{ type: 'item', id: itemId, fallback: detail }}
-              onBack={onBack}
-              embedded
-            />
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="rajdhani text-xl font-bold text-white">Observaciones</h3>
+                    <p className="mt-1 text-sm text-text-muted">Historial y comentarios del item.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowObservationForm(true);
+                      setObservationError('');
+                    }}
+                    className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+                {observationNotice && <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationNotice}</p>}
+                <div className="custom-scrollbar max-h-[360px] space-y-3 overflow-y-auto pr-1">
+                  {history.observaciones.length > 0 ? history.observaciones.map((obs) => (
+                    <article
+                      key={obs.idObservacion || `${obs.fecha}-${obs.observacion}`}
+                      className="cursor-pointer rounded-lg border border-dark-border bg-dark-bg p-4 transition-colors hover:border-brand-cyan/50"
+                      onClick={() => setSelectedObservation(obs)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <p className="text-xs text-text-muted">{formatDate(obs.fecha)}</p>
+                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white">{obs.observacion || 'Sin detalle'}</p>
+                    </article>
+                  )) : (
+                    <EmptyState>No hay observaciones registradas.</EmptyState>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="rajdhani text-xl font-bold text-white">Mantenciones</h3>
+                    <p className="mt-1 text-sm text-text-muted">Programadas y realizadas.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openMaintenanceModal('programada')}
+                      className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                    >
+                      Programar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openMaintenanceModal('realizada')}
+                      className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                </div>
+                {maintenanceNotice && <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceNotice}</p>}
+                <div className="custom-scrollbar max-h-[360px] space-y-3 overflow-y-auto pr-1">
+                  {sortedMaintenances.length > 0 ? sortedMaintenances.map((mant) => (
+                    <article
+                      key={mant.idMantencion || `${mant.fecha}-${mant.descripcion}`}
+                      className="cursor-pointer rounded-lg border border-dark-border bg-dark-bg p-4 transition-colors hover:border-brand-cyan/50"
+                      onClick={() => setSelectedMaintenance(mant)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs text-text-muted">{formatDate(mant.fecha)}</p>
+                        {mant.estadoMantencion && (
+                          <span className="rounded-full bg-brand-cyan/10 px-2 py-0.5 text-xs font-semibold text-brand-cyan">{mant.estadoMantencion}</span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm font-bold text-white">{mant.tipo || 'Mantencion'}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-text-muted">{mant.descripcion || 'Sin detalle'}</p>
+                      {isMaintenancePending(mant) && (
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={(event) => handleMarkMaintenanceAsDone(event, mant)}
+                            disabled={String(markingMaintenanceId) === String(getMaintenanceId(mant))}
+                            className="rounded-lg border border-brand-green/30 bg-brand-green/10 px-3 py-1.5 text-xs font-bold text-brand-green transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {String(markingMaintenanceId) === String(getMaintenanceId(mant)) ? 'Marcando...' : 'Marcar realizada'}
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  )) : (
+                    <EmptyState>No hay mantenciones registradas.</EmptyState>
+                  )}
+                </div>
+              </div>
+            </div>
           </section>
         </div>
+      )}
+
+      {showImageModal && (
+        <Modal
+          title="Agregar fotos"
+          subtitle={detail?.nombreMaterial}
+          onClose={() => {
+            if (!imageSaving) resetImageDraft();
+          }}
+          footer={(
+            <>
+              <button type="button" onClick={resetImageDraft} disabled={imageSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
+              <button type="submit" form="epp-image-form" disabled={imageSaving || imageUploads.length === 0} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{imageSaving ? 'Subiendo...' : 'Subir fotos'}</button>
+            </>
+          )}
+        >
+          <form id="epp-image-form" onSubmit={handleUploadImages} className="space-y-4">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-6 text-center transition-colors hover:border-brand-cyan/60">
+              <span className="text-sm font-semibold text-white">Seleccionar imagenes</span>
+              <span className="mt-1 text-xs text-text-muted">PNG, JPG, JPEG o WEBP</span>
+              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple className="hidden" onChange={handleImageChange} disabled={imageSaving} />
+            </label>
+            {imageUploads.length > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                {imageUploads.map((image, index) => (
+                  <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border border-dark-border">
+                    <img src={image.preview} alt={image.file.name} className="h-24 w-full object-cover" />
+                    <button type="button" onClick={() => removeDraftFile(setImageUploads, index)} disabled={imageSaving} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white">x</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {imageUploadError && <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{imageUploadError}</p>}
+          </form>
+        </Modal>
+      )}
+
+      {showObservationForm && (
+        <Modal
+          title="Agregar observacion"
+          subtitle={detail?.nombreMaterial}
+          onClose={() => {
+            if (!observationSaving) resetObservationDraft();
+          }}
+          footer={(
+            <>
+              <button type="button" onClick={resetObservationDraft} disabled={observationSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
+              <button type="submit" form="epp-observation-form" disabled={!observationText.trim() || observationSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{observationSaving ? 'Guardando...' : 'Guardar observacion'}</button>
+            </>
+          )}
+        >
+          <form id="epp-observation-form" onSubmit={handleCreateObservation} className="space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Observacion</span>
+              <textarea value={observationText} onChange={(event) => setObservationText(event.target.value)} rows={5} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan" placeholder="Escribe el detalle..." />
+            </label>
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
+              <span className="text-sm font-semibold text-white">{observationImages.length >= 3 ? 'Limite de 3 imagenes alcanzado' : 'Seleccionar imagenes'}</span>
+              <span className="mt-1 text-xs text-text-muted">Maximo 3 fotos.</span>
+              <input type="file" accept="image/png,image/jpeg,image/jpg" multiple className="hidden" onChange={handleObservationImageChange} disabled={observationSaving || observationImages.length >= 3} />
+            </label>
+            {observationImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                {observationImages.map((image, index) => (
+                  <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border border-dark-border">
+                    <img src={image.preview} alt={`Vista previa ${index + 1}`} className="h-24 w-full object-cover" />
+                    <button type="button" onClick={() => removeDraftFile(setObservationImages, index)} disabled={observationSaving} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white">x</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {observationError && <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationError}</p>}
+          </form>
+        </Modal>
+      )}
+
+      {maintenanceModalMode && (
+        <Modal
+          title={maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}
+          subtitle={detail?.nombreMaterial}
+          onClose={() => {
+            if (!maintenanceSaving) resetMaintenanceDraft();
+          }}
+          footer={(
+            <>
+              <button type="button" onClick={resetMaintenanceDraft} disabled={maintenanceSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
+              <button type="submit" form="epp-maintenance-form" disabled={maintenanceSaving || !maintenanceForm.tipo.trim() || !maintenanceForm.descripcion.trim() || (maintenanceModalMode === 'programada' && !maintenanceForm.fecha)} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}</button>
+            </>
+          )}
+        >
+          <form id="epp-maintenance-form" onSubmit={handleCreateMaintenance} className="space-y-4">
+            {maintenanceModalMode === 'programada' && (
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-white">Fecha</span>
+                <input type="date" value={maintenanceForm.fecha} onChange={(event) => setMaintenanceForm((current) => ({ ...current, fecha: event.target.value }))} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan" disabled={maintenanceSaving} />
+              </label>
+            )}
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Tipo</span>
+              <select value={maintenanceForm.tipo} onChange={(event) => setMaintenanceForm((current) => ({ ...current, tipo: event.target.value }))} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan" disabled={maintenanceSaving}>
+                <option value="Preventiva">Preventiva</option>
+                <option value="Correctiva">Correctiva</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Descripcion</span>
+              <textarea value={maintenanceForm.descripcion} onChange={(event) => setMaintenanceForm((current) => ({ ...current, descripcion: event.target.value }))} rows={5} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan" placeholder="Describe la mantencion..." disabled={maintenanceSaving} />
+            </label>
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
+              <span className="text-sm font-semibold text-white">Seleccionar archivos</span>
+              <span className="mt-1 text-xs text-text-muted">Puedes subir imagenes, PDF u otros documentos.</span>
+              <input type="file" multiple className="hidden" onChange={handleMaintenanceFileChange} disabled={maintenanceSaving} />
+            </label>
+            {maintenanceFiles.length > 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {maintenanceFiles.map((fileItem, index) => (
+                  <div key={`${fileItem.file.name}-${fileItem.preview}`} className="relative rounded-lg border border-dark-border bg-dark-bg p-2">
+                    {isImageFile(fileItem) ? (
+                      <img src={fileItem.preview} alt={fileItem.file.name} className="mb-2 h-24 w-full rounded object-cover" />
+                    ) : (
+                      <div className="mb-2 flex h-24 items-center justify-center rounded bg-brand-cyan/10 text-2xl text-brand-cyan">Archivo</div>
+                    )}
+                    <p className="truncate pr-7 text-xs font-semibold text-white">{fileItem.file.name}</p>
+                    <button type="button" onClick={() => removeDraftFile(setMaintenanceFiles, index)} disabled={maintenanceSaving} className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white">x</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {maintenanceError && <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceError}</p>}
+          </form>
+        </Modal>
+      )}
+
+      {selectedObservation && (
+        <Modal title="Detalle de observacion" subtitle={formatDate(selectedObservation.fecha)} onClose={() => setSelectedObservation(null)}>
+          <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+            <p className="mt-2 text-sm leading-relaxed text-white">{selectedObservation.observacion || 'Sin detalle'}</p>
+          </div>
+          <div className="mt-5">
+            <h4 className="mb-3 text-sm font-bold text-white">Imagenes</h4>
+            {loadingObservationImages ? (
+              <EmptyState>Cargando imagenes...</EmptyState>
+            ) : observationImagesError ? (
+              <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationImagesError}</p>
+            ) : observationDetailImages.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {observationDetailImages.map((image) => (
+                  <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-colors hover:border-brand-cyan/60">
+                    <img src={image.url} alt={image.nombre} className="h-44 w-full object-cover" />
+                    <div className="px-3 py-2">
+                      <p className="truncate text-xs font-semibold text-white">{image.nombre}</p>
+                      {image.fechaSubida && <p className="mt-1 text-[11px] text-text-muted">{formatDate(image.fechaSubida)}</p>}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <EmptyState>Esta observacion no tiene imagenes.</EmptyState>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {selectedMaintenance && (
+        <Modal title="Detalle de mantencion" subtitle={formatDate(selectedMaintenance.fecha)} onClose={() => setSelectedMaintenance(null)}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tipo</p>
+              <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.tipo || 'Mantencion'}</p>
+            </div>
+            <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</p>
+              <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.estadoMantencion || 'Sin estado'}</p>
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+            <p className="mt-2 text-sm leading-relaxed text-white">{selectedMaintenance.descripcion || 'Sin detalle'}</p>
+          </div>
+          <div className="mt-5">
+            <h4 className="mb-3 text-sm font-bold text-white">Imagenes y archivos</h4>
+            {loadingMaintenanceFiles ? (
+              <EmptyState>Cargando archivos...</EmptyState>
+            ) : maintenanceFilesError ? (
+              <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceFilesError}</p>
+            ) : maintenanceDetailFiles.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {maintenanceDetailFiles.map((file) => (
+                  <a key={file.idArchivo} href={file.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-colors hover:border-brand-cyan/60">
+                    {isImageFile(file) ? (
+                      <img src={file.url} alt={file.nombre} className="h-44 w-full object-cover" />
+                    ) : (
+                      <div className="flex h-44 items-center justify-center bg-brand-cyan/10 text-sm font-bold text-brand-cyan">Archivo</div>
+                    )}
+                    <div className="px-3 py-2">
+                      <p className="truncate text-xs font-semibold text-white">{file.nombre}</p>
+                      {file.fechaSubida && <p className="mt-1 text-[11px] text-text-muted">{formatDate(file.fechaSubida)}</p>}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <EmptyState>Esta mantencion no tiene archivos.</EmptyState>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );
