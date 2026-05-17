@@ -41,15 +41,25 @@ const getMaterialDetailRoute = (pathname) => {
   return null;
 };
 
+const getStockMinimoDetailId = (pathname) => {
+  const stockMatch = pathname.match(/^\/dashboard\/stockminimos\/([^/]+)$/);
+  return stockMatch ? stockMatch[1] : null;
+};
+
 const getInitialDashboardTab = (pathname) => (
   pathname.startsWith('/dashboard/mis-datos') ? 'mis-datos' : 'bodegas'
+);
+
+const getInitialInventoryView = (pathname) => (
+  pathname.startsWith('/dashboard/stockminimos/') ? 'stocks' : 'ubicaciones'
 );
 
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState(() => getInitialDashboardTab(window.location.pathname));
-  const [inventoryView, setInventoryView] = useState('ubicaciones');
+  const [inventoryView, setInventoryView] = useState(() => getInitialInventoryView(window.location.pathname));
   const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
+  const [stockMinimoDetailId, setStockMinimoDetailId] = useState(() => getStockMinimoDetailId(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [bomberoProfile, setBomberoProfile] = useState(null);
@@ -111,6 +121,9 @@ function Dashboard({ setView }) {
   const [stockMinimos, setStockMinimos] = useState([]);
   const [loadingStockMinimos, setLoadingStockMinimos] = useState(false);
   const [stockMinimosError, setStockMinimosError] = useState('');
+  const [stockMinimoDetail, setStockMinimoDetail] = useState(null);
+  const [loadingStockMinimoDetail, setLoadingStockMinimoDetail] = useState(false);
+  const [stockMinimoDetailError, setStockMinimoDetailError] = useState('');
   const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
   const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '', materiales: [] });
   const [stockMateriales, setStockMateriales] = useState([]);
@@ -161,9 +174,19 @@ function Dashboard({ setView }) {
   useEffect(() => {
     const handlePopState = () => {
       const nextMaterialDetailRoute = getMaterialDetailRoute(window.location.pathname);
+      const nextStockMinimoDetailId = getStockMinimoDetailId(window.location.pathname);
       setMaterialDetailRoute(nextMaterialDetailRoute);
+      setStockMinimoDetailId(nextStockMinimoDetailId);
+      if (nextStockMinimoDetailId) {
+        setActiveTab('bodegas');
+        setInventoryView('stocks');
+        return;
+      }
+      setStockMinimoDetail(null);
+      setStockMinimoDetailError('');
       if (!nextMaterialDetailRoute) {
         setActiveTab(getInitialDashboardTab(window.location.pathname));
+        setInventoryView(getInitialInventoryView(window.location.pathname));
       }
     };
 
@@ -199,6 +222,12 @@ function Dashboard({ setView }) {
       fetchStockMinimos();
     }
   }, [activeTab, inventoryView]);
+
+  useEffect(() => {
+    if (stockMinimoDetailId) {
+      fetchStockMinimoDetail(stockMinimoDetailId);
+    }
+  }, [stockMinimoDetailId]);
 
   useEffect(() => {
     if (activeTab === 'bodegas' && inventoryView === 'catalogo') {
@@ -687,9 +716,34 @@ function Dashboard({ setView }) {
     setMaterialDetailRoute(null);
   };
 
+  const openStockMinimoDetail = (stock) => {
+    if (!stock?.id) return;
+
+    window.history.pushState({}, '', `/dashboard/stockminimos/${stock.id}`);
+    setActiveTab('bodegas');
+    setInventoryView('stocks');
+    setMaterialDetailRoute(null);
+    setStockMinimoDetail(null);
+    setStockMinimoDetailError('');
+    setStockMinimoDetailId(stock.id);
+  };
+
+  const closeStockMinimoDetail = () => {
+    if (window.location.pathname.startsWith('/dashboard/stockminimos/')) {
+      window.history.pushState({}, '', '/dashboard');
+    }
+
+    setStockMinimoDetailId(null);
+    setStockMinimoDetail(null);
+    setStockMinimoDetailError('');
+    setActiveTab('bodegas');
+    setInventoryView('stocks');
+  };
+
   const selectDashboardTab = (tab) => {
     setActiveTab(tab);
     setMaterialDetailRoute(null);
+    setStockMinimoDetailId(null);
     setShowNotificationsMenu(false);
     setShowProfileMenu(false);
 
@@ -697,10 +751,23 @@ function Dashboard({ setView }) {
     if (
       window.location.pathname.startsWith('/dashboard/materiales/')
       || window.location.pathname.startsWith('/dashboard/epp/items/')
+      || window.location.pathname.startsWith('/dashboard/stockminimos/')
       || window.location.pathname.startsWith('/dashboard/mis-datos')
       || tab === 'mis-datos'
     ) {
       window.history.pushState({}, '', nextPath);
+    }
+  };
+
+  const selectInventoryView = (viewId) => {
+    setInventoryView(viewId);
+    setMaterialDetailRoute(null);
+    setStockMinimoDetailId(null);
+    setStockMinimoDetail(null);
+    setStockMinimoDetailError('');
+
+    if (window.location.pathname.startsWith('/dashboard/stockminimos/')) {
+      window.history.pushState({}, '', '/dashboard');
     }
   };
 
@@ -1147,6 +1214,20 @@ function Dashboard({ setView }) {
     nombre: stock.nombre || stock.name || 'Stock minimo',
   });
 
+  const mapStockMinimoDetail = (stock) => ({
+    id: stock.idStockMinimo || stock.id,
+    idUbicacion: stock.idUbicacion,
+    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicacion',
+    nombre: stock.nombre || stock.name || 'Stock minimo',
+    materiales: getArrayPayload(stock, ['materiales']).map(material => ({
+      id: material.idStockMaterial || material.id || material.idMaterial,
+      idStockMaterial: material.idStockMaterial || material.id,
+      idMaterial: material.idMaterial,
+      nombreMaterial: material.nombreMaterial || material.nombre || 'Material',
+      cantidad: Number(material.cantidad || 0),
+    })),
+  });
+
   const fetchStockMinimos = async () => {
     setLoadingStockMinimos(true);
     setStockMinimosError('');
@@ -1164,6 +1245,24 @@ function Dashboard({ setView }) {
       setLoadingStockMinimos(false);
     }
   };
+
+  async function fetchStockMinimoDetail(idStockMinimo = stockMinimoDetailId) {
+    if (!idStockMinimo) return;
+
+    setLoadingStockMinimoDetail(true);
+    setStockMinimoDetailError('');
+
+    try {
+      const data = await apiFetch(`/api/stockminimos/${idStockMinimo}`);
+      const detailPayload = data?.data || data?.result || data;
+      setStockMinimoDetail(mapStockMinimoDetail(detailPayload));
+    } catch (error) {
+      setStockMinimoDetailError(error.message || 'No se pudo cargar el detalle del stock minimo.');
+      setStockMinimoDetail(null);
+    } finally {
+      setLoadingStockMinimoDetail(false);
+    }
+  }
 
   const mapStockMaterial = (material) => ({
     id: material.idMaterial || material.id,
@@ -1542,7 +1641,7 @@ function Dashboard({ setView }) {
         if (showNotificationsMenu) setShowNotificationsMenu(false);
       }}>
         {/* Sub Header (Actions specific to active tab) */}
-        {activeTab !== 'vehiculos' && !materialDetailRoute && (
+        {activeTab !== 'vehiculos' && !materialDetailRoute && !stockMinimoDetailId && (
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
@@ -1555,7 +1654,7 @@ function Dashboard({ setView }) {
                       <button
                         key={view.id}
                         type="button"
-                        onClick={() => setInventoryView(view.id)}
+                        onClick={() => selectInventoryView(view.id)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-dark-bg3 hover:text-white'}`}
                       >
                         {view.label}
@@ -1616,7 +1715,115 @@ function Dashboard({ setView }) {
             )
           )}
 
-          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
+          {!materialDetailRoute && stockMinimoDetailId && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={closeStockMinimoDetail}
+                    className="mt-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
+                    style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                  >
+                    Volver
+                  </button>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Stock minimo</p>
+                    <h3 className="rajdhani mt-1 text-2xl font-bold" style={{ color: palette.text }}>
+                      {stockMinimoDetail?.nombre || 'Detalle de stock'}
+                    </h3>
+                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>
+                      {stockMinimoDetail?.nombreUbicacion || 'Cargando ubicacion...'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchStockMinimoDetail(stockMinimoDetailId)}
+                  disabled={loadingStockMinimoDetail}
+                  className="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan disabled:opacity-50"
+                  style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                >
+                  Actualizar
+                </button>
+              </div>
+
+              {loadingStockMinimoDetail ? (
+                <div className="rounded-xl border p-8 text-center" style={{ borderColor: palette.border, background: palette.card }}>
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-cyan/20 border-t-brand-cyan"></div>
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando detalle del stock minimo...</p>
+                </div>
+              ) : stockMinimoDetailError ? (
+                <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-6 text-center">
+                  <p className="font-semibold text-brand-red">{stockMinimoDetailError}</p>
+                  <button
+                    type="button"
+                    onClick={() => fetchStockMinimoDetail(stockMinimoDetailId)}
+                    className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h4 className="rajdhani text-lg font-bold" style={{ color: palette.text }}>Materiales requeridos</h4>
+                      <span className="rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
+                        {stockMinimoDetail?.materiales?.length || 0} materiales
+                      </span>
+                    </div>
+
+                    {stockMinimoDetail?.materiales?.length > 0 ? (
+                      <div className="overflow-hidden rounded-lg border" style={{ borderColor: palette.border }}>
+                        {stockMinimoDetail.materiales.map((material, index) => (
+                          <div
+                            key={`${material.id}-${material.idMaterial}`}
+                            className={`flex items-center justify-between gap-4 px-4 py-3 ${index > 0 ? 'border-t' : ''}`}
+                            style={{ borderColor: palette.border, background: index % 2 === 0 ? palette.bg : palette.cardSoft }}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold" style={{ color: palette.text }}>{material.nombreMaterial}</p>
+                              {material.idMaterial && (
+                                <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>ID material {material.idMaterial}</p>
+                              )}
+                            </div>
+                            <span className="flex-shrink-0 rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1.5 font-mono text-sm font-bold text-brand-cyan">
+                              x{material.cantidad}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed px-4 py-10 text-center" style={{ borderColor: palette.border }}>
+                        <p className="text-sm" style={{ color: palette.muted }}>Este stock minimo no tiene materiales asociados.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <aside className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
+                    <h4 className="rajdhani text-lg font-bold" style={{ color: palette.text }}>Resumen</h4>
+                    <div className="mt-4 space-y-3 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <span style={{ color: palette.muted }}>ID stock</span>
+                        <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.id || stockMinimoDetailId}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span style={{ color: palette.muted }}>Ubicacion</span>
+                        <span className="text-right font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.nombreUbicacion || '-'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span style={{ color: palette.muted }}>ID ubicacion</span>
+                        <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.idUbicacion || '-'}</span>
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
             <div
               style={{
                 display: 'grid',
@@ -1759,7 +1966,7 @@ function Dashboard({ setView }) {
               </div>
             </div>
           )}
-          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'arbol' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'arbol' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -1823,7 +2030,7 @@ function Dashboard({ setView }) {
               </div>
             </div>
           )}
-          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'stocks' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'stocks' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -1858,16 +2065,25 @@ function Dashboard({ setView }) {
                     {stockMinimos.map(stock => (
                       <div
                         key={stock.id}
-                        className="rounded-xl border p-5"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openStockMinimoDetail(stock)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openStockMinimoDetail(stock);
+                          }
+                        }}
+                        className="group cursor-pointer rounded-xl border p-5 transition-all hover:border-brand-cyan/40 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                         style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{stock.nombre}</p>
+                            <p className="rajdhani text-lg font-bold transition-colors group-hover:text-brand-cyan" style={{ color: palette.text }}>{stock.nombre}</p>
                             <p className="mt-1 text-sm" style={{ color: palette.muted }}>{stock.nombreUbicacion}</p>
                           </div>
                           <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-                            Stock
+                            Ver detalle
                           </span>
                         </div>
                         <div className="mt-5 flex flex-wrap gap-2 text-xs">
@@ -1892,7 +2108,7 @@ function Dashboard({ setView }) {
               </div>
             </div>
           )}
-          {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'catalogo' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'catalogo' && (
             <div className="p-8">
               <div className="mb-6">
                 <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Catalogo de Materiales</h3>
@@ -2060,7 +2276,7 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && activeTab === 'donaciones' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'donaciones' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               {selectedCampanaDetalle ? (
                 <div>
@@ -2269,15 +2485,15 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && activeTab === 'vehiculos' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'vehiculos' && (
             <VehiculosView />
           )}
 
-          {!materialDetailRoute && activeTab === 'epp' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'epp' && (
             <EppView eppData={eppData} setEppData={setEppData} />
           )}
 
-          {!materialDetailRoute && activeTab === 'mis-datos' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'mis-datos' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mx-auto max-w-5xl">
                 {loadingBomberoProfile ? (
@@ -2335,7 +2551,7 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'mis-datos' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'mis-datos' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>
@@ -2750,16 +2966,16 @@ function Dashboard({ setView }) {
                         </button>
                       </div>
                     ) : visibleStockMateriales.length > 0 ? (
-                      <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                      <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
                         {visibleStockMateriales.map(material => {
                           const selectedMaterial = getSelectedStockMaterial(material.id);
                           const isSelected = Boolean(selectedMaterial);
                           return (
                             <div
                               key={material.id}
-                              className={`rounded-lg border px-3 py-3 transition-colors ${isSelected ? 'border-brand-cyan/40 bg-brand-cyan/10' : 'border-dark-border bg-dark-bg2'}`}
+                              className={`rounded-lg border px-3 py-2 transition-colors ${isSelected ? 'border-brand-cyan/40 bg-brand-cyan/10' : 'border-dark-border bg-dark-bg2'}`}
                             >
-                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="grid grid-cols-[minmax(0,1fr)_104px] items-center gap-3">
                                 <button
                                   type="button"
                                   onClick={() => toggleStockMaterial(material.id)}
@@ -2774,15 +2990,15 @@ function Dashboard({ setView }) {
                                     <span className="block truncate text-xs text-text-muted">{material.tipo}</span>
                                   </span>
                                 </button>
-                                <label className="flex items-center gap-2 text-xs text-text-muted">
-                                  Cantidad
+                                <label className="flex items-center justify-end gap-2 text-xs text-text-muted">
+                                  <span className="hidden sm:inline">Cant.</span>
                                   <input
                                     type="number"
                                     min="1"
                                     value={selectedMaterial?.cantidad || 1}
                                     onChange={(e) => updateStockMaterialCantidad(material.id, e.target.value)}
                                     disabled={!isSelected || savingStockMinimo}
-                                    className="w-20 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
+                                    className="h-9 w-16 rounded-lg border border-dark-border bg-dark-bg px-2 text-center text-sm text-white outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
                                   />
                                 </label>
                               </div>
