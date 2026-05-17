@@ -693,7 +693,7 @@ function EppDetailView({ itemId, onBack }) {
       ) : (
         <div className="space-y-6">
           <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan">
                   <Icons.Shield />
@@ -702,11 +702,60 @@ function EppDetailView({ itemId, onBack }) {
                   <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan">Equipo de Proteccion Personal</p>
                   <h2 className="rajdhani mt-1 text-3xl font-bold text-white">{detail.nombreMaterial || 'EPP sin nombre'}</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripcion registrada.'}</p>
+                  <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${detail.estadoEpp === 'Operativo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-brand-red/20 bg-brand-red/10 text-brand-red'}`}>
+                    {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
+                  </span>
                 </div>
               </div>
-              <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${detail.estadoEpp === 'Operativo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-brand-red/20 bg-brand-red/10 text-brand-red'}`}>
-                {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
-              </span>
+
+              <div className="rounded-xl border border-dark-border bg-dark-bg p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Fotos del item</p>
+                    <p className="mt-1 text-sm font-bold text-white">{materialImages.length} registrada{materialImages.length === 1 ? '' : 's'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowImageModal(true)}
+                    className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+                {loadingMaterialImages ? (
+                  <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-dark-border text-sm text-text-muted">
+                    Cargando fotos...
+                  </div>
+                ) : materialImagesError ? (
+                  <div className="flex h-48 items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 text-center text-xs text-brand-red">
+                    {materialImagesError}
+                  </div>
+                ) : primaryImage ? (
+                  <div className="space-y-2">
+                    <a href={primaryImage.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border">
+                      <img src={primaryImage.url} alt={primaryImage.nombre} className="h-48 w-full object-cover" />
+                    </a>
+                    {materialImages.length > 1 && (
+                      <div className="grid grid-cols-4 gap-2">
+                        {materialImages.slice(1, 5).map((image) => (
+                          <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-md border border-dark-border">
+                            <img src={image.url} alt={image.nombre} className="h-14 w-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowImageModal(true)}
+                    className="flex h-48 w-full flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-surface/60 text-center text-sm text-text-muted transition-colors hover:border-brand-cyan/50 hover:text-brand-cyan"
+                  >
+                    <span className="font-semibold">Sin fotos</span>
+                    <span className="mt-1 text-xs">Agregar primera foto</span>
+                  </button>
+                )}
+              </div>
             </div>
           </section>
 
@@ -755,47 +804,7 @@ function EppDetailView({ itemId, onBack }) {
             </div>
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
-            <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="rajdhani text-xl font-bold text-white">Fotos del EPP</h3>
-                  <p className="mt-1 text-sm text-text-muted">Registro visual del item.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowImageModal(true)}
-                  className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
-                >
-                  + Agregar fotos
-                </button>
-              </div>
-
-              {loadingMaterialImages ? (
-                <EmptyState>Cargando fotos...</EmptyState>
-              ) : materialImagesError ? (
-                <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{materialImagesError}</p>
-              ) : primaryImage ? (
-                <div className="space-y-3">
-                  <a href={primaryImage.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border">
-                    <img src={primaryImage.url} alt={primaryImage.nombre} className="h-64 w-full object-cover" />
-                  </a>
-                  {materialImages.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {materialImages.slice(1, 5).map((image) => (
-                        <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-dark-border">
-                          <img src={image.url} alt={image.nombre} className="h-20 w-full object-cover" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <EmptyState>No hay fotos registradas para este EPP.</EmptyState>
-              )}
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
+          <section className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
@@ -891,7 +900,6 @@ function EppDetailView({ itemId, onBack }) {
                   )}
                 </div>
               </div>
-            </div>
           </section>
         </div>
       )}
