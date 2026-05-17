@@ -69,6 +69,9 @@ function Dashboard({ setView }) {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
   const [markingNotificationId, setMarkingNotificationId] = useState(null);
+  const [bomberosPersonal, setBomberosPersonal] = useState([]);
+  const [loadingBomberosPersonal, setLoadingBomberosPersonal] = useState(false);
+  const [bomberosPersonalError, setBomberosPersonalError] = useState('');
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -241,6 +244,12 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (activeTab === 'donaciones') {
       fetchCampanasDonaciones();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'personal') {
+      fetchBomberosPersonal();
     }
   }, [activeTab]);
 
@@ -823,6 +832,39 @@ function Dashboard({ setView }) {
       setNotifications([]);
     } finally {
       setLoadingNotifications(false);
+    }
+  };
+
+  const mapBomberoPersonal = (bombero) => ({
+    id: bombero.idBombero || bombero.id,
+    idUsuario: bombero.idUsuario,
+    nombre: bombero.nombre || 'Bombero',
+    rut: bombero.rut || '',
+    email: bombero.email || '',
+    telefono: bombero.telefono || '',
+    genero: bombero.genero || '',
+    cargo: bombero.cargo || 'Voluntario',
+    estado: bombero.estadoUsuario || bombero.estado || 'Sin estado',
+  });
+
+  const getBomberoInitials = (nombre = '') => {
+    const parts = nombre.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'B';
+    return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  };
+
+  const fetchBomberosPersonal = async () => {
+    setLoadingBomberosPersonal(true);
+    setBomberosPersonalError('');
+
+    try {
+      const data = await apiFetch('/api/bomberos');
+      setBomberosPersonal(getArrayPayload(data).map(mapBomberoPersonal).filter(bombero => bombero.id));
+    } catch (error) {
+      setBomberosPersonalError(error.message || 'No se pudo cargar el personal.');
+      setBomberosPersonal([]);
+    } finally {
+      setLoadingBomberosPersonal(false);
     }
   };
 
@@ -1549,6 +1591,9 @@ function Dashboard({ setView }) {
           <button onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
           </button>
+          <button onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.User /> <span className="hidden lg:inline">Personal</span>
+          </button>
         </nav>
 
         {/* Right: User Profile & Actions */}
@@ -1687,7 +1732,7 @@ function Dashboard({ setView }) {
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
-                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
+                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'personal' || activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
                 {activeTab === 'bodegas' ? (
@@ -1705,11 +1750,12 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
                 {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
+                {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
                 {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Informacion del bombero asociado a tu sesion</span>}
               </div>
             </div>
@@ -1742,6 +1788,18 @@ function Dashboard({ setView }) {
                   <span className="text-base leading-none">+</span>
                   Crear campaña
                 </button>
+              )}
+              {activeTab === 'personal' && (
+                <>
+                  <button type="button" className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Exportar
+                  </button>
+                  <button type="button" className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                    <span className="text-base leading-none">+</span>
+                    Agregar bombero
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -2562,6 +2620,107 @@ function Dashboard({ setView }) {
             </div>
           )}
 
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mx-auto max-w-6xl">
+                <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 p-2 text-brand-cyan">
+                      <Icons.User />
+                    </div>
+                    <div>
+                      <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Personal del Cuartel</h3>
+                      <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona los bomberos, sus cargos y datos de contacto.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b" style={{ borderColor: palette.border, background: palette.bg2, color: palette.muted }}>
+                      <tr>
+                        <th className="px-5 py-3 font-semibold">Nombre del Bombero</th>
+                        <th className="px-5 py-3 font-semibold">RUT</th>
+                        <th className="px-5 py-3 font-semibold">Cargo</th>
+                        <th className="px-5 py-3 font-semibold">Estado</th>
+                        <th className="px-5 py-3 text-right font-semibold">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingBomberosPersonal ? (
+                        <tr>
+                          <td colSpan="5" className="px-5 py-16 text-center" style={{ color: palette.muted }}>Cargando personal...</td>
+                        </tr>
+                      ) : bomberosPersonalError ? (
+                        <tr>
+                          <td colSpan="5" className="px-5 py-12">
+                            <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
+                              <p className="font-semibold text-brand-red">{bomberosPersonalError}</p>
+                              <button
+                                type="button"
+                                onClick={fetchBomberosPersonal}
+                                className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
+                              >
+                                Reintentar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : bomberosPersonal.length > 0 ? (
+                        bomberosPersonal.map((bombero) => {
+                          const isActive = String(bombero.estado).toLowerCase() === 'activo';
+                          return (
+                            <tr key={bombero.id} className="border-b last:border-b-0" style={{ borderColor: palette.border }}>
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-brand-cyan/30 bg-brand-cyan/10 text-sm font-bold text-brand-cyan">
+                                    {getBomberoInitials(bombero.nombre)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate font-semibold" style={{ color: palette.text }}>{bombero.nombre}</p>
+                                    <p className="mt-1 truncate text-xs" style={{ color: palette.muted }}>{bombero.email || 'Sin email registrado'}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 font-mono text-xs" style={{ color: palette.muted }}>{bombero.rut || '-'}</td>
+                              <td className="px-5 py-4">
+                                <span className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
+                                  {bombero.cargo}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: isActive ? '#22C55E' : palette.muted }}>
+                                  <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+                                  {bombero.estado}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="flex justify-end gap-2">
+                                  <button type="button" className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan" style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}>
+                                    Editar
+                                  </button>
+                                  <button type="button" className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20">
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="5" className="px-5 py-16 text-center" style={{ color: palette.muted }}>
+                            No hay bomberos registrados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'vehiculos' && (
             <VehiculosView />
           )}
@@ -2628,7 +2787,7 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && !stockMinimoDetailId && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'mis-datos' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'personal' && activeTab !== 'mis-datos' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>

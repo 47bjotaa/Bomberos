@@ -109,12 +109,12 @@ const getMaintenanceTargetIds = (material, route) => {
 };
 
 const getMaterialImageBasePath = (material, route) => {
-  if (material.esSerializacion) {
+  if (material.esSerializacion && material.codigoUnico) {
     const idItem = material.idItem || route.id;
     return idItem ? `/api/materiales/items/${idItem}/imagenes` : '';
   }
 
-  const idMaterial = material.idMaterial || route.id;
+  const idMaterial = material.idMaterial || route.fallback?.idMaterial || (route.type === 'material' ? route.id : null);
   return idMaterial ? `/api/materiales/${idMaterial}/imagenes` : '';
 };
 
