@@ -5,6 +5,7 @@ import LocationItemsView from '../components/dashboard/LocationItemsView';
 import MaterialDetailView from '../components/dashboard/MaterialDetailView';
 import VehiculosView from '../components/dashboard/VehiculosView';
 import EppView from '../components/dashboard/EppView';
+import EppDetailView from '../components/dashboard/EppDetailView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMaterialModal';
 import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
@@ -22,6 +23,11 @@ const TIPOS_PRODUCTO = [
 ];
 
 const getMaterialDetailRoute = (pathname) => {
+  const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
+  if (eppItemMatch) {
+    return { type: 'epp-item', id: eppItemMatch[1], fallback: {} };
+  }
+
   const itemMatch = pathname.match(/^\/dashboard\/materiales\/items\/([^/]+)$/);
   if (itemMatch) {
     return { type: 'item', id: itemMatch[1], fallback: {} };
@@ -521,6 +527,18 @@ function Dashboard({ setView }) {
 
     if (!detailId) return;
 
+    const isEpp = String(material.categoria || material.tipo || material.nombreTipoProducto || '').toLowerCase().includes('epp');
+    if (isEpp && isSerializado) {
+      const nextRoute = {
+        type: 'epp-item',
+        id: detailId,
+        fallback: material,
+      };
+      window.history.pushState({}, '', `/dashboard/epp/items/${detailId}`);
+      setMaterialDetailRoute(nextRoute);
+      return;
+    }
+
     const nextRoute = {
       type: isSerializado ? 'item' : 'material',
       id: detailId,
@@ -535,7 +553,7 @@ function Dashboard({ setView }) {
   };
 
   const closeMaterialDetail = () => {
-    if (window.location.pathname.startsWith('/dashboard/materiales/')) {
+    if (window.location.pathname.startsWith('/dashboard/materiales/') || window.location.pathname.startsWith('/dashboard/epp/items/')) {
       window.history.pushState({}, '', '/dashboard');
     }
 
@@ -547,7 +565,7 @@ function Dashboard({ setView }) {
     setMaterialDetailRoute(null);
     setShowNotificationsMenu(false);
 
-    if (window.location.pathname.startsWith('/dashboard/materiales/')) {
+    if (window.location.pathname.startsWith('/dashboard/materiales/') || window.location.pathname.startsWith('/dashboard/epp/items/')) {
       window.history.pushState({}, '', '/dashboard');
     }
   };
@@ -1449,7 +1467,11 @@ function Dashboard({ setView }) {
         {/* Content Body */}
         <div className="min-h-0 flex-1 overflow-hidden">
           {materialDetailRoute && (
-            <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} onRemoved={refreshActiveUbicacion} />
+            materialDetailRoute.type === 'epp-item' ? (
+              <EppDetailView itemId={materialDetailRoute.id} onBack={closeMaterialDetail} />
+            ) : (
+              <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} onRemoved={refreshActiveUbicacion} />
+            )
           )}
 
           {!materialDetailRoute && activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (

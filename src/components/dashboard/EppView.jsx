@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
+import EppDetailView from './EppDetailView';
 
 const getArrayPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -87,6 +88,7 @@ function EppView({ eppData, setEppData }) {
   const [decommissionReason, setDecommissionReason] = useState('');
   const [confirmDecommission, setConfirmDecommission] = useState(false);
   const [decommissioning, setDecommissioning] = useState(false);
+  const [selectedEppDetailId, setSelectedEppDetailId] = useState(null);
 
   const [editingEppId, setEditingEppId] = useState(null);
   const [editEppData, setEditEppData] = useState({});
@@ -229,6 +231,15 @@ function EppView({ eppData, setEppData }) {
     }
   };
 
+  if (selectedEppDetailId) {
+    return (
+      <EppDetailView
+        itemId={selectedEppDetailId}
+        onBack={() => setSelectedEppDetailId(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-8 flex flex-col h-full fade-in">
       <div className="flex gap-3 mb-6">
@@ -316,7 +327,13 @@ function EppView({ eppData, setEppData }) {
                         <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-text-muted border border-dark-border shadow-[0_0_10px_rgba(0,0,0,0.2)]">
                           <Icons.Shield className="w-4 h-4" />
                         </div>
-                        <span className="font-medium text-white">{item.equipo}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEppDetailId(item.idItem || item.id)}
+                          className="font-medium text-white transition-colors hover:text-brand-cyan"
+                        >
+                          {item.equipo}
+                        </button>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-text-muted font-mono text-xs">{item.codigo}</td>
