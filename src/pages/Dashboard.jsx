@@ -124,6 +124,9 @@ function Dashboard({ setView }) {
   const [stockMinimoDetail, setStockMinimoDetail] = useState(null);
   const [loadingStockMinimoDetail, setLoadingStockMinimoDetail] = useState(false);
   const [stockMinimoDetailError, setStockMinimoDetailError] = useState('');
+  const [stockMinimoInventoryItems, setStockMinimoInventoryItems] = useState([]);
+  const [loadingStockMinimoInventory, setLoadingStockMinimoInventory] = useState(false);
+  const [stockMinimoInventoryError, setStockMinimoInventoryError] = useState('');
   const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
   const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '', materiales: [] });
   const [stockMateriales, setStockMateriales] = useState([]);
@@ -725,6 +728,8 @@ function Dashboard({ setView }) {
     setMaterialDetailRoute(null);
     setStockMinimoDetail(null);
     setStockMinimoDetailError('');
+    setStockMinimoInventoryItems([]);
+    setStockMinimoInventoryError('');
     setStockMinimoDetailId(stock.id);
   };
 
@@ -736,6 +741,8 @@ function Dashboard({ setView }) {
     setStockMinimoDetailId(null);
     setStockMinimoDetail(null);
     setStockMinimoDetailError('');
+    setStockMinimoInventoryItems([]);
+    setStockMinimoInventoryError('');
     setActiveTab('bodegas');
     setInventoryView('stocks');
   };
@@ -744,6 +751,9 @@ function Dashboard({ setView }) {
     setActiveTab(tab);
     setMaterialDetailRoute(null);
     setStockMinimoDetailId(null);
+    setStockMinimoDetail(null);
+    setStockMinimoInventoryItems([]);
+    setStockMinimoInventoryError('');
     setShowNotificationsMenu(false);
     setShowProfileMenu(false);
 
@@ -765,6 +775,8 @@ function Dashboard({ setView }) {
     setStockMinimoDetailId(null);
     setStockMinimoDetail(null);
     setStockMinimoDetailError('');
+    setStockMinimoInventoryItems([]);
+    setStockMinimoInventoryError('');
 
     if (window.location.pathname.startsWith('/dashboard/stockminimos/')) {
       window.history.pushState({}, '', '/dashboard');
@@ -1251,11 +1263,18 @@ function Dashboard({ setView }) {
 
     setLoadingStockMinimoDetail(true);
     setStockMinimoDetailError('');
+    setStockMinimoInventoryItems([]);
+    setStockMinimoInventoryError('');
 
     try {
       const data = await apiFetch(`/api/stockminimos/${idStockMinimo}`);
       const detailPayload = data?.data || data?.result || data;
-      setStockMinimoDetail(mapStockMinimoDetail(detailPayload));
+      const detail = mapStockMinimoDetail(detailPayload);
+      setStockMinimoDetail(detail);
+
+      if (detail.idUbicacion) {
+        fetchStockMinimoInventory(detail.idUbicacion);
+      }
     } catch (error) {
       setStockMinimoDetailError(error.message || 'No se pudo cargar el detalle del stock minimo.');
       setStockMinimoDetail(null);
@@ -1263,6 +1282,29 @@ function Dashboard({ setView }) {
       setLoadingStockMinimoDetail(false);
     }
   }
+
+  const fetchStockMinimoInventory = async (idUbicacion) => {
+    if (!idUbicacion) return;
+
+    setLoadingStockMinimoInventory(true);
+    setStockMinimoInventoryError('');
+
+    try {
+      const data = await apiFetch(`/api/materiales?idUbicacion=${idUbicacion}`);
+      setStockMinimoInventoryItems(mapMateriales(data));
+    } catch (error) {
+      setStockMinimoInventoryError(error.message || 'No se pudo cargar el inventario actual.');
+      setStockMinimoInventoryItems([]);
+    } finally {
+      setLoadingStockMinimoInventory(false);
+    }
+  };
+
+  const getStockMinimoCurrentQuantity = (idMaterial) => (
+    stockMinimoInventoryItems
+      .filter(item => String(item.idMaterial) === String(idMaterial))
+      .reduce((total, item) => total + (Number(item.cantidad) || 0), 0)
+  );
 
   const mapStockMaterial = (material) => ({
     id: material.idMaterial || material.id,
@@ -1727,24 +1769,21 @@ function Dashboard({ setView }) {
                   >
                     Volver
                   </button>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Stock minimo</p>
-                    <h3 className="rajdhani mt-1 text-2xl font-bold" style={{ color: palette.text }}>
-                      {stockMinimoDetail?.nombre || 'Detalle de stock'}
+                    <h3 className="rajdhani mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-bold" style={{ color: palette.text }}>
+                      <span>{stockMinimoDetail?.nombre || 'Detalle de stock'}</span>
+                      <span className="rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-1 text-sm font-semibold text-brand-cyan">
+                        {stockMinimoDetail?.nombreUbicacion || 'Cargando ubicacion...'}
+                      </span>
                     </h3>
-                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>
-                      {stockMinimoDetail?.nombreUbicacion || 'Cargando ubicacion...'}
-                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => fetchStockMinimoDetail(stockMinimoDetailId)}
-                  disabled={loadingStockMinimoDetail}
-                  className="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan disabled:opacity-50"
-                  style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
                 >
-                  Actualizar
+                  Agregar material
                 </button>
               </div>
 
@@ -1774,25 +1813,63 @@ function Dashboard({ setView }) {
                       </span>
                     </div>
 
+                    {stockMinimoInventoryError && (
+                      <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                        {stockMinimoInventoryError}
+                      </p>
+                    )}
+
                     {stockMinimoDetail?.materiales?.length > 0 ? (
                       <div className="overflow-hidden rounded-lg border" style={{ borderColor: palette.border }}>
-                        {stockMinimoDetail.materiales.map((material, index) => (
-                          <div
-                            key={`${material.id}-${material.idMaterial}`}
-                            className={`flex items-center justify-between gap-4 px-4 py-3 ${index > 0 ? 'border-t' : ''}`}
-                            style={{ borderColor: palette.border, background: index % 2 === 0 ? palette.bg : palette.cardSoft }}
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold" style={{ color: palette.text }}>{material.nombreMaterial}</p>
-                              {material.idMaterial && (
-                                <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>ID material {material.idMaterial}</p>
-                              )}
-                            </div>
-                            <span className="flex-shrink-0 rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1.5 font-mono text-sm font-bold text-brand-cyan">
-                              x{material.cantidad}
-                            </span>
-                          </div>
-                        ))}
+                        <table className="w-full text-left text-sm">
+                          <thead style={{ background: palette.bg2, color: palette.muted }}>
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">Material</th>
+                              <th className="px-4 py-3 text-center font-semibold">Stock minimo</th>
+                              <th className="px-4 py-3 text-center font-semibold">Inventario actual</th>
+                              <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stockMinimoDetail.materiales.map((material, index) => {
+                              const currentQuantity = getStockMinimoCurrentQuantity(material.idMaterial);
+                              return (
+                                <tr
+                                  key={`${material.id}-${material.idMaterial}`}
+                                  className={index > 0 ? 'border-t' : ''}
+                                  style={{ borderColor: palette.border, background: index % 2 === 0 ? palette.bg : palette.cardSoft }}
+                                >
+                                  <td className="px-4 py-3">
+                                    <p className="truncate font-semibold" style={{ color: palette.text }}>{material.nombreMaterial}</p>
+                                    {material.idMaterial && (
+                                      <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>ID material {material.idMaterial}</p>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="inline-flex min-w-14 justify-center rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1.5 font-mono font-bold text-brand-cyan">
+                                      x{material.cantidad}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span
+                                      className={`inline-flex min-w-14 justify-center rounded-lg border px-3 py-1.5 font-mono font-bold ${!loadingStockMinimoInventory && currentQuantity < material.cantidad ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-bg3 text-white'}`}
+                                    >
+                                      {loadingStockMinimoInventory ? '...' : `x${currentQuantity}`}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <button
+                                      type="button"
+                                      className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     ) : (
                       <div className="rounded-lg border border-dashed px-4 py-10 text-center" style={{ borderColor: palette.border }}>

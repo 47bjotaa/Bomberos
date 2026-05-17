@@ -234,6 +234,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   const observationImagesRef = useRef([]);
   const maintenanceFilesRef = useRef([]);
   const materialImageUploadsRef = useRef([]);
+  const materialImageRequestRef = useRef(0);
 
   const resetObservationDraft = () => {
     setShowObservationForm(false);
@@ -362,9 +363,12 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
     let mounted = true;
 
     const fetchDetail = async () => {
+      materialImageRequestRef.current += 1;
       setLoading(true);
       setError('');
+      setDetail(null);
       setMaterialImages([]);
+      setLoadingMaterialImages(false);
       setMaterialImagesError('');
       setShowMaterialImageModal(false);
       setMaterialImageUploads((currentImages) => {
@@ -455,6 +459,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   const fetchMaterialImages = useCallback(async () => {
     if (!materialImageBasePath || loading || error) return;
 
+    const requestId = materialImageRequestRef.current + 1;
+    materialImageRequestRef.current = requestId;
     setLoadingMaterialImages(true);
     setMaterialImagesError('');
 
@@ -478,12 +484,18 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         };
       }));
 
-      setMaterialImages(imagesWithUrls.filter((image) => image?.url));
+      if (materialImageRequestRef.current === requestId) {
+        setMaterialImages(imagesWithUrls.filter((image) => image?.url));
+      }
     } catch (err) {
-      setMaterialImagesError(err.message || 'No se pudieron cargar las imagenes del material.');
-      setMaterialImages([]);
+      if (materialImageRequestRef.current === requestId) {
+        setMaterialImagesError(err.message || 'No se pudieron cargar las imagenes del material.');
+        setMaterialImages([]);
+      }
     } finally {
-      setLoadingMaterialImages(false);
+      if (materialImageRequestRef.current === requestId) {
+        setLoadingMaterialImages(false);
+      }
     }
   }, [materialImageBasePath, loading, error]);
 
