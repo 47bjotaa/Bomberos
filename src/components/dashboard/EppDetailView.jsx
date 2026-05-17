@@ -97,21 +97,6 @@ const sortMaintenances = (maintenances = []) => (
   })
 );
 
-function DetailCard({ label, value, tone = 'default' }) {
-  const toneClass = tone === 'cyan'
-    ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan'
-    : tone === 'red'
-      ? 'border-brand-red/20 bg-brand-red/10 text-brand-red'
-      : 'border-dark-border bg-dark-bg text-white';
-
-  return (
-    <div className={`rounded-xl border px-4 py-3 ${toneClass}`}>
-      <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
-      <p className="mt-1 text-lg font-bold">{value || '-'}</p>
-    </div>
-  );
-}
-
 function EmptyState({ children }) {
   return (
     <div className="rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
@@ -693,21 +678,7 @@ function EppDetailView({ itemId, onBack }) {
       ) : (
         <div className="space-y-6">
           <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
-            <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-              <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan">
-                  <Icons.Shield />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan">Equipo de Proteccion Personal</p>
-                  <h2 className="rajdhani mt-1 text-3xl font-bold text-white">{detail.nombreMaterial || 'EPP sin nombre'}</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripcion registrada.'}</p>
-                  <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${detail.estadoEpp === 'Operativo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-brand-red/20 bg-brand-red/10 text-brand-red'}`}>
-                    {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
-                  </span>
-                </div>
-              </div>
-
+            <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:items-stretch">
               <div className="rounded-xl border border-dark-border bg-dark-bg p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
@@ -756,51 +727,48 @@ function EppDetailView({ itemId, onBack }) {
                   </button>
                 )}
               </div>
-            </div>
-          </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <DetailCard label="Codigo unico" value={detail.codigoUnico} tone="cyan" />
-            <DetailCard label="Talla" value={detail.talla || 'Sin talla'} />
-            <DetailCard label="Vencimiento" value={formatDate(detail.fechaVencimiento)} />
-            <DetailCard label="Estado inventario" value={detail.estadoInventario} />
-          </section>
+              <div className="flex min-w-0 flex-col justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan">
+                    <Icons.Shield />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan">Equipo de Proteccion Personal</p>
+                    <h2 className="rajdhani mt-1 text-3xl font-bold text-white">{detail.nombreMaterial || 'EPP sin nombre'}</h2>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripcion registrada.'}</p>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${detail.estadoEpp === 'Operativo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-brand-red/20 bg-brand-red/10 text-brand-red'}`}>
+                        {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
+                      </span>
+                      {detail.nombreTipoProducto && (
+                        <span className="inline-flex rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1 text-xs font-bold text-brand-cyan">
+                          {detail.nombreTipoProducto}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
-              <h3 className="rajdhani text-xl font-bold text-white">Informacion del material</h3>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between gap-4 border-b border-dark-border pb-3">
-                  <dt className="text-text-muted">Tipo producto</dt>
-                  <dd className="font-semibold text-white">{detail.nombreTipoProducto || '-'}</dd>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan/80">Codigo</p>
+                    <p className="mt-1 text-lg font-bold text-brand-cyan">{detail.codigoUnico || '-'}</p>
+                  </div>
+                  <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Talla</p>
+                    <p className="mt-1 text-lg font-bold text-white">{detail.talla || 'Sin talla'}</p>
+                  </div>
+                  <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Vencimiento</p>
+                    <p className="mt-1 text-lg font-bold text-white">{formatDate(detail.fechaVencimiento)}</p>
+                  </div>
+                  <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Inventario</p>
+                    <p className="mt-1 text-lg font-bold text-white">{detail.estadoInventario || '-'}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between gap-4 border-b border-dark-border pb-3">
-                  <dt className="text-text-muted">ID material</dt>
-                  <dd className="font-mono text-brand-cyan">{detail.idMaterial || '-'}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">ID item</dt>
-                  <dd className="font-mono text-brand-cyan">{detail.idItem || '-'}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="rounded-xl border border-dark-border bg-dark-surface p-5">
-              <h3 className="rajdhani text-xl font-bold text-white">Detalle EPP</h3>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between gap-4 border-b border-dark-border pb-3">
-                  <dt className="text-text-muted">ID detalle EPP</dt>
-                  <dd className="font-mono text-brand-cyan">{detail.idDetalleEpp || '-'}</dd>
-                </div>
-                <div className="flex justify-between gap-4 border-b border-dark-border pb-3">
-                  <dt className="text-text-muted">Estado EPP</dt>
-                  <dd className="font-semibold text-white">{detail.estadoEpp || '-'}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">Fecha vencimiento</dt>
-                  <dd className="font-semibold text-white">{formatDate(detail.fechaVencimiento)}</dd>
-                </div>
-              </dl>
+              </div>
             </div>
           </section>
 
