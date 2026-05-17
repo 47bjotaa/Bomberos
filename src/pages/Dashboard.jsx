@@ -41,13 +41,20 @@ const getMaterialDetailRoute = (pathname) => {
   return null;
 };
 
+const getInitialDashboardTab = (pathname) => (
+  pathname.startsWith('/dashboard/mis-datos') ? 'mis-datos' : 'bodegas'
+);
+
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('bodegas');
+  const [activeTab, setActiveTab] = useState(() => getInitialDashboardTab(window.location.pathname));
   const [inventoryView, setInventoryView] = useState('ubicaciones');
   const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [bomberoProfile, setBomberoProfile] = useState(null);
+  const [loadingBomberoProfile, setLoadingBomberoProfile] = useState(false);
+  const [bomberoProfileError, setBomberoProfileError] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
@@ -153,11 +160,19 @@ function Dashboard({ setView }) {
 
   useEffect(() => {
     const handlePopState = () => {
-      setMaterialDetailRoute(getMaterialDetailRoute(window.location.pathname));
+      const nextMaterialDetailRoute = getMaterialDetailRoute(window.location.pathname);
+      setMaterialDetailRoute(nextMaterialDetailRoute);
+      if (!nextMaterialDetailRoute) {
+        setActiveTab(getInitialDashboardTab(window.location.pathname));
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    fetchBomberoProfile();
   }, []);
 
   useEffect(() => {
@@ -269,7 +284,119 @@ function Dashboard({ setView }) {
 
   const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
 
+  const parseJwtPayload = (token) => {
+    if (!token) return {};
+
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return {};
+
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+      const jsonPayload = decodeURIComponent(
+        window.atob(paddedBase64)
+          .split('')
+          .map(char => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`)
+          .join('')
+      );
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('No se pudo decodificar el token:', error);
+      return {};
+    }
+  };
+
+  const getTokenClaim = (payload, claimNames) => {
+    for (const claimName of claimNames) {
+      if (payload?.[claimName] !== undefined && payload?.[claimName] !== null && payload?.[claimName] !== '') {
+        return payload[claimName];
+      }
+    }
+
+    return null;
+  };
+
+  const getSessionUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const getCurrentBomberoIdFromSession = () => {
+    const tokenPayload = parseJwtPayload(localStorage.getItem('token'));
+    const user = getSessionUser();
+
+    return getTokenClaim(tokenPayload, [
+      'idBombero',
+      'IdBombero',
+      'bomberoId',
+      'BomberoId',
+      'id_bombero',
+      'nameid',
+      'unique_name',
+      'sub',
+      'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier',
+    ]) || user.idBombero || user.id;
+  };
+
+  const getProfileInitials = (name = '') => {
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'U';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  };
+
+  const formatProfileName = (name = '') => {
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return parts[0] || 'Usuario';
+
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
+  const fetchBomberoProfile = async () => {
+    const idBombero = getCurrentBomberoIdFromSession();
+    if (!idBombero) {
+      setBomberoProfileError('No se pudo obtener el id del bombero desde la sesion.');
+      return null;
+    }
+
+    setLoadingBomberoProfile(true);
+    setBomberoProfileError('');
+
+    try {
+      const data = await apiFetch(`/api/bomberos/${idBombero}`);
+      setBomberoProfile(data);
+      localStorage.setItem('user', JSON.stringify({
+        ...getSessionUser(),
+        idBombero: data.idBombero || idBombero,
+        idUsuario: data.idUsuario,
+        idCompania: data.idCompania,
+        email: data.email,
+        cargo: data.cargo,
+      }));
+      return data;
+    } catch (error) {
+      console.error('No se pudieron cargar los datos del bombero:', error);
+      setBomberoProfileError(error.message || 'No se pudieron cargar los datos del bombero.');
+      return null;
+    } finally {
+      setLoadingBomberoProfile(false);
+    }
+  };
+
+  const sessionUser = getSessionUser();
+  const headerProfileName = loadingBomberoProfile
+    ? 'Cargando...'
+    : formatProfileName(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
+  const headerProfileCargo = bomberoProfile?.cargo || sessionUser.cargo || 'Sin cargo';
+  const headerProfileInitials = getProfileInitials(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
+
   const getCurrentBomberoId = async () => {
+    if (bomberoProfile?.idBombero) return bomberoProfile.idBombero;
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.idBombero) return user.idBombero;
 
@@ -564,9 +691,16 @@ function Dashboard({ setView }) {
     setActiveTab(tab);
     setMaterialDetailRoute(null);
     setShowNotificationsMenu(false);
+    setShowProfileMenu(false);
 
-    if (window.location.pathname.startsWith('/dashboard/materiales/') || window.location.pathname.startsWith('/dashboard/epp/items/')) {
-      window.history.pushState({}, '', '/dashboard');
+    const nextPath = tab === 'mis-datos' ? '/dashboard/mis-datos' : '/dashboard';
+    if (
+      window.location.pathname.startsWith('/dashboard/materiales/')
+      || window.location.pathname.startsWith('/dashboard/epp/items/')
+      || window.location.pathname.startsWith('/dashboard/mis-datos')
+      || tab === 'mis-datos'
+    ) {
+      window.history.pushState({}, '', nextPath);
     }
   };
 
@@ -1372,14 +1506,21 @@ function Dashboard({ setView }) {
             }}
           >
             <div className="text-right hidden md:block">
-              <div className="text-sm font-semibold" style={{ color: palette.text }}>Nicolás C.</div>
-              <div className="text-xs text-brand-cyan">Capitán</div>
+              <div className="text-sm font-semibold" style={{ color: palette.text }}>{headerProfileName}</div>
+              <div className="text-xs text-brand-cyan">{headerProfileCargo}</div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">NC</div>
+            <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">{headerProfileInitials}</div>
           </div>
 
           {showProfileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-dark-surface border border-dark-border rounded-lg shadow-xl overflow-hidden z-50">
+            <div className="absolute right-0 top-full mt-2 w-52 bg-dark-surface border border-dark-border rounded-lg shadow-xl overflow-hidden z-50">
+              <button
+                onClick={() => selectDashboardTab('mis-datos')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-text-main hover:bg-dark-bg3 hover:text-white transition-colors text-left"
+              >
+                <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.8 5.803 2.127M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Mis Datos
+              </button>
               <button
                 onClick={() => {
                   authService.logout();
@@ -1405,7 +1546,7 @@ function Dashboard({ setView }) {
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
-                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : <Icons.Inventory />}
+                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
                 {activeTab === 'bodegas' ? (
@@ -1423,11 +1564,12 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
                 {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
+                {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Informacion del bombero asociado a tu sesion</span>}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -2135,7 +2277,65 @@ function Dashboard({ setView }) {
             <EppView eppData={eppData} setEppData={setEppData} />
           )}
 
-          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && (
+          {!materialDetailRoute && activeTab === 'mis-datos' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mx-auto max-w-5xl">
+                {loadingBomberoProfile ? (
+                  <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
+                    Cargando tus datos...
+                  </div>
+                ) : bomberoProfileError ? (
+                  <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-6 text-center">
+                    <p className="font-semibold text-brand-red">{bomberoProfileError}</p>
+                    <button
+                      type="button"
+                      onClick={fetchBomberoProfile}
+                      className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <section className="rounded-xl border border-dark-border bg-dark-surface p-6">
+                      <div className="flex flex-wrap items-center gap-5">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-brand-cyan bg-dark-bg2 text-xl font-bold text-white shadow-[0_0_18px_rgba(56,189,248,0.18)]">
+                          {headerProfileInitials}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="rajdhani text-3xl font-bold text-white">{bomberoProfile?.nombre || 'Sin nombre registrado'}</h3>
+                          <p className="mt-1 text-sm text-brand-cyan">{bomberoProfile?.cargo || 'Sin cargo registrado'}</p>
+                        </div>
+                        <span className={`ml-auto rounded-full border px-3 py-1 text-xs font-semibold ${bomberoProfile?.estadoUsuario === 'Activo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
+                          {bomberoProfile?.estadoUsuario || 'Sin estado'}
+                        </span>
+                      </div>
+                    </section>
+
+                    <section className="grid gap-4 md:grid-cols-2">
+                      {[
+                        ['ID Bombero', bomberoProfile?.idBombero],
+                        ['ID Usuario', bomberoProfile?.idUsuario],
+                        ['ID Compania', bomberoProfile?.idCompania],
+                        ['RUT', bomberoProfile?.rut],
+                        ['Email', bomberoProfile?.email],
+                        ['Telefono', bomberoProfile?.telefono],
+                        ['Genero', bomberoProfile?.genero],
+                        ['Cargo', bomberoProfile?.cargo],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-xl border border-dark-border bg-dark-surface p-5">
+                          <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{label}</p>
+                          <p className="mt-2 break-words text-base font-semibold text-white">{value || '-'}</p>
+                        </div>
+                      ))}
+                    </section>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!materialDetailRoute && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'mis-datos' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>
