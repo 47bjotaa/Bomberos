@@ -112,6 +112,8 @@ function Dashboard({ setView }) {
   const [tiposArbolUbicacion, setTiposArbolUbicacion] = useState([]);
   const [loadingTiposArbol, setLoadingTiposArbol] = useState(false);
   const [tiposArbolError, setTiposArbolError] = useState('');
+  const [deletingTipoUbicacionId, setDeletingTipoUbicacionId] = useState(null);
+  const [deleteTipoUbicacionError, setDeleteTipoUbicacionError] = useState('');
   const [showAddTipoUbicacionModal, setShowAddTipoUbicacionModal] = useState(false);
   const [newTipoUbicacionData, setNewTipoUbicacionData] = useState({ nombre: '', esTipoRaiz: false });
   const [savingTipoUbicacion, setSavingTipoUbicacion] = useState(false);
@@ -1132,9 +1134,34 @@ function Dashboard({ setView }) {
     }
   };
 
+  const handleDeleteTipoUbicacion = async (tipo) => {
+    if (!tipo?.id || deletingTipoUbicacionId) return;
+
+    const confirmed = window.confirm(`Eliminar el tipo de ubicacion "${tipo.nombre}"?`);
+    if (!confirmed) return;
+
+    setDeletingTipoUbicacionId(tipo.id);
+    setDeleteTipoUbicacionError('');
+
+    try {
+      await apiFetch(`/api/tipoubicaciones/${tipo.id}`, {
+        method: 'DELETE',
+      });
+
+      setTiposArbolUbicacion(prev => prev.filter(item => String(item.id) !== String(tipo.id)));
+      setTiposUbicacion(prev => prev.filter(item => String(item.id) !== String(tipo.id)));
+      await fetchTiposArbolUbicacion();
+    } catch (error) {
+      setDeleteTipoUbicacionError(error.message || 'No se pudo eliminar el tipo de ubicacion.');
+    } finally {
+      setDeletingTipoUbicacionId(null);
+    }
+  };
+
   const openAddTipoUbicacionModal = () => {
     setNewTipoUbicacionData({ nombre: '', esTipoRaiz: false });
     setAddTipoUbicacionError('');
+    setDeleteTipoUbicacionError('');
     setTipoRelationsError('');
     setCreatedTipoUbicacion(null);
     setSelectedTipoPadreIds([]);
@@ -2132,30 +2159,60 @@ function Dashboard({ setView }) {
                     </button>
                   </div>
                 ) : tiposArbolUbicacion.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {tiposArbolUbicacion.map(tipo => (
-                      <div
-                        key={tipo.id}
-                        className="rounded-xl border p-5"
-                        style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{tipo.nombre}</p>
-                            <p className="mt-1 text-xs" style={{ color: palette.muted }}>ID tipo {tipo.id}</p>
-                          </div>
-                          <span
-                            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tipo.esTipoRaiz ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}
-                          >
-                            {tipo.esTipoRaiz ? 'Raiz' : 'Sububicacion'}
-                          </span>
-                        </div>
-                        {tipo.idCompania && (
-                          <p className="mt-4 text-xs" style={{ color: palette.muted }}>Compania {tipo.idCompania}</p>
-                        )}
+                  <>
+                    {deleteTipoUbicacionError && (
+                      <div className="mb-4 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm font-semibold text-brand-red">
+                        {deleteTipoUbicacionError}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {tiposArbolUbicacion.map(tipo => {
+                        const isDeletingTipo = String(deletingTipoUbicacionId) === String(tipo.id);
+
+                        return (
+                          <div
+                            key={tipo.id}
+                            className="rounded-xl border p-5"
+                            style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{tipo.nombre}</p>
+                                <p className="mt-1 text-xs" style={{ color: palette.muted }}>ID tipo {tipo.id}</p>
+                              </div>
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tipo.esTipoRaiz ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}
+                              >
+                                {tipo.esTipoRaiz ? 'Raiz' : 'Sububicacion'}
+                              </span>
+                            </div>
+                            {tipo.idCompania && (
+                              <p className="mt-4 text-xs" style={{ color: palette.muted }}>Compania {tipo.idCompania}</p>
+                            )}
+                            <div className="mt-5 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:text-brand-cyan"
+                                style={{ borderColor: palette.borderStrong, color: palette.muted }}
+                                title="Editar tipo de ubicacion"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTipoUbicacion(tipo)}
+                                disabled={isDeletingTipo || Boolean(deletingTipoUbicacionId)}
+                                className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Eliminar tipo de ubicacion"
+                              >
+                                {isDeletingTipo ? 'Eliminando...' : 'Eliminar'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-14 text-center" style={{ borderColor: palette.borderStrong }}>
                     <p className="font-semibold" style={{ color: palette.text }}>No hay tipos de ubicacion registrados.</p>
