@@ -169,6 +169,8 @@ function Dashboard({ setView }) {
   const [donacionesCampana, setDonacionesCampana] = useState([]);
   const [loadingDonacionesCampana, setLoadingDonacionesCampana] = useState(false);
   const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
+  const [filtroNombreDonante, setFiltroNombreDonante] = useState('');
+  const [filtroNombreBomberoDonacion, setFiltroNombreBomberoDonacion] = useState('');
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -948,12 +950,16 @@ function Dashboard({ setView }) {
     setSelectedCampanaDetalle(campana);
     setDonacionesCampana([]);
     setDonacionesCampanaError('');
+    setFiltroNombreDonante('');
+    setFiltroNombreBomberoDonacion('');
   };
 
   const closeCampanaDetalle = () => {
     setSelectedCampanaDetalle(null);
     setDonacionesCampana([]);
     setDonacionesCampanaError('');
+    setFiltroNombreDonante('');
+    setFiltroNombreBomberoDonacion('');
   };
 
   const resetNewCampanaData = () => {
@@ -1660,6 +1666,16 @@ function Dashboard({ setView }) {
     && newUbicacionData.idTipoUbicacion
     && (!currentUbicacion || currentUbicacion.idUbicacion);
 
+  const filtroDonanteNormalizado = filtroNombreDonante.trim().toLowerCase();
+  const filtroBomberoDonacionNormalizado = filtroNombreBomberoDonacion.trim().toLowerCase();
+  const donacionesCampanaFiltradas = donacionesCampana.filter((donacion) => {
+    const nombreDonante = String(donacion.nombreDonante || '').toLowerCase();
+    const nombreBombero = String(donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '').toLowerCase();
+
+    return (!filtroDonanteNormalizado || nombreDonante.includes(filtroDonanteNormalizado))
+      && (!filtroBomberoDonacionNormalizado || nombreBombero.includes(filtroBomberoDonacionNormalizado));
+  });
+
   const handleCreateUbicacion = async (event) => {
     event.preventDefault();
     if (!canCreateUbicacion || savingUbicacion) return;
@@ -1918,7 +1934,18 @@ function Dashboard({ setView }) {
                   Asignar EPP
                 </button>
               )}
-              {activeTab === 'donaciones' && (
+              {activeTab === 'donaciones' && selectedCampanaDetalle && (
+                <button
+                  type="button"
+                  onClick={() => generateAndCopyDonationLink(selectedCampanaDetalle)}
+                  disabled={generatingDonationLinkId === selectedCampanaDetalle.id}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-1.414 1.414a4 4 0 01-5.656-5.656l1.414-1.414m7.656 3.656l1.414-1.414a4 4 0 00-5.656-5.656l-1.414 1.414"></path></svg>
+                  {generatingDonationLinkId === selectedCampanaDetalle.id ? 'Generando...' : copiedDonationSlug === (selectedCampanaDetalle.slug || String(selectedCampanaDetalle.id)) ? 'Link copiado' : 'Generar link'}
+                </button>
+              )}
+              {activeTab === 'donaciones' && !selectedCampanaDetalle && (
                 <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <span className="text-base leading-none">+</span>
                   Crear campaña
@@ -2615,6 +2642,35 @@ function Dashboard({ setView }) {
                       </div>
                     </div>
 
+                    {donationLinkError && (
+                      <div className="mb-4 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                        {donationLinkError}
+                      </div>
+                    )}
+
+                    <div className="mb-4 grid gap-3 md:grid-cols-2">
+                      <div className="relative">
+                        <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input
+                          type="text"
+                          value={filtroNombreDonante}
+                          onChange={(event) => setFiltroNombreDonante(event.target.value)}
+                          placeholder="Buscar por nombre donante..."
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        />
+                      </div>
+                      <div className="relative">
+                        <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input
+                          type="text"
+                          value={filtroNombreBomberoDonacion}
+                          onChange={(event) => setFiltroNombreBomberoDonacion(event.target.value)}
+                          placeholder="Buscar por nombre bombero..."
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        />
+                      </div>
+                    </div>
+
                     <div className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
@@ -2642,7 +2698,7 @@ function Dashboard({ setView }) {
                                 </button>
                               </td>
                             </tr>
-                          ) : donacionesCampana.length > 0 ? donacionesCampana.map(donacion => (
+                          ) : donacionesCampanaFiltradas.length > 0 ? donacionesCampanaFiltradas.map(donacion => (
                             <tr key={donacion.idDonacion} className="hover:bg-dark-bg3 transition-colors">
                               <td className="px-5 py-4 text-text-muted">{donacion.telefonoDonante || donacion.telefono || '-'}</td>
                               <td className="px-5 py-4 font-semibold text-white">{donacion.nombreDonante}</td>
@@ -2659,7 +2715,7 @@ function Dashboard({ setView }) {
                           )) : (
                             <tr>
                               <td colSpan="7" className="px-5 py-16 text-center text-text-muted">
-                                No hay donaciones pagadas para esta campana.
+                                {donacionesCampana.length > 0 ? 'No hay donaciones que coincidan con los filtros.' : 'No hay donaciones pagadas para esta campana.'}
                               </td>
                             </tr>
                           )}
