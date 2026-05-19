@@ -3361,6 +3361,7 @@ function Dashboard({ setView }) {
                       <option value="">Seleccionar tipo de ubicacion</option>
                       {tiposArbolUbicacion
                         .filter(tipo => String(tipo.id) !== String(editingTipoRelations.id))
+                        .filter(tipo => !tipo.esTipoRaiz)
                         .filter(tipo => !tipoChildrenRelations.some(relation => String(relation.idTipoUbicacionHijo) === String(tipo.id)))
                         .map(tipo => (
                           <option key={tipo.id} value={tipo.id}>
@@ -3378,6 +3379,7 @@ function Dashboard({ setView }) {
                   </div>
                   {tiposArbolUbicacion
                     .filter(tipo => String(tipo.id) !== String(editingTipoRelations.id))
+                    .filter(tipo => !tipo.esTipoRaiz)
                     .filter(tipo => !tipoChildrenRelations.some(relation => String(relation.idTipoUbicacionHijo) === String(tipo.id))).length === 0 && (
                     <p className="mt-3 text-xs text-text-muted">No quedan tipos disponibles para agregar.</p>
                   )}
