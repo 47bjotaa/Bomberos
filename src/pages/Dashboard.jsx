@@ -123,6 +123,13 @@ function Dashboard({ setView }) {
   const [selectedTipoPadreIds, setSelectedTipoPadreIds] = useState([]);
   const [savingTipoRelations, setSavingTipoRelations] = useState(false);
   const [tipoRelationsError, setTipoRelationsError] = useState('');
+  const [editingTipoRelations, setEditingTipoRelations] = useState(null);
+  const [tipoChildrenRelations, setTipoChildrenRelations] = useState([]);
+  const [loadingTipoChildrenRelations, setLoadingTipoChildrenRelations] = useState(false);
+  const [selectedTipoHijoId, setSelectedTipoHijoId] = useState('');
+  const [savingTipoChildRelation, setSavingTipoChildRelation] = useState(false);
+  const [deletingTipoChildRelationId, setDeletingTipoChildRelationId] = useState(null);
+  const [editTipoRelationsError, setEditTipoRelationsError] = useState('');
   const [stockMinimos, setStockMinimos] = useState([]);
   const [loadingStockMinimos, setLoadingStockMinimos] = useState(false);
   const [stockMinimosError, setStockMinimosError] = useState('');
@@ -1114,6 +1121,16 @@ function Dashboard({ setView }) {
     esTipoRaiz: toBoolean(tipo.esTipoRaiz),
   });
 
+  const mapTipoRelation = (relation) => ({
+    id: relation.idTipoUbicacionRelacion || `${relation.idTipoUbicacionPadre}-${relation.idTipoUbicacionHijo}`,
+    idTipoUbicacionRelacion: relation.idTipoUbicacionRelacion,
+    idTipoUbicacionPadre: relation.idTipoUbicacionPadre,
+    nombreTipoPadre: relation.nombreTipoPadre,
+    idTipoUbicacionHijo: relation.idTipoUbicacionHijo,
+    nombreTipoHijo: relation.nombreTipoHijo || 'Tipo de ubicacion',
+    esTipoRaizHijo: toBoolean(relation.esTipoRaizHijo),
+  });
+
   const fetchTiposArbolUbicacion = async () => {
     setLoadingTiposArbol(true);
     setTiposArbolError('');
@@ -1131,6 +1148,97 @@ function Dashboard({ setView }) {
       return [];
     } finally {
       setLoadingTiposArbol(false);
+    }
+  };
+
+  const fetchTipoChildrenRelations = async (tipoPadreId) => {
+    if (!tipoPadreId) return [];
+
+    setLoadingTipoChildrenRelations(true);
+    setEditTipoRelationsError('');
+
+    try {
+      const data = await apiFetch(`/api/relaciontipoubicaciones/${tipoPadreId}`);
+      const relations = getArrayPayload(data, ['relaciones', 'relacionTipoUbicaciones', 'tipos'])
+        .map(mapTipoRelation)
+        .filter(relation => relation.idTipoUbicacionHijo);
+      setTipoChildrenRelations(relations);
+      return relations;
+    } catch (error) {
+      setEditTipoRelationsError(error.message || 'No se pudieron cargar los tipos admitidos.');
+      setTipoChildrenRelations([]);
+      return [];
+    } finally {
+      setLoadingTipoChildrenRelations(false);
+    }
+  };
+
+  const openEditTipoRelationsModal = async (tipo) => {
+    setEditingTipoRelations(tipo);
+    setSelectedTipoHijoId('');
+    setEditTipoRelationsError('');
+    setTipoChildrenRelations([]);
+    await fetchTipoChildrenRelations(tipo.id);
+  };
+
+  const closeEditTipoRelationsModal = () => {
+    if (loadingTipoChildrenRelations || savingTipoChildRelation || deletingTipoChildRelationId) return;
+
+    setEditingTipoRelations(null);
+    setTipoChildrenRelations([]);
+    setSelectedTipoHijoId('');
+    setEditTipoRelationsError('');
+  };
+
+  const handleAddTipoChildRelation = async (event) => {
+    event.preventDefault();
+    if (!editingTipoRelations?.id || !selectedTipoHijoId || savingTipoChildRelation) return;
+
+    const tipoHijo = tiposArbolUbicacion.find(tipo => String(tipo.id) === String(selectedTipoHijoId));
+    setSavingTipoChildRelation(true);
+    setEditTipoRelationsError('');
+
+    try {
+      await apiFetch('/api/relaciontipoubicaciones', {
+        method: 'POST',
+        body: JSON.stringify({
+          idCompania: Number(editingTipoRelations.idCompania || tipoHijo?.idCompania || 0),
+          idTipoUbicacionPadre: Number(editingTipoRelations.id),
+          idTipoUbicacionHijo: Number(selectedTipoHijoId),
+        }),
+      });
+
+      setSelectedTipoHijoId('');
+      await fetchTipoChildrenRelations(editingTipoRelations.id);
+    } catch (error) {
+      setEditTipoRelationsError(error.message || 'No se pudo agregar el tipo admitido.');
+    } finally {
+      setSavingTipoChildRelation(false);
+    }
+  };
+
+  const handleDeleteTipoChildRelation = async (relation) => {
+    if (!editingTipoRelations?.id || !relation?.idTipoUbicacionHijo || deletingTipoChildRelationId) return;
+
+    const relationId = relation.idTipoUbicacionRelacion || relation.id;
+    setDeletingTipoChildRelationId(relationId);
+    setEditTipoRelationsError('');
+
+    try {
+      await apiFetch('/api/relaciontipoubicaciones', {
+        method: 'DELETE',
+        body: JSON.stringify({
+          idTipoUbicacionPadre: Number(editingTipoRelations.id),
+          idTipoUbicacionHijo: Number(relation.idTipoUbicacionHijo),
+        }),
+      });
+
+      setTipoChildrenRelations(prev => prev.filter(item => String(item.idTipoUbicacionHijo) !== String(relation.idTipoUbicacionHijo)));
+      await fetchTipoChildrenRelations(editingTipoRelations.id);
+    } catch (error) {
+      setEditTipoRelationsError(error.message || 'No se pudo eliminar la relacion.');
+    } finally {
+      setDeletingTipoChildRelationId(null);
     }
   };
 
@@ -2192,6 +2300,7 @@ function Dashboard({ setView }) {
                             <div className="mt-5 flex flex-wrap gap-2">
                               <button
                                 type="button"
+                                onClick={() => openEditTipoRelationsModal(tipo)}
                                 className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:text-brand-cyan"
                                 style={{ borderColor: palette.borderStrong, color: palette.muted }}
                                 title="Editar tipo de ubicacion"
@@ -3178,6 +3287,117 @@ function Dashboard({ setView }) {
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingTipoRelations ? 'Guardando...' : 'Guardar relaciones'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {editingTipoRelations && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleAddTipoChildRelation} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-white rajdhani">Editar Tipo de Ubicacion</h3>
+                  <p className="mt-1 text-xs text-text-muted">Tipos admitidos dentro de {editingTipoRelations.nombre}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditTipoRelationsModal}
+                  disabled={loadingTipoChildrenRelations || savingTipoChildRelation || Boolean(deletingTipoChildRelationId)}
+                  className="text-text-muted hover:text-white transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+
+              <div className="max-h-[72vh] overflow-y-auto p-6 space-y-5">
+                <div>
+                  <p className="mb-3 text-sm font-semibold text-white">Tipos que admite</p>
+                  {loadingTipoChildrenRelations ? (
+                    <p className="rounded-lg border border-dark-border bg-dark-bg px-4 py-4 text-sm text-text-muted">
+                      Cargando tipos admitidos...
+                    </p>
+                  ) : tipoChildrenRelations.length > 0 ? (
+                    <div className="space-y-2">
+                      {tipoChildrenRelations.map(relation => {
+                        const relationId = relation.idTipoUbicacionRelacion || relation.id;
+                        const isDeletingRelation = String(deletingTipoChildRelationId) === String(relationId);
+
+                        return (
+                          <div key={relationId} className="flex items-center justify-between gap-3 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                            <span>
+                              <span className="block text-sm font-semibold text-white">{relation.nombreTipoHijo}</span>
+                              <span className="block text-xs text-text-muted">ID tipo {relation.idTipoUbicacionHijo}{relation.esTipoRaizHijo ? ' - Tipo raiz' : ' - Sububicacion'}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTipoChildRelation(relation)}
+                              disabled={isDeletingRelation || Boolean(deletingTipoChildRelationId) || savingTipoChildRelation}
+                              className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isDeletingRelation ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-dark-border bg-dark-bg px-4 py-4 text-sm text-text-muted">
+                      Este tipo aun no admite otros tipos de ubicacion.
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-dark-border bg-dark-bg px-4 py-4">
+                  <label className="block text-sm font-semibold text-white mb-2">Agregar tipo admitido</label>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <select
+                      value={selectedTipoHijoId}
+                      onChange={(event) => setSelectedTipoHijoId(event.target.value)}
+                      disabled={loadingTipoChildrenRelations || savingTipoChildRelation || Boolean(deletingTipoChildRelationId)}
+                      className="min-w-0 flex-1 px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    >
+                      <option value="">Seleccionar tipo de ubicacion</option>
+                      {tiposArbolUbicacion
+                        .filter(tipo => String(tipo.id) !== String(editingTipoRelations.id))
+                        .filter(tipo => !tipoChildrenRelations.some(relation => String(relation.idTipoUbicacionHijo) === String(tipo.id)))
+                        .map(tipo => (
+                          <option key={tipo.id} value={tipo.id}>
+                            {tipo.nombre}{tipo.esTipoRaiz ? ' - Raiz' : ' - Sububicacion'}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="submit"
+                      disabled={!selectedTipoHijoId || savingTipoChildRelation || loadingTipoChildrenRelations || Boolean(deletingTipoChildRelationId)}
+                      className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingTipoChildRelation ? 'Agregando...' : 'Agregar'}
+                    </button>
+                  </div>
+                  {tiposArbolUbicacion
+                    .filter(tipo => String(tipo.id) !== String(editingTipoRelations.id))
+                    .filter(tipo => !tipoChildrenRelations.some(relation => String(relation.idTipoUbicacionHijo) === String(tipo.id))).length === 0 && (
+                    <p className="mt-3 text-xs text-text-muted">No quedan tipos disponibles para agregar.</p>
+                  )}
+                </div>
+
+                {editTipoRelationsError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {editTipoRelationsError}
+                  </p>
+                )}
+              </div>
+
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end">
+                <button
+                  type="button"
+                  onClick={closeEditTipoRelationsModal}
+                  disabled={loadingTipoChildrenRelations || savingTipoChildRelation || Boolean(deletingTipoChildRelationId)}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cerrar
                 </button>
               </div>
             </form>
