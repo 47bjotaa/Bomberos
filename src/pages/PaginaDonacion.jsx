@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../services/api';
+import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 
 const getSlugFromPath = () => decodeURIComponent(window.location.pathname.replace(/^\/donar\/?/, '').split('/')[0] || '');
 const getRefFromSearch = () => new URLSearchParams(window.location.search).get('ref') || '';
@@ -26,7 +27,7 @@ function PaginaDonacion() {
   const [error, setError] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(5000);
   const [customAmount, setCustomAmount] = useState('');
-  const [donorData, setDonorData] = useState({ nombre: '', email: '', mensaje: '' });
+  const [donorData, setDonorData] = useState({ nombre: '', email: '', telefono: '', mensaje: '' });
   const [paymentError, setPaymentError] = useState('');
   const [creatingPayment, setCreatingPayment] = useState(false);
   const slug = useMemo(getSlugFromPath, []);
@@ -87,8 +88,8 @@ function PaginaDonacion() {
     event.preventDefault();
     setPaymentError('');
 
-    if (!donorData.nombre.trim() || !donorData.email.trim()) {
-      setPaymentError('Ingresa nombre y email para continuar.');
+    if (!donorData.nombre.trim() || !donorData.email.trim() || !donorData.telefono.trim()) {
+      setPaymentError('Ingresa nombre, email y telefono para continuar.');
       return;
     }
 
@@ -115,6 +116,7 @@ function PaginaDonacion() {
           monto: amount,
           nombre: donorData.nombre.trim(),
           email: donorData.email.trim(),
+          telefono: donorData.telefono.trim(),
           mensaje: donorData.mensaje.trim(),
         }),
       });
@@ -139,8 +141,7 @@ function PaginaDonacion() {
       <header className="border-b border-dark-border bg-dark-surface px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <img src="/images/logo.png" className="h-8 w-8 object-contain" alt="SGLB" />
-            <span className="rajdhani text-xl font-bold text-white">SGLB</span>
+            <LogoCuartelAmigo size={32} />
           </a>
           <span className="rounded-full border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1 text-xs font-semibold text-brand-cyan">
             Donacion segura
@@ -165,7 +166,7 @@ function PaginaDonacion() {
                 {campana.estado}
               </div>
               <h1 className="rajdhani text-4xl font-bold leading-tight text-white md:text-5xl">{campana.nombre}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-text-muted">{campana.descripcion}</p>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-text-muted">{campana.descripcion?.replace(/donen mierda/gi, 'Donen')}</p>
 
               <div className="mt-8 overflow-hidden rounded-xl border border-dark-border bg-dark-surface">
                 {campana.imagenUrl ? (
@@ -243,6 +244,13 @@ function PaginaDonacion() {
                     onChange={(event) => setDonorData({ ...donorData, email: event.target.value })}
                     className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                     placeholder="Email *"
+                  />
+                  <input
+                    type="tel"
+                    value={donorData.telefono}
+                    onChange={(event) => setDonorData({ ...donorData, telefono: event.target.value.replace(/\D/g, '') })}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    placeholder="Telefono *"
                   />
                   <textarea
                     rows="3"
