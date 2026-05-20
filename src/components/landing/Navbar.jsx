@@ -2,12 +2,22 @@ import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { APP_LOGIN_URL } from '../../utils/constants';
 import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
+import { useState, useEffect } from 'react';
 
 function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   const { theme, toggleTheme } = useTheme();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="container flex items-center justify-between" style={{ width: '100%' }}>
         <div className="flex items-center">
           <LogoCuartelAmigo size={80} />
