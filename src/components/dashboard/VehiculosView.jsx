@@ -3,11 +3,14 @@ import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
 
 function VehiculosView() {
-  const [view, setView] = useState('list'); // list, add, detail
+  const [view, setView] = useState('list'); // list, detail
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
 
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [savingVehiculo, setSavingVehiculo] = useState(false);
+  const [addError, setAddError] = useState('');
 
   useEffect(() => {
     fetchVehiculos();
@@ -17,16 +20,7 @@ function VehiculosView() {
     setLoading(true);
     try {
       const data = await apiFetch('/api/vehiculos');
-      const mappedData = data.map(v => ({
-        id: v.idVehiculo || v.id,
-        nombre: v.nombre || v.name || `Unidad ${v.patente || ''}`,
-        patente: v.patente || 'S/N',
-        tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
-        modelo: v.modelo || v.descripcion || 'Sin especificar',
-        estado: v.estado || 'Operativo',
-        observaciones: v.observaciones || [],
-        mantenciones: v.mantenciones || []
-      }));
+      const mappedData = data.map(mapVehiculo);
       setVehiculos(mappedData);
     } catch (error) {
       console.error("Error al cargar vehículos:", error);
@@ -37,7 +31,12 @@ function VehiculosView() {
 
   // Form states
   const [formData, setFormData] = useState({
-    nombre: '', patente: '', tipo: '', estado: 'Operativo', descripcion: ''
+    descripcion: '',
+    estadoUbicacion: '',
+    nomenclatura: '',
+    tipoVehiculo: '',
+    estadoVehiculo: 'Operativo',
+    patente: ''
   });
 
   // Detail states
@@ -55,21 +54,65 @@ function VehiculosView() {
     setSelectedVehiculo(updatedV);
   };
 
-  const handleAddSubmit = (e) => {
+  const mapVehiculo = (v) => ({
+    id: v.idVehiculo || v.id,
+    nombre: v.nombre || v.name || v.nomenclatura || `Unidad ${v.patente || ''}`,
+    patente: v.patente || 'S/N',
+    tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
+    modelo: v.modelo || v.descripcion || 'Sin especificar',
+    estado: v.estadoVehiculo || v.estado || 'Operativo',
+    estadoUbicacion: v.estadoUbicacion || '',
+    observaciones: v.observaciones || [],
+    mantenciones: v.mantenciones || []
+  });
+
+  const resetAddForm = () => {
+    setFormData({
+      descripcion: '',
+      estadoUbicacion: '',
+      nomenclatura: '',
+      tipoVehiculo: '',
+      estadoVehiculo: 'Operativo',
+      patente: ''
+    });
+    setAddError('');
+  };
+
+  const closeAddModal = () => {
+    if (savingVehiculo) return;
+    setShowAddModal(false);
+    resetAddForm();
+  };
+
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    const newV = {
-      id: Date.now(),
-      nombre: formData.nombre || 'Nuevo Vehículo',
-      patente: formData.patente || 'S/N',
-      tipo: formData.tipo || 'Desconocido',
-      modelo: formData.descripcion || 'Sin descripción',
-      estado: formData.estado,
-      observaciones: [],
-      mantenciones: []
+    if (savingVehiculo) return;
+
+    setSavingVehiculo(true);
+    setAddError('');
+
+    const payload = {
+      descripcion: formData.descripcion.trim(),
+      estadoUbicacion: formData.estadoUbicacion.trim(),
+      nomenclatura: formData.nomenclatura.trim(),
+      tipoVehiculo: formData.tipoVehiculo.trim(),
+      estadoVehiculo: formData.estadoVehiculo.trim(),
+      patente: formData.patente.trim()
     };
-    setVehiculos([...vehiculos, newV]);
-    setView('list');
-    setFormData({ nombre: '', patente: '', tipo: '', estado: 'Operativo', descripcion: '' });
+
+    try {
+      await apiFetch('/api/vehiculos', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      await fetchVehiculos();
+      setShowAddModal(false);
+      resetAddForm();
+    } catch (error) {
+      setAddError(error.message || 'No se pudo crear el vehiculo.');
+    } finally {
+      setSavingVehiculo(false);
+    }
   };
 
   if (view === 'list') {
@@ -80,7 +123,7 @@ function VehiculosView() {
             <h3 className="text-2xl font-semibold text-white mb-1 rajdhani tracking-wide">Parque Automotriz</h3>
             <p className="text-sm text-text-muted">Gestiona los vehículos, carros y ambulancias de la compañía.</p>
           </div>
-          <button onClick={() => setView('add')} className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+          <button onClick={() => setShowAddModal(true)} className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
             Agregar vehículo
           </button>
         </div>
@@ -117,83 +160,121 @@ function VehiculosView() {
             <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-dark-border rounded-2xl">
               <Icons.Truck size={48} className="text-text-muted mb-4 opacity-20" />
               <p className="text-text-muted rajdhani text-lg">No hay vehículos registrados.</p>
-              <button onClick={() => setView('add')} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehículo</button>
+              <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehículo</button>
             </div>
           )}
         </div>
-      </div>
-    );
-  }
 
-  if (view === 'add') {
-    return (
-      <div className="p-8 max-w-3xl mx-auto pb-20">
-        <div className="flex items-center gap-4 mb-8">
-          <button onClick={() => setView('list')} className="text-text-muted hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          </button>
-          <h3 className="text-2xl font-semibold text-white rajdhani tracking-wide">Agregar Vehículo</h3>
-        </div>
-
-        <div className="bg-dark-surface border border-dark-border rounded-xl p-8">
-          <form onSubmit={handleAddSubmit}>
-            {/* Foto upload mock */}
-            <div className="bg-dark-bg border border-dashed border-dark-border rounded-xl p-6 flex items-center gap-6 mb-8">
-              <div className="w-16 h-16 rounded-full bg-dark-bg2 flex items-center justify-center border border-dark-border text-text-muted">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              </div>
-              <div>
-                <h4 className="text-white font-medium mb-1">Foto del vehículo</h4>
-                <p className="text-sm text-text-muted mb-3">Sube una imagen representativa del carro o ambulancia. (PNG, JPG)</p>
-                <button type="button" className="px-4 py-2 text-xs font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors">
-                  Seleccionar archivo
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="w-full max-w-3xl max-h-[88vh] overflow-hidden rounded-2xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-xl font-bold text-white">Agregar Vehiculo</h3>
+                  <p className="mt-1 text-sm text-text-muted">Registra una nueva unidad del parque automotriz.</p>
+                </div>
+                <button type="button" onClick={closeAddModal} className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-dark-bg3 hover:text-white">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Nombre del Vehículo (Clave)</label>
-                <input required type="text" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej: Carro Bomba (B-1)" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Patente</label>
-                <input type="text" value={formData.patente} onChange={e => setFormData({ ...formData, patente: e.target.value })} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej: AB-12-34" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Tipo de Vehículo</label>
-                <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all appearance-none">
-                  <option value="">Seleccionar tipo...</option>
-                  <option value="Carro Bomba (Urbano)">Carro Bomba (Urbano)</option>
-                  <option value="Carro Rescate Pesado">Carro Rescate Pesado</option>
-                  <option value="Ambulancia Avanzada">Ambulancia Avanzada</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Estado</label>
-                <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all appearance-none">
-                  <option value="Operativo">Operativo</option>
-                  <option value="En Mantención">En Mantención</option>
-                  <option value="Fuera de Servicio">Fuera de Servicio</option>
-                </select>
-              </div>
-            </div>
+              <form onSubmit={handleAddSubmit} className="custom-scrollbar max-h-[calc(88vh-76px)] overflow-y-auto p-6">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Nomenclatura <span className="text-brand-red">*</span></span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.nomenclatura}
+                      onChange={e => setFormData({ ...formData, nomenclatura: e.target.value })}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      placeholder="Ej: B-1, RX-2, AB1234"
+                    />
+                  </label>
 
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-text-main mb-1.5">Descripción / Detalles</label>
-              <textarea value={formData.descripcion} onChange={e => setFormData({ ...formData, descripcion: e.target.value })} className="w-full px-4 py-2.5 rounded-lg bg-dark-bg2 border border-dark-border text-white focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all min-h-[100px]" placeholder="Marca, modelo, año, capacidad, etc."></textarea>
-            </div>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Patente <span className="text-brand-red">*</span></span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.patente}
+                      onChange={e => setFormData({ ...formData, patente: e.target.value })}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      placeholder="Ej: AB-12-34"
+                    />
+                  </label>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-dark-border">
-              <button type="button" onClick={() => setView('list')} className="px-5 py-2.5 text-sm font-medium text-text-main bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-bg3 transition-colors">
-                Cancelar
-              </button>
-              <button type="submit" className="px-5 py-2.5 text-sm font-medium text-dark-bg bg-brand-cyan rounded-lg hover:bg-opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-                Crear vehículo
-              </button>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Tipo de vehiculo <span className="text-brand-red">*</span></span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.tipoVehiculo}
+                      onChange={e => setFormData({ ...formData, tipoVehiculo: e.target.value })}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      placeholder="Ej: Carro bomba, ambulancia, rescate"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
+                    <select
+                      value={formData.estadoVehiculo}
+                      onChange={e => setFormData({ ...formData, estadoVehiculo: e.target.value })}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan"
+                    >
+                      <option value="Operativo">Operativo</option>
+                      <option value="En Mantencion">En Mantencion</option>
+                      <option value="Fuera de Servicio">Fuera de Servicio</option>
+                    </select>
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Estado / ubicacion</span>
+                    <input
+                      type="text"
+                      value={formData.estadoUbicacion}
+                      onChange={e => setFormData({ ...formData, estadoUbicacion: e.target.value })}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      placeholder="Ej: Cuartel central, en servicio, taller"
+                    />
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="mb-2 block text-sm font-medium text-text-main">Descripcion</span>
+                    <textarea
+                      value={formData.descripcion}
+                      onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                      className="min-h-[110px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      placeholder="Marca, modelo, capacidad, observaciones generales..."
+                    />
+                  </label>
+                </div>
+
+                {addError && (
+                  <div className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">
+                    {addError}
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-end gap-3 border-t border-dark-border pt-5">
+                  <button type="button" onClick={closeAddModal} className="rounded-lg border border-dark-border bg-dark-bg px-5 py-2.5 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg3 hover:text-white">
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingVehiculo}
+                    className="rounded-lg bg-brand-cyan px-5 py-2.5 text-sm font-bold text-dark-bg transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingVehiculo ? 'Creando...' : 'Crear vehiculo'}
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     );
   }
