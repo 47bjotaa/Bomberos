@@ -13,6 +13,7 @@ import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
+import InicioView from '../components/dashboard/InicioView';
 
 const GENERAL_INVENTORY_ID = 'general-inventory';
 const TIPOS_PRODUCTO = [
@@ -47,9 +48,16 @@ const getStockMinimoDetailId = (pathname) => {
   return stockMatch ? stockMatch[1] : null;
 };
 
-const getInitialDashboardTab = (pathname) => (
-  pathname.startsWith('/dashboard/mis-datos') ? 'mis-datos' : 'bodegas'
-);
+const getInitialDashboardTab = (pathname) => {
+  if (pathname.startsWith('/dashboard/mis-datos')) return 'mis-datos';
+  if (pathname.startsWith('/dashboard/bodegas')) return 'bodegas';
+  if (pathname.startsWith('/dashboard/vehiculos')) return 'vehiculos';
+  if (pathname.startsWith('/dashboard/epp')) return 'epp';
+  if (pathname.startsWith('/dashboard/donaciones')) return 'donaciones';
+  if (pathname.startsWith('/dashboard/personal')) return 'personal';
+  if (pathname.startsWith('/dashboard/libro-guardia')) return 'libro-guardia';
+  return 'inicio';
+};
 
 const getInitialInventoryView = (pathname) => (
   pathname.startsWith('/dashboard/stockminimos/') ? 'stocks' : 'ubicaciones'
@@ -2030,9 +2038,11 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
                   </h2>
                 )}
+                {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
+                {activeTab === 'bodegas' && <span className="text-xs text-text-muted mt-0.5">Controla inventario, movimientos y stock de materiales</span>}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
                 {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
                 {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
@@ -2248,6 +2258,12 @@ function Dashboard({ setView }) {
                   </aside>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'inicio' && (
+            <div className="h-full p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar">
+              <InicioView onNavigate={selectDashboardTab} />
             </div>
           )}
 
