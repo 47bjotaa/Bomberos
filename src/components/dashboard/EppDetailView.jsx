@@ -29,6 +29,13 @@ const getChileDateTime = () => {
   }).format(date).replace(' ', 'T');
 };
 
+const getDateInputValue = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+};
+
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
 
@@ -139,7 +146,7 @@ function Modal({ title, subtitle, children, footer, onClose }) {
   );
 }
 
-function EppDetailView({ itemId, onBack }) {
+function EppDetailView({ itemId, onBack, onRemoved }) {
   const [detail, setDetail] = useState(null);
   const [history, setHistory] = useState({ observaciones: [], mantenciones: [], requiereMantencion: true });
   const [loading, setLoading] = useState(true);
@@ -175,6 +182,14 @@ function EppDetailView({ itemId, onBack }) {
   const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ talla: '', estadoEpp: 'Operativo', fechaVencimiento: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [deactivationReason, setDeactivationReason] = useState('');
+  const [deactivationSaving, setDeactivationSaving] = useState(false);
+  const [deactivationError, setDeactivationError] = useState('');
 
   const imageUploadsRef = useRef([]);
   const observationImagesRef = useRef([]);
@@ -187,6 +202,34 @@ function EppDetailView({ itemId, onBack }) {
   ), [itemId]);
   const sortedMaintenances = useMemo(() => sortMaintenances(history.mantenciones), [history.mantenciones]);
   const primaryImage = materialImages[0] || null;
+
+  const openEditModal = () => {
+    setEditForm({
+      talla: detail?.talla || '',
+      estadoEpp: detail?.estadoEpp || detail?.estadoInventario || 'Operativo',
+      fechaVencimiento: getDateInputValue(detail?.fechaVencimiento),
+    });
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    if (editSaving) return;
+    setShowEditModal(false);
+    setEditError('');
+  };
+
+  const openDeactivateModal = () => {
+    setDeactivationReason('');
+    setDeactivationError('');
+    setShowDeactivateModal(true);
+  };
+
+  const closeDeactivateModal = () => {
+    if (deactivationSaving) return;
+    setShowDeactivateModal(false);
+    setDeactivationError('');
+  };
 
   const resetImageDraft = useCallback(() => {
     setShowImageModal(false);
@@ -656,16 +699,103 @@ function EppDetailView({ itemId, onBack }) {
     }
   };
 
+  const handleUpdateEppDetail = async (event) => {
+    event.preventDefault();
+    if (!itemId || editSaving) return;
+
+    const payload = {
+      talla: editForm.talla.trim(),
+      estadoEpp: editForm.estadoEpp,
+      fechaVencimiento: editForm.fechaVencimiento ? new Date(editForm.fechaVencimiento).toISOString() : null,
+    };
+
+    if (!payload.talla || !payload.estadoEpp || !payload.fechaVencimiento) {
+      setEditError('Completa talla, estado y vencimiento.');
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError('');
+
+    try {
+      const updatedDetail = await apiFetch(`/api/materiales/items/${itemId}/detalle-epp`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+
+      setDetail((current) => ({
+        ...current,
+        ...(updatedDetail || {}),
+        ...payload,
+      }));
+      setShowEditModal(false);
+    } catch (saveError) {
+      setEditError(saveError.message || 'No se pudo editar el EPP.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeactivateEpp = async (event) => {
+    event.preventDefault();
+    const motivo = deactivationReason.trim();
+    if (!itemId || !motivo || deactivationSaving) return;
+
+    setDeactivationSaving(true);
+    setDeactivationError('');
+
+    try {
+      await apiFetch('/api/materiales/items/restar', {
+        method: 'POST',
+        body: JSON.stringify({
+          idItem: Number(itemId),
+          motivo,
+          fecha: new Date().toISOString(),
+        }),
+      });
+
+      setShowDeactivateModal(false);
+      await onRemoved?.();
+      onBack?.();
+    } catch (saveError) {
+      setDeactivationError(saveError.message || 'No se pudo dar de baja el EPP.');
+    } finally {
+      setDeactivationSaving(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-auto bg-dark-bg p-8 text-text-main fade-in">
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Volver
-      </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Volver
+        </button>
+        {!loading && !error && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openEditModal}
+              className="inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50"
+            >
+              <svg className="h-4 w-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.5L19 9.5a2.5 2.5 0 00-3.536-3.536L5 16.5V20z"></path></svg>
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={openDeactivateModal}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+              Dar de baja
+            </button>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-20 text-center text-text-muted">
@@ -870,6 +1000,90 @@ function EppDetailView({ itemId, onBack }) {
               </div>
           </section>
         </div>
+      )}
+
+      {showEditModal && (
+        <Modal
+          title="Editar EPP"
+          subtitle={detail?.nombreMaterial}
+          onClose={closeEditModal}
+          footer={(
+            <>
+              <button type="button" onClick={closeEditModal} disabled={editSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
+              <button type="submit" form="epp-edit-form" disabled={editSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{editSaving ? 'Guardando...' : 'Guardar cambios'}</button>
+            </>
+          )}
+        >
+          <form id="epp-edit-form" onSubmit={handleUpdateEppDetail} className="space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Talla</span>
+              <input
+                type="text"
+                value={editForm.talla}
+                onChange={(event) => setEditForm((current) => ({ ...current, talla: event.target.value }))}
+                className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan"
+                disabled={editSaving}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Estado</span>
+              <select
+                value={editForm.estadoEpp}
+                onChange={(event) => setEditForm((current) => ({ ...current, estadoEpp: event.target.value }))}
+                className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan"
+                disabled={editSaving}
+              >
+                <option value="Operativo">Operativo</option>
+                <option value="En reparacion">En reparacion</option>
+                <option value="No operativo">No operativo</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Fecha de vencimiento</span>
+              <input
+                type="date"
+                value={editForm.fechaVencimiento}
+                onChange={(event) => setEditForm((current) => ({ ...current, fechaVencimiento: event.target.value }))}
+                className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan"
+                disabled={editSaving}
+              />
+            </label>
+            {editError && <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{editError}</p>}
+          </form>
+        </Modal>
+      )}
+
+      {showDeactivateModal && (
+        <Modal
+          title="Dar de baja EPP"
+          subtitle={detail?.nombreMaterial}
+          onClose={closeDeactivateModal}
+          footer={(
+            <>
+              <button type="button" onClick={closeDeactivateModal} disabled={deactivationSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
+              <button type="submit" form="epp-deactivate-form" disabled={!deactivationReason.trim() || deactivationSaving} className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{deactivationSaving ? 'Procesando...' : 'Confirmar baja'}</button>
+            </>
+          )}
+        >
+          <form id="epp-deactivate-form" onSubmit={handleDeactivateEpp} className="space-y-4">
+            <div className="rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+              <p className="text-sm font-semibold text-white">{detail?.nombreMaterial || 'EPP'}</p>
+              <p className="mt-1 font-mono text-xs text-text-muted">{detail?.codigoUnico || '-'}</p>
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-white">Motivo de la baja</span>
+              <textarea
+                value={deactivationReason}
+                onChange={(event) => setDeactivationReason(event.target.value)}
+                rows={4}
+                className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan"
+                placeholder="Describe por que se da de baja"
+                disabled={deactivationSaving}
+              />
+            </label>
+            {deactivationError && <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{deactivationError}</p>}
+          </form>
+        </Modal>
       )}
 
       {showImageModal && (

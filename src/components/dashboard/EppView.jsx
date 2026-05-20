@@ -76,7 +76,7 @@ const mapEppItem = (item) => {
   };
 };
 
-function EppView({ eppData, setEppData }) {
+function EppView({ eppData, setEppData, onDetailChange }) {
   const [activeEppTab, setActiveEppTab] = useState('asignados');
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('Filtrar');
@@ -93,6 +93,11 @@ function EppView({ eppData, setEppData }) {
   const [editingEppId, setEditingEppId] = useState(null);
   const [editEppData, setEditEppData] = useState({});
   const [confirmEppAction, setConfirmEppAction] = useState(null);
+
+  useEffect(() => {
+    onDetailChange?.(Boolean(selectedEppDetailId));
+    return () => onDetailChange?.(false);
+  }, [onDetailChange, selectedEppDetailId]);
 
   useEffect(() => {
     let ignore = false;
@@ -236,6 +241,10 @@ function EppView({ eppData, setEppData }) {
       <EppDetailView
         itemId={selectedEppDetailId}
         onBack={() => setSelectedEppDetailId(null)}
+        onRemoved={() => {
+          setEppData(prev => prev.filter(item => String(item.idItem || item.id) !== String(selectedEppDetailId)));
+          setSelectedEppDetailId(null);
+        }}
       />
     );
   }

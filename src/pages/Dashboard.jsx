@@ -62,6 +62,7 @@ function Dashboard({ setView }) {
   const [stockMinimoDetailId, setStockMinimoDetailId] = useState(() => getStockMinimoDetailId(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [showingEppDetail, setShowingEppDetail] = useState(false);
   const [bomberoProfile, setBomberoProfile] = useState(null);
   const [loadingBomberoProfile, setLoadingBomberoProfile] = useState(false);
   const [bomberoProfileError, setBomberoProfileError] = useState('');
@@ -280,7 +281,7 @@ function Dashboard({ setView }) {
         refreshDonaciones();
       }
     };
-    const intervalId = window.setInterval(refreshDonaciones, 30000);
+    const intervalId = window.setInterval(refreshDonaciones, 300000);
 
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -1928,7 +1929,7 @@ function Dashboard({ setView }) {
                   </button>
                 </>
               )}
-              {activeTab === 'epp' && (
+              {activeTab === 'epp' && !showingEppDetail && (
                 <button onClick={() => setShowAssignEppModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                   Asignar EPP
@@ -2948,7 +2949,7 @@ function Dashboard({ setView }) {
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'epp' && (
-            <EppView eppData={eppData} setEppData={setEppData} />
+            <EppView eppData={eppData} setEppData={setEppData} onDetailChange={setShowingEppDetail} />
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'mis-datos' && (
