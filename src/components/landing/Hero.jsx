@@ -19,7 +19,7 @@ function Hero() {
           integral, robusto y en tiempo real diseñado exclusivamente para bomberos.
         </p>
         <div className="flex justify-center gap-4 reveal is-visible delay-200">
-          <a href={APP_LOGIN_URL} className="btn btn-primary">Registrarse / Ingresar <Icons.ChevronRight /></a>
+          <a href={APP_LOGIN_URL} className="btn btn-primary">Ingresar <Icons.ChevronRight /></a>
           <a href="#solucion" className="btn btn-secondary">Explorar Módulos</a>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { APP_LOGIN_URL } from '../../utils/constants';
+import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
 
 function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   const { theme, toggleTheme } = useTheme();
@@ -9,6 +10,7 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
     <nav className="navbar">
       <div className="container flex items-center justify-between" style={{ width: '100%' }}>
         <div className="flex items-center">
+          <LogoCuartelAmigo size={80} />
         </div>
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
           <a href="#problema" onClick={() => setMobileMenuOpen(false)}>Problema</a>
@@ -24,7 +26,6 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
           >
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
           </button>
-          <a href={APP_LOGIN_URL} className="btn btn-primary nav-btn">Ingresar</a>
           <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <Icons.Menu />
           </button>

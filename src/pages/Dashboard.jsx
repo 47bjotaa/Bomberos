@@ -9,6 +9,7 @@ import EppDetailView from '../components/dashboard/EppDetailView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMaterialModal';
 import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
+import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
@@ -1846,11 +1847,8 @@ function Dashboard({ setView }) {
       {/* Top Navigation Bar */}
       <header className="flex justify-between items-center px-6 py-4 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
         {/* Left: Logo */}
-        <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity mr-4 md:mr-8" onClick={() => setView('landing')}>
-          <div className="w-8 h-8 flex items-center justify-center">
-            <img src="/images/logo.png" className="brand-logo" alt="SYNETIX" style={{ height: '32px' }} />
-          </div>
-          <span className="font-bold tracking-tight rajdhani text-xl hidden md:block" style={{ color: palette.text }}>SGLB</span>
+        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-4 md:mr-8" onClick={() => setView('landing')}>
+          <LogoCuartelAmigo size={80} />
         </div>
 
         {/* Center: Navigation Icons */}
