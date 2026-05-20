@@ -2976,28 +2976,22 @@ function Dashboard({ setView }) {
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'libro-guardia' && (
-            <div className="h-full overflow-auto bg-white text-slate-950">
-              <div className="border-b border-slate-200 bg-white px-8 py-5">
+            <div className="h-full overflow-auto" style={{ background: palette.bg, color: palette.text }}>
+              <div className="border-b px-8 py-5" style={{ borderColor: palette.border, background: palette.bg2 }}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="mb-6 flex items-center gap-2 text-sm font-bold text-blue-600">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan [&>svg]:h-5 [&>svg]:w-5">
                       <Icons.Shield />
-                      <span>CuartelAmigo</span>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 h-6 w-6 text-blue-600">
-                        <Icons.Traceability />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-slate-950">Libros de Guardia</h2>
-                        <p className="mt-1 text-sm text-slate-500">Gestiona los registros de novedades y servicio de guardia</p>
-                      </div>
+                    <div>
+                      <h2 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Libros de Guardia</h2>
+                      <p className="mt-1 text-sm" style={{ color: palette.muted }}>Gestiona los registros de novedades y servicio de guardia</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={openCreateLibroGuardiaModal}
-                    className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
                   >
                     <span className="text-base leading-none">+</span>
                     Crear libro
@@ -3007,16 +3001,16 @@ function Dashboard({ setView }) {
 
               <div className="mx-auto max-w-6xl px-8 py-7">
                 {loadingLibrosGuardia ? (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-6 py-16 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border px-6 py-16 text-center text-sm" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
                     Cargando libros de guardia...
                   </div>
                 ) : librosGuardiaError ? (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-6 py-8 text-center">
-                    <p className="text-sm font-semibold text-red-600">{librosGuardiaError}</p>
+                  <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 px-6 py-8 text-center">
+                    <p className="text-sm font-semibold text-brand-red">{librosGuardiaError}</p>
                     <button
                       type="button"
                       onClick={fetchLibrosGuardia}
-                      className="mt-4 rounded border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                      className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
                     >
                       Reintentar
                     </button>
@@ -3028,29 +3022,30 @@ function Dashboard({ setView }) {
                       return (
                         <article
                           key={libro.id}
-                          className={`min-h-36 rounded-3xl border bg-white transition-shadow hover:shadow-md ${isActive ? 'border-blue-500' : 'border-slate-200'}`}
+                          className={`min-h-36 rounded-xl border transition-all hover:border-brand-cyan/40 hover:shadow-lg ${isActive ? 'border-brand-cyan/50' : 'border-dark-border'}`}
+                          style={{ background: palette.card }}
                         >
-                          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-400'}`}></span>
+                          <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: palette.border }}>
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${isActive ? 'text-brand-cyan' : 'text-text-muted'}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-brand-cyan' : 'bg-slate-500'}`}></span>
                               {libro.estado}
                             </span>
                             <button type="button" className="rounded px-2 text-lg leading-none text-slate-400 hover:text-slate-600">⋮</button>
                           </div>
                           <div className="px-5 py-5">
                             <div className="flex items-center gap-4">
-                              <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                              <div className={`flex h-12 w-12 items-center justify-center rounded-lg border [&>svg]:h-6 [&>svg]:w-6 ${isActive ? 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
                                 <Icons.Traceability />
                               </div>
                               <div className="min-w-0">
-                                <h3 className="truncate text-base font-bold text-slate-950">{libro.nombre}</h3>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <h3 className="truncate text-base font-bold" style={{ color: palette.text }}>{libro.nombre}</h3>
+                                <p className="mt-1 text-xs" style={{ color: palette.muted }}>
                                   {libro.duracion || formatDateChile(libro.fechaCreacion) || 'Sin duracion'}
                                 </p>
                               </div>
                             </div>
-                            <div className="mt-5 border-t border-slate-100 pt-4 text-right">
-                              <button type="button" className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700">
+                            <div className="mt-5 border-t pt-4 text-right" style={{ borderColor: palette.border }}>
+                              <button type="button" className="text-sm font-semibold text-brand-cyan transition-colors hover:text-white">
                                 Ver registros →
                               </button>
                             </div>
@@ -3060,12 +3055,12 @@ function Dashboard({ setView }) {
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
-                    <p className="text-sm font-semibold text-slate-700">No hay libros de guardia creados.</p>
+                  <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
+                    <p className="text-sm font-semibold" style={{ color: palette.text }}>No hay libros de guardia creados.</p>
                     <button
                       type="button"
                       onClick={openCreateLibroGuardiaModal}
-                      className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg transition-opacity hover:opacity-90"
                     >
                       Crear primer libro
                     </button>
