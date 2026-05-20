@@ -1,9 +1,27 @@
+import { useMemo, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemePalette } from '../../utils/themePalette';
 
 function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, onSelectMaterial, addMaterialDisabledReason = '' }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
+  const [searchName, setSearchName] = useState('');
+  const [selectedType, setSelectedType] = useState('Todos los tipos');
+
+  const materialTypes = useMemo(() => (
+    Array.from(new Set(items.map(item => item.categoria).filter(Boolean))).sort((a, b) => a.localeCompare(b))
+  ), [items]);
+
+  const filteredItems = useMemo(() => {
+    const normalizedSearch = searchName.trim().toLowerCase();
+
+    return items.filter((item) => {
+      const matchesName = !normalizedSearch || String(item.nombre || '').toLowerCase().includes(normalizedSearch);
+      const matchesType = selectedType === 'Todos los tipos' || item.categoria === selectedType;
+
+      return matchesName && matchesType;
+    });
+  }, [items, searchName, selectedType]);
 
   const getIcon = (iconType) => {
     switch (iconType) {
@@ -83,9 +101,40 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
               <span className="h-1.5 w-1.5 rounded-full bg-brand-red shadow-[0_0_5px_rgba(232,55,42,0.5)]"></span>
               Materiales en {locationName}
             </h4>
+            <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="relative">
+                <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchName}
+                  onChange={(event) => setSearchName(event.target.value)}
+                  placeholder="Buscar por nombre..."
+                  className="w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedType}
+                  onChange={(event) => setSelectedType(event.target.value)}
+                  className="w-full appearance-none rounded-lg border px-4 py-2 pr-10 text-sm outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
+                >
+                  <option value="Todos los tipos">Todos los tipos</option>
+                  {materialTypes.map(tipo => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
             <div className="space-y-3">
-              {items.length > 0 ? (
-                items.map((item) => (
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
                   <div
                     key={`${item.id}-${item.codigo || item.nombre}`}
                     onClick={() => onSelectMaterial?.(item)}
@@ -148,7 +197,9 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                   className="rounded-2xl border-2 border-dashed py-10 text-center opacity-70"
                   style={{ borderColor: palette.border }}
                 >
-                  <p className="text-sm" style={{ color: palette.muted }}>Sin materiales directos.</p>
+                  <p className="text-sm" style={{ color: palette.muted }}>
+                    {items.length > 0 ? 'No hay materiales que coincidan con los filtros.' : 'Sin materiales directos.'}
+                  </p>
                 </div>
               )}
             </div>

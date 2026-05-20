@@ -141,6 +141,7 @@ function Dashboard({ setView }) {
   const [loadingStockMinimoInventory, setLoadingStockMinimoInventory] = useState(false);
   const [stockMinimoInventoryError, setStockMinimoInventoryError] = useState('');
   const [showAddStockMinimoModal, setShowAddStockMinimoModal] = useState(false);
+  const [editingStockMinimoId, setEditingStockMinimoId] = useState(null);
   const [newStockMinimoData, setNewStockMinimoData] = useState({ nombre: '', idUbicacion: '', materiales: [] });
   const [stockMateriales, setStockMateriales] = useState([]);
   const [stockMaterialSearch, setStockMaterialSearch] = useState('');
@@ -1518,6 +1519,7 @@ function Dashboard({ setView }) {
   };
 
   const openAddStockMinimoModal = async () => {
+    setEditingStockMinimoId(null);
     setNewStockMinimoData({ nombre: '', idUbicacion: '', materiales: [] });
     setStockMaterialSearch('');
     setAddStockMinimoError('');
@@ -1526,10 +1528,48 @@ function Dashboard({ setView }) {
     await fetchStockMateriales();
   };
 
+  const openEditStockMinimoModal = async () => {
+    if (!stockMinimoDetail) return;
+
+    const selectedMaterials = (stockMinimoDetail.materiales || [])
+      .filter(material => material.idMaterial)
+      .map(material => ({
+        idMaterial: Number(material.idMaterial),
+        cantidad: Math.max(1, Number(material.cantidad) || 1),
+      }));
+
+    setEditingStockMinimoId(stockMinimoDetail.id || stockMinimoDetailId);
+    setNewStockMinimoData({
+      nombre: stockMinimoDetail.nombre || '',
+      idUbicacion: stockMinimoDetail.idUbicacion ? String(stockMinimoDetail.idUbicacion) : '',
+      materiales: selectedMaterials,
+    });
+    setStockMaterialSearch('');
+    setAddStockMinimoError('');
+    setStockMaterialesError('');
+    setShowAddStockMinimoModal(true);
+
+    const loadedMaterials = await fetchStockMateriales();
+    const loadedIds = new Set(loadedMaterials.map(material => String(material.id)));
+    const missingMaterials = (stockMinimoDetail.materiales || [])
+      .filter(material => material.idMaterial && !loadedIds.has(String(material.idMaterial)))
+      .map(material => ({
+        id: material.idMaterial,
+        nombre: material.nombreMaterial || 'Material',
+        tipo: 'Actual',
+        descripcion: '',
+      }));
+
+    if (missingMaterials.length > 0) {
+      setStockMateriales(currentMaterials => [...currentMaterials, ...missingMaterials]);
+    }
+  };
+
   const closeAddStockMinimoModal = () => {
     if (savingStockMinimo) return;
 
     setShowAddStockMinimoModal(false);
+    setEditingStockMinimoId(null);
     setAddStockMinimoError('');
   };
 
@@ -1570,7 +1610,7 @@ function Dashboard({ setView }) {
     && newStockMinimoData.materiales.length > 0
     && newStockMinimoData.materiales.every(material => material.idMaterial && material.cantidad > 0);
 
-  const handleCreateStockMinimo = async (event) => {
+  const handleSaveStockMinimo = async (event) => {
     event.preventDefault();
     if (!canCreateStockMinimo || savingStockMinimo) return;
 
@@ -1578,22 +1618,29 @@ function Dashboard({ setView }) {
     setAddStockMinimoError('');
 
     try {
-      await apiFetch('/api/stockminimos', {
-        method: 'POST',
-        body: JSON.stringify({
-          idUbicacion: Number(newStockMinimoData.idUbicacion),
-          nombre: newStockMinimoData.nombre.trim(),
-          materiales: newStockMinimoData.materiales.map(material => ({
-            idMaterial: Number(material.idMaterial),
-            cantidad: Number(material.cantidad),
-          })),
-        }),
+      const payload = {
+        idUbicacion: Number(newStockMinimoData.idUbicacion),
+        nombre: newStockMinimoData.nombre.trim(),
+        materiales: newStockMinimoData.materiales.map(material => ({
+          idMaterial: Number(material.idMaterial),
+          cantidad: Number(material.cantidad),
+        })),
+      };
+
+      await apiFetch(editingStockMinimoId ? `/api/stockminimos/${editingStockMinimoId}` : '/api/stockminimos', {
+        method: editingStockMinimoId ? 'PUT' : 'POST',
+        body: JSON.stringify(payload),
       });
 
       setShowAddStockMinimoModal(false);
+      const editedId = editingStockMinimoId;
+      setEditingStockMinimoId(null);
       await fetchStockMinimos();
+      if (editedId) {
+        await fetchStockMinimoDetail(editedId);
+      }
     } catch (error) {
-      setAddStockMinimoError(error.message || 'No se pudo crear el stock minimo.');
+      setAddStockMinimoError(error.message || (editingStockMinimoId ? 'No se pudo editar el stock minimo.' : 'No se pudo crear el stock minimo.'));
     } finally {
       setSavingStockMinimo(false);
     }
@@ -2002,6 +2049,8 @@ function Dashboard({ setView }) {
                 </div>
                 <button
                   type="button"
+                  onClick={openEditStockMinimoModal}
+                  disabled={loadingStockMinimoDetail || Boolean(stockMinimoDetailError) || !stockMinimoDetail}
                   className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
                 >
                   Agregar material
@@ -3465,9 +3514,11 @@ function Dashboard({ setView }) {
 
         {showAddStockMinimoModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <form onSubmit={handleCreateStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <form onSubmit={handleSaveStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white rajdhani">Agregar Stock Minimo</h3>
+                <h3 className="text-lg font-semibold text-white rajdhani">
+                  {editingStockMinimoId ? 'Editar Stock Minimo' : 'Agregar Stock Minimo'}
+                </h3>
                 <button type="button" onClick={closeAddStockMinimoModal} disabled={savingStockMinimo} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -3606,7 +3657,7 @@ function Dashboard({ setView }) {
                   disabled={!canCreateStockMinimo || savingStockMinimo}
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {savingStockMinimo ? 'Creando...' : 'Crear Stock'}
+                  {savingStockMinimo ? (editingStockMinimoId ? 'Guardando...' : 'Creando...') : (editingStockMinimoId ? 'Guardar cambios' : 'Crear Stock')}
                 </button>
               </div>
             </form>
