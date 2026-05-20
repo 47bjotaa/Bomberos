@@ -237,7 +237,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
             </div>
           </section>
 
-          <section className="flex min-h-0 flex-col p-6">
+          <section className="flex min-h-0 flex-col p-6 overflow-y-auto">
             {selectedMaterial ? (
               <>
                 <p className="mb-1 text-xs font-bold uppercase tracking-wider text-text-muted">Material seleccionado</p>

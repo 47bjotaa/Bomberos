@@ -2171,7 +2171,7 @@ function Dashboard({ setView }) {
                     )}
 
                     {stockMinimoDetail?.materiales?.length > 0 ? (
-                      <div className="overflow-hidden rounded-lg border" style={{ borderColor: palette.border }}>
+                      <div className="overflow-x-auto overflow-y-hidden rounded-lg border" style={{ borderColor: palette.border }}>
                         <table className="w-full text-left text-sm">
                           <thead style={{ background: palette.bg2, color: palette.muted }}>
                             <tr>
@@ -2599,7 +2599,7 @@ function Dashboard({ setView }) {
                 </div>
               </div>
 
-              <div className="border border-dark-border rounded-xl overflow-hidden bg-dark-surface shadow-lg">
+              <div className="border border-dark-border rounded-xl overflow-x-auto bg-dark-surface shadow-lg">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted font-medium rajdhani text-base">
                     <tr>
@@ -2802,7 +2802,7 @@ function Dashboard({ setView }) {
                       </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+                    <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
                           <tr>
@@ -3083,7 +3083,7 @@ function Dashboard({ setView }) {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+                <div className="overflow-x-auto overflow-y-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
                   <table className="w-full text-left text-sm">
                     <thead className="border-b" style={{ borderColor: palette.border, background: palette.bg2, color: palette.muted }}>
                       <tr>
