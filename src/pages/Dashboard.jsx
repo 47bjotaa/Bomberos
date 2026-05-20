@@ -173,6 +173,13 @@ function Dashboard({ setView }) {
   const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
   const [filtroNombreDonante, setFiltroNombreDonante] = useState('');
   const [filtroNombreBomberoDonacion, setFiltroNombreBomberoDonacion] = useState('');
+  const [librosGuardia, setLibrosGuardia] = useState([]);
+  const [loadingLibrosGuardia, setLoadingLibrosGuardia] = useState(false);
+  const [librosGuardiaError, setLibrosGuardiaError] = useState('');
+  const [showCreateLibroGuardiaModal, setShowCreateLibroGuardiaModal] = useState(false);
+  const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
+  const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
+  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: '', estado: 'En curso' });
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -263,6 +270,12 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (activeTab === 'personal') {
       fetchBomberosPersonal();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'libro-guardia') {
+      fetchLibrosGuardia();
     }
   }, [activeTab]);
 
@@ -568,6 +581,76 @@ function Dashboard({ setView }) {
       totalDonaciones: campana.totalDonaciones || 0,
       progress,
     };
+  };
+
+  const mapLibroGuardia = (libro) => ({
+    id: libro.idLibroGuardia || libro.id,
+    nombre: libro.nombre || libro.name || 'Libro de guardia',
+    duracion: libro.duracion || '',
+    estado: libro.estado || 'Cerrado',
+    fechaCreacion: libro.fechaCreacion || libro.createdAt || '',
+  });
+
+  const fetchLibrosGuardia = async () => {
+    setLoadingLibrosGuardia(true);
+    setLibrosGuardiaError('');
+
+    try {
+      const data = await apiFetch('/api/librosguardia');
+      setLibrosGuardia(getArrayPayload(data, ['libros', 'librosGuardia', 'items']).map(mapLibroGuardia).filter(libro => libro.id));
+    } catch (error) {
+      setLibrosGuardiaError(error.message || 'No se pudieron cargar los libros de guardia.');
+      setLibrosGuardia([]);
+    } finally {
+      setLoadingLibrosGuardia(false);
+    }
+  };
+
+  const openCreateLibroGuardiaModal = () => {
+    setNewLibroGuardiaData({ nombre: '', duracion: '', estado: 'En curso' });
+    setCreateLibroGuardiaError('');
+    setShowCreateLibroGuardiaModal(true);
+  };
+
+  const closeCreateLibroGuardiaModal = () => {
+    if (savingLibroGuardia) return;
+    setShowCreateLibroGuardiaModal(false);
+    setCreateLibroGuardiaError('');
+  };
+
+  const handleCreateLibroGuardia = async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      nombre: newLibroGuardiaData.nombre.trim(),
+      duracion: newLibroGuardiaData.duracion.trim(),
+      estado: newLibroGuardiaData.estado,
+      fechaCreacion: new Date().toISOString(),
+    };
+
+    if (!payload.nombre || !payload.duracion || !payload.estado) {
+      setCreateLibroGuardiaError('Completa nombre, duracion y estado.');
+      return;
+    }
+
+    setSavingLibroGuardia(true);
+    setCreateLibroGuardiaError('');
+
+    try {
+      const createdLibro = await apiFetch('/api/librosguardia', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const mappedLibro = mapLibroGuardia({ ...payload, ...(createdLibro || {}) });
+      setLibrosGuardia(current => (mappedLibro.id ? [mappedLibro, ...current] : current));
+      setShowCreateLibroGuardiaModal(false);
+      setNewLibroGuardiaData({ nombre: '', duracion: '', estado: 'En curso' });
+      await fetchLibrosGuardia();
+    } catch (error) {
+      setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
+    } finally {
+      setSavingLibroGuardia(false);
+    }
   };
 
   const mapUbicacion = (u) => {
@@ -1927,7 +2010,7 @@ function Dashboard({ setView }) {
         if (showNotificationsMenu) setShowNotificationsMenu(false);
       }}>
         {/* Sub Header (Actions specific to active tab) */}
-        {activeTab !== 'vehiculos' && !materialDetailRoute && !stockMinimoDetailId && (
+        {activeTab !== 'vehiculos' && activeTab !== 'libro-guardia' && !materialDetailRoute && !stockMinimoDetailId && (
           <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
@@ -2892,6 +2975,106 @@ function Dashboard({ setView }) {
             </div>
           )}
 
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'libro-guardia' && (
+            <div className="h-full overflow-auto bg-white text-slate-950">
+              <div className="border-b border-slate-200 bg-white px-8 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <div className="mb-6 flex items-center gap-2 text-sm font-bold text-blue-600">
+                      <Icons.Shield />
+                      <span>CuartelAmigo</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 h-6 w-6 text-blue-600">
+                        <Icons.Traceability />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-950">Libros de Guardia</h2>
+                        <p className="mt-1 text-sm text-slate-500">Gestiona los registros de novedades y servicio de guardia</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openCreateLibroGuardiaModal}
+                    className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                  >
+                    <span className="text-base leading-none">+</span>
+                    Crear libro
+                  </button>
+                </div>
+              </div>
+
+              <div className="mx-auto max-w-6xl px-8 py-7">
+                {loadingLibrosGuardia ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-6 py-16 text-center text-sm text-slate-500">
+                    Cargando libros de guardia...
+                  </div>
+                ) : librosGuardiaError ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-6 py-8 text-center">
+                    <p className="text-sm font-semibold text-red-600">{librosGuardiaError}</p>
+                    <button
+                      type="button"
+                      onClick={fetchLibrosGuardia}
+                      className="mt-4 rounded border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                ) : librosGuardia.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {librosGuardia.map((libro) => {
+                      const isActive = String(libro.estado).toLowerCase().includes('curso') || String(libro.estado).toLowerCase().includes('activo');
+                      return (
+                        <article
+                          key={libro.id}
+                          className={`min-h-36 rounded-3xl border bg-white transition-shadow hover:shadow-md ${isActive ? 'border-blue-500' : 'border-slate-200'}`}
+                        >
+                          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-400'}`}></span>
+                              {libro.estado}
+                            </span>
+                            <button type="button" className="rounded px-2 text-lg leading-none text-slate-400 hover:text-slate-600">⋮</button>
+                          </div>
+                          <div className="px-5 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                                <Icons.Traceability />
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="truncate text-base font-bold text-slate-950">{libro.nombre}</h3>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {libro.duracion || formatDateChile(libro.fechaCreacion) || 'Sin duracion'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-5 border-t border-slate-100 pt-4 text-right">
+                              <button type="button" className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700">
+                                Ver registros →
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+                    <p className="text-sm font-semibold text-slate-700">No hay libros de guardia creados.</p>
+                    <button
+                      type="button"
+                      onClick={openCreateLibroGuardiaModal}
+                      className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                    >
+                      Crear primer libro
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mx-auto max-w-6xl">
@@ -3506,6 +3689,81 @@ function Dashboard({ setView }) {
                   className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
                 >
                   Cerrar
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showCreateLibroGuardiaModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <form onSubmit={handleCreateLibroGuardia} className="w-full max-w-lg overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Crear libro de guardia</h3>
+                  <p className="mt-1 text-xs text-text-muted">Define el periodo y estado inicial del libro.</p>
+                </div>
+                <button type="button" onClick={closeCreateLibroGuardiaModal} disabled={savingLibroGuardia} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="space-y-4 p-6">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-text-muted">Nombre</label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newLibroGuardiaData.nombre}
+                    onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, nombre: event.target.value }))}
+                    disabled={savingLibroGuardia}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Ej. Libro Noviembre 2026"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-text-muted">Duracion</label>
+                  <input
+                    type="text"
+                    value={newLibroGuardiaData.duracion}
+                    onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, duracion: event.target.value }))}
+                    disabled={savingLibroGuardia}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Ej. 01 Nov 2026 - Actual"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-text-muted">Estado</label>
+                  <select
+                    value={newLibroGuardiaData.estado}
+                    onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, estado: event.target.value }))}
+                    disabled={savingLibroGuardia}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                  >
+                    <option value="En curso">En curso</option>
+                    <option value="Cerrado">Cerrado</option>
+                  </select>
+                </div>
+                {createLibroGuardiaError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {createLibroGuardiaError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={closeCreateLibroGuardiaModal}
+                  disabled={savingLibroGuardia}
+                  className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingLibroGuardia}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingLibroGuardia ? 'Creando...' : 'Crear libro'}
                 </button>
               </div>
             </form>
