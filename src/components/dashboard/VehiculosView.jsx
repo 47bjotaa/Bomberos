@@ -32,7 +32,6 @@ function VehiculosView() {
   // Form states
   const [formData, setFormData] = useState({
     descripcion: '',
-    estadoUbicacion: '',
     nomenclatura: '',
     tipoVehiculo: '',
     estadoVehiculo: 'Operativo',
@@ -69,7 +68,6 @@ function VehiculosView() {
   const resetAddForm = () => {
     setFormData({
       descripcion: '',
-      estadoUbicacion: '',
       nomenclatura: '',
       tipoVehiculo: '',
       estadoVehiculo: 'Operativo',
@@ -93,7 +91,7 @@ function VehiculosView() {
 
     const payload = {
       descripcion: formData.descripcion.trim(),
-      estadoUbicacion: formData.estadoUbicacion.trim(),
+      estadoUbicacion: 'Activa',
       nomenclatura: formData.nomenclatura.trim(),
       tipoVehiculo: formData.tipoVehiculo.trim(),
       estadoVehiculo: formData.estadoVehiculo.trim(),
@@ -229,17 +227,6 @@ function VehiculosView() {
                       <option value="En Mantencion">En Mantencion</option>
                       <option value="Fuera de Servicio">Fuera de Servicio</option>
                     </select>
-                  </label>
-
-                  <label className="block md:col-span-2">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Estado / ubicacion</span>
-                    <input
-                      type="text"
-                      value={formData.estadoUbicacion}
-                      onChange={e => setFormData({ ...formData, estadoUbicacion: e.target.value })}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
-                      placeholder="Ej: Cuartel central, en servicio, taller"
-                    />
                   </label>
 
                   <label className="block md:col-span-2">
