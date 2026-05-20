@@ -141,7 +141,7 @@ function PaginaDonacion() {
       <header className="border-b border-dark-border bg-dark-surface px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <LogoCuartelAmigo size={32} />
+            <LogoCuartelAmigo size={44} />
           </a>
           <span className="rounded-full border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1 text-xs font-semibold text-brand-cyan">
             Donacion segura

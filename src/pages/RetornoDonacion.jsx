@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../services/api';
+import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 
 const getSlugFromPath = () => decodeURIComponent(window.location.pathname.replace(/^\/donacion-gracias\/?/, '').split('/')[0] || '');
 
@@ -68,8 +69,7 @@ function RetornoDonacion() {
       <header className="border-b border-dark-border bg-dark-surface px-6 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <img src="/images/logo.png" className="h-8 w-8 object-contain" alt="SGLB" />
-            <span className="rajdhani text-xl font-bold text-white">SGLB</span>
+            <LogoCuartelAmigo size={44} />
           </a>
           <span className="rounded-full border border-brand-green/30 bg-brand-green/10 px-3 py-1 text-xs font-semibold text-brand-green">
             Donacion recibida
