@@ -179,7 +179,7 @@ function Dashboard({ setView }) {
   const [showCreateLibroGuardiaModal, setShowCreateLibroGuardiaModal] = useState(false);
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
-  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: '', estado: 'En curso' });
+  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Activa' });
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -607,7 +607,7 @@ function Dashboard({ setView }) {
   };
 
   const openCreateLibroGuardiaModal = () => {
-    setNewLibroGuardiaData({ nombre: '', duracion: '', estado: 'En curso' });
+    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Activa' });
     setCreateLibroGuardiaError('');
     setShowCreateLibroGuardiaModal(true);
   };
@@ -644,7 +644,7 @@ function Dashboard({ setView }) {
       const mappedLibro = mapLibroGuardia({ ...payload, ...(createdLibro || {}) });
       setLibrosGuardia(current => (mappedLibro.id ? [mappedLibro, ...current] : current));
       setShowCreateLibroGuardiaModal(false);
-      setNewLibroGuardiaData({ nombre: '', duracion: '', estado: 'En curso' });
+      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Activa' });
       await fetchLibrosGuardia();
     } catch (error) {
       setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
@@ -3018,7 +3018,7 @@ function Dashboard({ setView }) {
                 ) : librosGuardia.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {librosGuardia.map((libro) => {
-                      const isActive = String(libro.estado).toLowerCase().includes('curso') || String(libro.estado).toLowerCase().includes('activo');
+                      const isActive = String(libro.estado).toLowerCase().includes('activa') || String(libro.estado).toLowerCase().includes('activo');
                       return (
                         <article
                           key={libro.id}
@@ -3717,14 +3717,16 @@ function Dashboard({ setView }) {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-text-muted">Duracion</label>
-                  <input
-                    type="text"
+                  <select
                     value={newLibroGuardiaData.duracion}
                     onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, duracion: event.target.value }))}
                     disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                    placeholder="Ej. 01 Nov 2026 - Actual"
-                  />
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                  >
+                    <option value="Diario">Diario</option>
+                    <option value="Semanal">Semanal</option>
+                    <option value="Mensual">Mensual</option>
+                  </select>
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-text-muted">Estado</label>
@@ -3734,7 +3736,7 @@ function Dashboard({ setView }) {
                     disabled={savingLibroGuardia}
                     className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                   >
-                    <option value="En curso">En curso</option>
+                    <option value="Activa">Activa</option>
                     <option value="Cerrado">Cerrado</option>
                   </select>
                 </div>
