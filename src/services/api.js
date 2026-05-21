@@ -71,10 +71,10 @@ export const apiFetch = async (endpoint, options = {}) => {
 
 // --- AUTHENTICATION ---
 export const authService = {
-  login: async (rut, password) => {
+  login: async (rut, password, turnstileToken) => {
     const data = await apiFetch('/api/Auth/login', {
       method: 'POST',
-      body: JSON.stringify({ rut, password }),
+      body: JSON.stringify({ rut, password, turnstileToken }),
     });
     if (data.token) {
       localStorage.setItem('token', data.token);

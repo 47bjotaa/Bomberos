@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { authService } from '../services/api';
 import { cuerposBomberos } from '../utils/constants';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +11,8 @@ const authPathByMode = {
   recover: '/recuperar-password',
   reset: '/restablecer-password',
 };
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 function AuthView({ initialMode = 'register' }) {
   const { theme, toggleTheme } = useTheme();
@@ -35,6 +38,8 @@ function AuthView({ initialMode = 'register' }) {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const formatRut = (value) => {
     const digits = value.replace(/\D/g, '').slice(0, 9);
@@ -56,12 +61,16 @@ function AuthView({ initialMode = 'register' }) {
     setStep(1);
     setErrors({});
     setSuccessMessage('');
+    setTurnstileToken('');
+    setTurnstileKey(key => key + 1);
   };
 
   useEffect(() => {
     setMode(initialMode);
     setErrors({});
     setSuccessMessage('');
+    setTurnstileToken('');
+    setTurnstileKey(key => key + 1);
   }, [initialMode]);
 
   const validate = () => {
@@ -85,6 +94,8 @@ function AuthView({ initialMode = 'register' }) {
     } else if (mode === 'login') {
       if (!formData.rut) newErrors.rut = "Obligatorio";
       if (!formData.password) newErrors.password = "Obligatorio";
+      if (!TURNSTILE_SITE_KEY) newErrors.turnstile = "Falta configurar Turnstile.";
+      else if (!turnstileToken) newErrors.turnstile = "Completa la verificación.";
     } else if (mode === 'recover') {
       if (!formData.rut) newErrors.rut = "Obligatorio";
       else if (!rutRegex.test(formData.rut)) newErrors.rut = "Inválido";
@@ -155,13 +166,18 @@ function AuthView({ initialMode = 'register' }) {
 
     if (validate()) {
       if (mode === 'login') {
+        setIsSubmitting(true);
         try {
-          const res = await authService.login(formData.rut, formData.password);
+          const res = await authService.login(formData.rut, formData.password, turnstileToken);
           console.log("Login exitoso", res);
           window.location.href = "/dashboard";
         } catch (error) {
           setErrors(prev => ({ ...prev, api: error.message || "Error al iniciar sesión." }));
           console.error("Error API Login:", error);
+          setTurnstileToken('');
+          setTurnstileKey(key => key + 1);
+        } finally {
+          setIsSubmitting(false);
         }
       } else {
         try {
@@ -390,8 +406,32 @@ function AuthView({ initialMode = 'register' }) {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-              Iniciar Sesión
+            <div>
+              {TURNSTILE_SITE_KEY ? (
+                <Turnstile
+                  key={turnstileKey}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  options={{ theme: theme === 'light' ? 'light' : 'dark' }}
+                  onSuccess={(token) => {
+                    setTurnstileToken(token);
+                    setErrors(prev => ({ ...prev, turnstile: null }));
+                  }}
+                  onExpire={() => {
+                    setTurnstileToken('');
+                    setErrors(prev => ({ ...prev, turnstile: 'La verificación expiró. Inténtalo nuevamente.' }));
+                  }}
+                  onError={() => {
+                    setTurnstileToken('');
+                    setErrors(prev => ({ ...prev, turnstile: 'No se pudo completar la verificación.' }));
+                  }}
+                />
+              ) : (
+                <p className="text-brand-red text-xs">Falta configurar Turnstile.</p>
+              )}
+              {errors.turnstile && <p className="text-brand-red text-xs mt-1">{errors.turnstile}</p>}
+            </div>
+            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+              {isSubmitting ? 'Ingresando...' : 'Iniciar Sesion'}
             </button>
           </form>
           <div className="mt-6 text-center text-sm text-text-muted">
