@@ -825,7 +825,7 @@ function VehiculosView() {
     const v = selectedVehiculo;
 
     return (
-      <div className="h-full w-full max-w-none p-6 pb-20 lg:p-8">
+      <div className="h-full w-full max-w-none overflow-y-auto p-6 pb-36 lg:p-8 lg:pb-40">
         <div className="mb-8 flex items-center justify-between border-b border-dark-border pb-4">
           <div className="flex items-center gap-4">
             <button onClick={() => setView('list')} className="flex items-center gap-2 border-r border-dark-border pr-4 text-sm font-medium text-text-muted transition-colors hover:text-white">
@@ -940,18 +940,21 @@ function VehiculosView() {
         )}
 
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-          <section>
-            <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-2">
-              <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
-                <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                Observaciones
-              </h4>
-              <button onClick={() => setShowAddObs(true)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
-                <span>+</span> Agregar
+          <section className="rounded-xl border border-dark-border bg-dark-surface/40 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
+            <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-3">
+              <div>
+                <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
+                  <svg className="h-5 w-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  Observaciones
+                </h4>
+                <p className="mt-0.5 text-xs text-text-muted">{(v.observaciones || []).length} registradas</p>
+              </div>
+              <button onClick={() => setShowAddObs(true)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                + Agregar
               </button>
             </div>
 
-            <div className="custom-scrollbar max-h-[336px] space-y-4 overflow-y-auto pr-1">
+            <div className="custom-scrollbar max-h-[330px] space-y-3 overflow-y-auto pr-1">
               {observationNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {observationNotice}
@@ -969,10 +972,13 @@ function VehiculosView() {
                   key={getObservationId(obs) || idx}
                   type="button"
                   onClick={() => setSelectedObservation(obs)}
-                  className="block w-full rounded-lg border border-dark-border bg-dark-surface p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2"
+                  className="block min-h-[92px] w-full rounded-lg border border-dark-border bg-dark-bg p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                 >
-                  <span className="text-xs text-text-muted">{formatDate(obs.fecha)}</span>
-                  <p className="mt-2 text-sm leading-relaxed text-text-muted">{obs.observacion || obs.desc || obs.descripcion || 'Sin detalle'}</p>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-brand-cyan">{formatDate(obs.fecha)}</span>
+                    <span className="rounded-full border border-dark-border px-2 py-0.5 text-[11px] text-text-muted">Obs.</span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-text-muted">{obs.observacion || obs.desc || obs.descripcion || 'Sin detalle'}</p>
                 </button>
               ))}
 
@@ -984,18 +990,21 @@ function VehiculosView() {
             </div>
           </section>
 
-          <section>
-            <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-2">
-              <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
-                <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Mantenciones
-              </h4>
-              <button onClick={() => setShowAddMant(true)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
-                <span>+</span> Agregar
+          <section className="rounded-xl border border-dark-border bg-dark-surface/40 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
+            <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-3">
+              <div>
+                <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
+                  <svg className="h-5 w-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  Mantenciones
+                </h4>
+                <p className="mt-0.5 text-xs text-text-muted">{(v.mantenciones || []).length} registradas</p>
+              </div>
+              <button onClick={() => setShowAddMant(true)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                + Agregar
               </button>
             </div>
 
-            <div className="custom-scrollbar max-h-[336px] space-y-4 overflow-y-auto pr-1">
+            <div className="custom-scrollbar max-h-[330px] space-y-3 overflow-y-auto pr-1">
               {maintenanceNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {maintenanceNotice}
@@ -1013,10 +1022,10 @@ function VehiculosView() {
                   key={getMaintenanceId(mant) || idx}
                   type="button"
                   onClick={() => setSelectedMaintenance(mant)}
-                  className="block w-full rounded-lg border border-dark-border bg-dark-surface p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2"
+                  className="block min-h-[92px] w-full rounded-lg border border-dark-border bg-dark-bg p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                 >
                   <div className="mb-2 flex items-start justify-between gap-3">
-                    <span className="text-xs text-text-muted">{formatDate(mant.fecha)}</span>
+                    <span className="text-xs font-semibold text-brand-cyan">{formatDate(mant.fecha)}</span>
                     <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[11px] font-bold text-brand-cyan">{mant.estadoMantencion || mant.tipo || 'Mantencion'}</span>
                   </div>
                   <h5 className="mb-1 text-sm font-semibold text-white">{mant.tipo || 'Mantencion'}</h5>
