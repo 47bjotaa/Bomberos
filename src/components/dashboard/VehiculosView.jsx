@@ -107,6 +107,10 @@ function VehiculosView() {
   const [observationSaving, setObservationSaving] = useState(false);
   const [observationError, setObservationError] = useState('');
   const [observationNotice, setObservationNotice] = useState('');
+  const [selectedObservation, setSelectedObservation] = useState(null);
+  const [observationDetailImages, setObservationDetailImages] = useState([]);
+  const [loadingObservationImages, setLoadingObservationImages] = useState(false);
+  const [observationImagesError, setObservationImagesError] = useState('');
   const observationImagesRef = useRef([]);
 
   const [showAddMant, setShowAddMant] = useState(false);
@@ -115,6 +119,10 @@ function VehiculosView() {
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState('');
   const [maintenanceNotice, setMaintenanceNotice] = useState('');
+  const [selectedMaintenance, setSelectedMaintenance] = useState(null);
+  const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
+  const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
+  const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const maintenanceFilesRef = useRef([]);
 
   const fetchVehiculos = async () => {
@@ -223,6 +231,122 @@ function VehiculosView() {
   }, [fetchVehicleDetail, view]);
 
   useEffect(() => {
+    if (!selectedObservation || !vehicleTargetQuery) return;
+
+    let mounted = true;
+    const idObservacion = getObservationId(selectedObservation);
+
+    const fetchObservationImages = async () => {
+      if (!idObservacion) {
+        setObservationDetailImages([]);
+        setObservationImagesError('Esta observacion no tiene id para consultar imagenes.');
+        return;
+      }
+
+      setLoadingObservationImages(true);
+      setObservationImagesError('');
+      setObservationDetailImages([]);
+
+      try {
+        const imageListPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes?${vehicleTargetQuery}`);
+        const imageList = getArrayPayload(imageListPayload, ['imagenes', 'archivos', 'files']);
+        const imagesWithUrls = await Promise.all(imageList.map(async (image) => {
+          const idArchivo = getImageFileId(image);
+          if (!idArchivo) return null;
+
+          const urlPayload = await apiFetch(`/api/observaciones/${idObservacion}/imagenes/${idArchivo}/url?${vehicleTargetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+
+          return {
+            idArchivo,
+            nombre: image?.nombreOriginal || image?.nombre || `Imagen ${idArchivo}`,
+            contentType: image?.contentType || '',
+            tamanioBytes: image?.tamanioBytes || 0,
+            fechaSubida: image?.fechaSubida || '',
+            url,
+          };
+        }));
+
+        if (mounted) {
+          setObservationDetailImages(imagesWithUrls.filter((image) => image?.url));
+        }
+      } catch (err) {
+        if (mounted) {
+          setObservationImagesError(err.message || 'No se pudieron cargar las imagenes.');
+        }
+      } finally {
+        if (mounted) {
+          setLoadingObservationImages(false);
+        }
+      }
+    };
+
+    fetchObservationImages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedObservation, vehicleTargetQuery]);
+
+  useEffect(() => {
+    if (!selectedMaintenance || !vehicleTargetQuery) return;
+
+    let mounted = true;
+    const idMantencion = getMaintenanceId(selectedMaintenance);
+
+    const fetchMaintenanceFiles = async () => {
+      if (!idMantencion) {
+        setMaintenanceDetailFiles([]);
+        setMaintenanceFilesError('Esta mantencion no tiene id para consultar archivos.');
+        return;
+      }
+
+      setLoadingMaintenanceFiles(true);
+      setMaintenanceFilesError('');
+      setMaintenanceDetailFiles([]);
+
+      try {
+        const fileListPayload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos?${vehicleTargetQuery}`);
+        const fileList = getArrayPayload(fileListPayload, ['archivos', 'imagenes', 'files']);
+        const filesWithUrls = await Promise.all(fileList.map(async (file) => {
+          const idArchivo = getImageFileId(file);
+          if (!idArchivo) return null;
+
+          const urlPayload = await apiFetch(`/api/mantenciones/${idMantencion}/archivos/${idArchivo}/url?${vehicleTargetQuery}`);
+          const url = getTemporaryImageUrl(urlPayload);
+
+          return {
+            idArchivo,
+            nombre: file?.nombreOriginal || file?.nombre || `Archivo ${idArchivo}`,
+            contentType: file?.contentType || '',
+            tamanioBytes: file?.tamanioBytes || 0,
+            fechaSubida: file?.fechaSubida || '',
+            url,
+          };
+        }));
+
+        if (mounted) {
+          setMaintenanceDetailFiles(filesWithUrls.filter((file) => file?.url));
+        }
+      } catch (err) {
+        if (mounted) {
+          setMaintenanceFilesError(err.message || 'No se pudieron cargar los archivos.');
+        }
+      } finally {
+        if (mounted) {
+          setLoadingMaintenanceFiles(false);
+        }
+      }
+    };
+
+    fetchMaintenanceFiles();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedMaintenance, vehicleTargetQuery]);
+
+  useEffect(() => {
     observationImagesRef.current = observationImages;
   }, [observationImages]);
 
@@ -243,12 +367,14 @@ function VehiculosView() {
     setObservationImages([]);
     setObservationError('');
     setObservationNotice('');
+    setSelectedObservation(null);
     setShowAddMant(false);
     setNewMant({ fecha: '', tipo: 'Preventiva', descripcion: '' });
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
     setMaintenanceError('');
     setMaintenanceNotice('');
+    setSelectedMaintenance(null);
     setImageUploadError('');
   };
 
@@ -825,7 +951,7 @@ function VehiculosView() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="custom-scrollbar max-h-[336px] space-y-4 overflow-y-auto pr-1">
               {observationNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {observationNotice}
@@ -839,10 +965,15 @@ function VehiculosView() {
               )}
 
               {!loadingVehicleDetail && (v.observaciones || []).map((obs, idx) => (
-                <div key={getObservationId(obs) || idx} className="rounded-lg border border-dark-border bg-dark-surface p-4">
+                <button
+                  key={getObservationId(obs) || idx}
+                  type="button"
+                  onClick={() => setSelectedObservation(obs)}
+                  className="block w-full rounded-lg border border-dark-border bg-dark-surface p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2"
+                >
                   <span className="text-xs text-text-muted">{formatDate(obs.fecha)}</span>
                   <p className="mt-2 text-sm leading-relaxed text-text-muted">{obs.observacion || obs.desc || obs.descripcion || 'Sin detalle'}</p>
-                </div>
+                </button>
               ))}
 
               {!loadingVehicleDetail && (v.observaciones || []).length === 0 && (
@@ -864,7 +995,7 @@ function VehiculosView() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="custom-scrollbar max-h-[336px] space-y-4 overflow-y-auto pr-1">
               {maintenanceNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {maintenanceNotice}
@@ -878,14 +1009,19 @@ function VehiculosView() {
               )}
 
               {!loadingVehicleDetail && (v.mantenciones || []).map((mant, idx) => (
-                <div key={getMaintenanceId(mant) || idx} className="rounded-lg border border-dark-border bg-dark-surface p-4">
+                <button
+                  key={getMaintenanceId(mant) || idx}
+                  type="button"
+                  onClick={() => setSelectedMaintenance(mant)}
+                  className="block w-full rounded-lg border border-dark-border bg-dark-surface p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2"
+                >
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <span className="text-xs text-text-muted">{formatDate(mant.fecha)}</span>
                     <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[11px] font-bold text-brand-cyan">{mant.estadoMantencion || mant.tipo || 'Mantencion'}</span>
                   </div>
                   <h5 className="mb-1 text-sm font-semibold text-white">{mant.tipo || 'Mantencion'}</h5>
                   <p className="text-sm leading-relaxed text-text-muted">{mant.descripcion || mant.desc || 'Sin detalle'}</p>
-                </div>
+                </button>
               ))}
 
               {!loadingVehicleDetail && (v.mantenciones || []).length === 0 && (
@@ -896,6 +1032,169 @@ function VehiculosView() {
             </div>
           </section>
         </div>
+
+        {selectedObservation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSelectedObservation(null)}>
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-text-muted">{formatDate(selectedObservation.fecha)}</p>
+                  <h3 className="mt-1 text-lg font-bold text-white">Detalle de observacion</h3>
+                  <p className="mt-0.5 truncate text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedObservation(null)} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
+                  x
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Fecha</p>
+                    <p className="mt-2 text-sm font-bold text-white">{formatDate(selectedObservation.fecha)}</p>
+                  </div>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID observacion</p>
+                    <p className="mt-2 text-sm font-bold text-white">{getObservationId(selectedObservation) || 'Sin id'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-text-main">
+                    {selectedObservation.observacion || selectedObservation.descripcion || selectedObservation.desc || 'Sin detalle'}
+                  </p>
+                </div>
+
+                <div className="mt-5">
+                  <h4 className="mb-3 text-sm font-bold text-white">Imagenes</h4>
+                  {loadingObservationImages ? (
+                    <div className="rounded-lg border border-dark-border py-8 text-center text-sm text-text-muted">
+                      Cargando imagenes...
+                    </div>
+                  ) : observationImagesError ? (
+                    <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                      {observationImagesError}
+                    </p>
+                  ) : observationDetailImages.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {observationDetailImages.map((image) => (
+                        <a
+                          key={image.idArchivo}
+                          href={image.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-colors hover:border-brand-cyan/60"
+                        >
+                          <img src={image.url} alt={image.nombre} className="h-44 w-full object-cover" />
+                          <div className="px-3 py-2">
+                            <p className="truncate text-xs font-semibold text-white">{image.nombre}</p>
+                            {image.fechaSubida && (
+                              <p className="mt-1 text-[11px] text-text-muted">{formatDate(image.fechaSubida)}</p>
+                            )}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
+                      Esta observacion no tiene imagenes.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedMaintenance && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSelectedMaintenance(null)}>
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-text-muted">{formatDate(selectedMaintenance.fecha)}</p>
+                  <h3 className="mt-1 text-lg font-bold text-white">Detalle de mantencion</h3>
+                  <p className="mt-0.5 truncate text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedMaintenance(null)} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
+                  x
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Fecha</p>
+                    <p className="mt-2 text-sm font-bold text-white">{formatDate(selectedMaintenance.fecha)}</p>
+                  </div>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tipo</p>
+                    <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.tipo || 'Mantencion'}</p>
+                  </div>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</p>
+                    <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.estadoMantencion || 'Sin estado'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-text-main">
+                    {selectedMaintenance.descripcion || selectedMaintenance.desc || 'Sin detalle'}
+                  </p>
+                </div>
+
+                <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID mantencion</p>
+                  <p className="mt-2 text-sm font-bold text-white">{getMaintenanceId(selectedMaintenance) || 'Sin id'}</p>
+                </div>
+
+                <div className="mt-5">
+                  <h4 className="mb-3 text-sm font-bold text-white">Imagenes y archivos</h4>
+                  {loadingMaintenanceFiles ? (
+                    <div className="rounded-lg border border-dark-border py-8 text-center text-sm text-text-muted">
+                      Cargando archivos...
+                    </div>
+                  ) : maintenanceFilesError ? (
+                    <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                      {maintenanceFilesError}
+                    </p>
+                  ) : maintenanceDetailFiles.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {maintenanceDetailFiles.map((file) => (
+                        <a
+                          key={file.idArchivo}
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-colors hover:border-brand-cyan/60"
+                        >
+                          {isImageFile(file) ? (
+                            <img src={file.url} alt={file.nombre} className="h-44 w-full object-cover" />
+                          ) : (
+                            <div className="flex h-44 items-center justify-center bg-brand-cyan/10 text-3xl font-bold text-brand-cyan">
+                              PDF
+                            </div>
+                          )}
+                          <div className="px-3 py-2">
+                            <p className="truncate text-xs font-semibold text-white">{file.nombre}</p>
+                            {file.fechaSubida && (
+                              <p className="mt-1 text-[11px] text-text-muted">{formatDate(file.fechaSubida)}</p>
+                            )}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
+                      Esta mantencion no tiene archivos.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showAddObs && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeObservationModal}>
