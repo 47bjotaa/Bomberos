@@ -64,8 +64,8 @@ const mapVehiculo = (v) => ({
   nombre: v.nombre || v.name || v.nomenclatura || `Unidad ${v.patente || ''}`,
   patente: v.patente || 'S/N',
   tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
-  modelo: v.modelo || v.descripcion || 'Sin especificar',
-  descripcion: v.descripcion || v.modelo || 'Sin descripcion registrada.',
+  modelo: v.modelo || v.descripcion || v.descripcionUbicacion || 'Sin especificar',
+  descripcion: v.descripcion || v.descripcionUbicacion || v.modelo || 'Sin descripcion registrada.',
   estado: v.estadoVehiculo || v.estado || 'Operativo',
   estadoUbicacion: v.estadoUbicacion || '',
   observaciones: Array.isArray(v.observaciones) ? v.observaciones : [],
@@ -92,6 +92,8 @@ function VehiculosView() {
   const [isEditingPatente, setIsEditingPatente] = useState(false);
   const [tempPatente, setTempPatente] = useState('');
   const [vehicleImages, setVehicleImages] = useState([]);
+  const [loadingVehicleDetail, setLoadingVehicleDetail] = useState(false);
+  const [vehicleDetailError, setVehicleDetailError] = useState('');
   const [loadingVehicleImages, setLoadingVehicleImages] = useState(false);
   const [vehicleImagesError, setVehicleImagesError] = useState('');
   const [uploadingVehicleImage, setUploadingVehicleImage] = useState(false);
@@ -143,6 +145,33 @@ function VehiculosView() {
     setSelectedVehiculo(updatedV);
   };
 
+  const fetchVehicleDetail = useCallback(async () => {
+    if (!selectedId) return;
+
+    setLoadingVehicleDetail(true);
+    setVehicleDetailError('');
+
+    try {
+      const data = await apiFetch(`/api/vehiculos/${selectedId}`);
+      const mappedDetail = mapVehiculo(data);
+
+      setVehiculos((current) => current.map((vehiculo) => (
+        String(vehiculo.id) === String(mappedDetail.id)
+          ? { ...vehiculo, ...mappedDetail }
+          : vehiculo
+      )));
+      setSelectedVehiculo((current) => (
+        current && String(current.id) === String(mappedDetail.id)
+          ? { ...current, ...mappedDetail }
+          : mappedDetail
+      ));
+    } catch (err) {
+      setVehicleDetailError(err.message || 'No se pudo cargar el detalle del vehiculo.');
+    } finally {
+      setLoadingVehicleDetail(false);
+    }
+  }, [selectedId]);
+
   const fetchVehicleImages = useCallback(async () => {
     if (!imageBasePath) return;
 
@@ -189,6 +218,11 @@ function VehiculosView() {
   }, [fetchVehicleImages, view]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (view === 'detail') fetchVehicleDetail();
+  }, [fetchVehicleDetail, view]);
+
+  useEffect(() => {
     observationImagesRef.current = observationImages;
   }, [observationImages]);
 
@@ -223,6 +257,7 @@ function VehiculosView() {
     setView('detail');
     setVehicleImages([]);
     setVehicleImagesError('');
+    setVehicleDetailError('');
     resetDetailForms();
   };
 
@@ -380,6 +415,26 @@ function VehiculosView() {
     });
   };
 
+  const closeObservationModal = () => {
+    if (observationSaving) return;
+
+    setShowAddObs(false);
+    setNewObs({ observacion: '' });
+    observationImages.forEach((image) => URL.revokeObjectURL(image.preview));
+    setObservationImages([]);
+    setObservationError('');
+  };
+
+  const closeMaintenanceModal = () => {
+    if (maintenanceSaving) return;
+
+    setShowAddMant(false);
+    setNewMant({ fecha: '', tipo: 'Preventiva', descripcion: '' });
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
+    setMaintenanceError('');
+  };
+
   const handleCreateObservation = async (event) => {
     event.preventDefault();
 
@@ -444,6 +499,7 @@ function VehiculosView() {
       if (imageUploadError) {
         setObservationNotice(`La observacion fue creada, pero no se pudieron subir las imagenes: ${imageUploadError.message || 'revisa el endpoint de imagenes.'}`);
       }
+      await fetchVehicleDetail();
     } catch (err) {
       setObservationError(err.message || 'No se pudo crear la observacion.');
     } finally {
@@ -518,6 +574,7 @@ function VehiculosView() {
       if (fileUploadError) {
         setMaintenanceNotice(`La mantencion fue creada, pero no se pudieron subir los archivos: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
       }
+      await fetchVehicleDetail();
     } catch (err) {
       setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
     } finally {
@@ -750,6 +807,12 @@ function VehiculosView() {
           </div>
         </div>
 
+        {vehicleDetailError && (
+          <p className="mb-6 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+            {vehicleDetailError}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
           <section>
             <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-2">
@@ -757,58 +820,32 @@ function VehiculosView() {
                 <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                 Observaciones
               </h4>
-              <button onClick={() => setShowAddObs((current) => !current)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
-                <span>{showAddObs ? '-' : '+'}</span> {showAddObs ? 'Cancelar' : 'Agregar'}
+              <button onClick={() => setShowAddObs(true)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
+                <span>+</span> Agregar
               </button>
             </div>
 
             <div className="space-y-4">
-              {showAddObs && (
-                <form onSubmit={handleCreateObservation} className="mb-4 rounded-lg border border-brand-cyan/50 bg-dark-bg2 p-4">
-                  <textarea placeholder="Detalle de la observacion" value={newObs.observacion} onChange={(e) => setNewObs({ observacion: e.target.value })} className="mb-3 min-h-[96px] w-full rounded border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none" />
-                  <label className="mb-3 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-4 text-center transition-colors hover:border-brand-cyan/60">
-                    <span className="text-sm font-semibold text-white">
-                      {observationImages.length >= 3 ? 'Limite de 3 imagenes alcanzado' : 'Seleccionar imagenes'}
-                    </span>
-                    <span className="mt-1 text-xs text-text-muted">Puedes adjuntar hasta 3 imagenes.</span>
-                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleObservationImageChange} disabled={observationSaving || observationImages.length >= 3} />
-                  </label>
-                  {observationImages.length > 0 && (
-                    <div className="mb-3 grid grid-cols-3 gap-3">
-                      {observationImages.map((image, index) => (
-                        <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
-                          <img src={image.preview} alt={image.file.name} className="h-24 w-full object-cover" />
-                          <p className="truncate px-2 py-1 text-[11px] text-text-muted">{image.file.name}</p>
-                          <button type="button" onClick={() => removeObservationImage(index)} disabled={observationSaving} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50">
-                            x
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {observationError && <p className="mb-3 rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationError}</p>}
-                  <div className="flex justify-end">
-                    <button type="submit" disabled={!newObs.observacion.trim() || observationSaving} className="rounded bg-brand-cyan px-3 py-1.5 text-xs font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                      {observationSaving ? 'Guardando...' : 'Guardar Observacion'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
               {observationNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {observationNotice}
                 </p>
               )}
 
-              {(v.observaciones || []).map((obs, idx) => (
+              {loadingVehicleDetail && (
+                <div className="rounded-lg border border-dashed border-dark-border p-6 text-center text-sm text-text-muted">
+                  Cargando observaciones...
+                </div>
+              )}
+
+              {!loadingVehicleDetail && (v.observaciones || []).map((obs, idx) => (
                 <div key={getObservationId(obs) || idx} className="rounded-lg border border-dark-border bg-dark-surface p-4">
                   <span className="text-xs text-text-muted">{formatDate(obs.fecha)}</span>
                   <p className="mt-2 text-sm leading-relaxed text-text-muted">{obs.observacion || obs.desc || obs.descripcion || 'Sin detalle'}</p>
                 </div>
               ))}
 
-              {(v.observaciones || []).length === 0 && !showAddObs && (
+              {!loadingVehicleDetail && (v.observaciones || []).length === 0 && (
                 <div className="rounded-lg border border-dashed border-dark-border p-6 text-center text-sm text-text-muted">
                   No hay observaciones registradas.
                 </div>
@@ -822,62 +859,25 @@ function VehiculosView() {
                 <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Mantenciones
               </h4>
-              <button onClick={() => setShowAddMant((current) => !current)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
-                <span>{showAddMant ? '-' : '+'}</span> {showAddMant ? 'Cancelar' : 'Agregar'}
+              <button onClick={() => setShowAddMant(true)} className="flex items-center gap-1 text-xs font-medium text-text-muted transition-colors hover:text-brand-cyan">
+                <span>+</span> Agregar
               </button>
             </div>
 
             <div className="space-y-4">
-              {showAddMant && (
-                <form onSubmit={handleCreateMaintenance} className="mb-4 rounded-lg border border-brand-cyan/50 bg-dark-bg2 p-4">
-                  <div className="mb-3 grid gap-3 md:grid-cols-2">
-                    <input type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} className="rounded border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none" />
-                    <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} className="rounded border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none">
-                      <option value="Preventiva">Preventiva</option>
-                      <option value="Correctiva">Correctiva</option>
-                    </select>
-                  </div>
-                  <textarea placeholder="Detalle de la mantencion" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} className="mb-3 min-h-[96px] w-full rounded border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none" />
-                  <label className="mb-3 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-4 text-center transition-colors hover:border-brand-cyan/60">
-                    <span className="text-sm font-semibold text-white">Seleccionar archivos</span>
-                    <span className="mt-1 text-xs text-text-muted">Puedes adjuntar imagenes, PDF u otros documentos.</span>
-                    <input type="file" multiple className="hidden" onChange={handleMaintenanceFileChange} disabled={maintenanceSaving} />
-                  </label>
-                  {maintenanceFiles.length > 0 && (
-                    <div className="mb-3 grid grid-cols-2 gap-3">
-                      {maintenanceFiles.map((fileItem, index) => (
-                        <div key={`${fileItem.file.name}-${fileItem.preview}`} className="relative rounded-lg border border-dark-border bg-dark-bg p-2">
-                          {isImageFile(fileItem) ? (
-                            <img src={fileItem.preview} alt={fileItem.file.name} className="mb-2 h-24 w-full rounded object-cover" />
-                          ) : (
-                            <div className="mb-2 flex h-24 items-center justify-center rounded bg-brand-cyan/10 text-2xl text-brand-cyan">
-                              PDF
-                            </div>
-                          )}
-                          <p className="truncate pr-7 text-xs font-semibold text-white">{fileItem.file.name}</p>
-                          <button type="button" onClick={() => removeMaintenanceFile(index)} disabled={maintenanceSaving} className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50">
-                            x
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {maintenanceError && <p className="mb-3 rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceError}</p>}
-                  <div className="flex justify-end">
-                    <button type="submit" disabled={!newMant.descripcion.trim() || !newMant.tipo.trim() || maintenanceSaving} className="rounded bg-brand-cyan px-3 py-1.5 text-xs font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                      {maintenanceSaving ? 'Guardando...' : 'Guardar Mantencion'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
               {maintenanceNotice && (
                 <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                   {maintenanceNotice}
                 </p>
               )}
 
-              {(v.mantenciones || []).map((mant, idx) => (
+              {loadingVehicleDetail && (
+                <div className="rounded-lg border border-dashed border-dark-border p-6 text-center text-sm text-text-muted">
+                  Cargando mantenciones...
+                </div>
+              )}
+
+              {!loadingVehicleDetail && (v.mantenciones || []).map((mant, idx) => (
                 <div key={getMaintenanceId(mant) || idx} className="rounded-lg border border-dark-border bg-dark-surface p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <span className="text-xs text-text-muted">{formatDate(mant.fecha)}</span>
@@ -888,7 +888,7 @@ function VehiculosView() {
                 </div>
               ))}
 
-              {(v.mantenciones || []).length === 0 && !showAddMant && (
+              {!loadingVehicleDetail && (v.mantenciones || []).length === 0 && (
                 <div className="rounded-lg border border-dashed border-dark-border p-6 text-center text-sm text-text-muted">
                   No hay mantenciones registradas.
                 </div>
@@ -896,6 +896,117 @@ function VehiculosView() {
             </div>
           </section>
         </div>
+
+        {showAddObs && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeObservationModal}>
+            <form onSubmit={handleCreateObservation} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Agregar observacion</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={closeObservationModal} disabled={observationSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <textarea placeholder="Detalle de la observacion" value={newObs.observacion} onChange={(e) => setNewObs({ observacion: e.target.value })} disabled={observationSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
+                  <span className="text-sm font-semibold text-white">
+                    {observationImages.length >= 3 ? 'Limite de 3 imagenes alcanzado' : 'Seleccionar imagenes'}
+                  </span>
+                  <span className="mt-1 text-xs text-text-muted">Puedes adjuntar hasta 3 imagenes.</span>
+                  <input type="file" multiple accept="image/*" className="hidden" onChange={handleObservationImageChange} disabled={observationSaving || observationImages.length >= 3} />
+                </label>
+                {observationImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {observationImages.map((image, index) => (
+                      <div key={`${image.file.name}-${image.preview}`} className="relative overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
+                        <img src={image.preview} alt={image.file.name} className="h-24 w-full object-cover" />
+                        <p className="truncate px-2 py-1 text-[11px] text-text-muted">{image.file.name}</p>
+                        <button type="button" onClick={() => removeObservationImage(index)} disabled={observationSaving} className="absolute right-1 top-1 text-sm font-bold text-white drop-shadow transition-colors hover:text-brand-red disabled:opacity-50">
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {observationError && <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationError}</p>}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeObservationModal} disabled={observationSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={!newObs.observacion.trim() || observationSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {observationSaving ? 'Guardando...' : 'Guardar observacion'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showAddMant && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeMaintenanceModal}>
+            <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Agregar mantencion</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-140px)] space-y-4 overflow-y-auto p-6">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <input type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                  <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60">
+                    <option value="Preventiva">Preventiva</option>
+                    <option value="Correctiva">Correctiva</option>
+                  </select>
+                </div>
+                <textarea placeholder="Detalle de la mantencion" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} disabled={maintenanceSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
+                  <span className="text-sm font-semibold text-white">Seleccionar archivos</span>
+                  <span className="mt-1 text-xs text-text-muted">Puedes adjuntar imagenes, PDF u otros documentos.</span>
+                  <input type="file" multiple className="hidden" onChange={handleMaintenanceFileChange} disabled={maintenanceSaving} />
+                </label>
+                {maintenanceFiles.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {maintenanceFiles.map((fileItem, index) => (
+                      <div key={`${fileItem.file.name}-${fileItem.preview}`} className="relative rounded-lg border border-dark-border bg-dark-bg p-2">
+                        {isImageFile(fileItem) ? (
+                          <img src={fileItem.preview} alt={fileItem.file.name} className="mb-2 h-24 w-full rounded object-cover" />
+                        ) : (
+                          <div className="mb-2 flex h-24 items-center justify-center rounded bg-brand-cyan/10 text-2xl text-brand-cyan">
+                            PDF
+                          </div>
+                        )}
+                        <p className="truncate pr-7 text-xs font-semibold text-white">{fileItem.file.name}</p>
+                        <button type="button" onClick={() => removeMaintenanceFile(index)} disabled={maintenanceSaving} className="absolute right-2 top-2 text-sm font-bold text-white drop-shadow transition-colors hover:text-brand-red disabled:opacity-50">
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {maintenanceError && <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceError}</p>}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={!newMant.descripcion.trim() || !newMant.tipo.trim() || maintenanceSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {maintenanceSaving ? 'Guardando...' : 'Guardar mantencion'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     );
   }
