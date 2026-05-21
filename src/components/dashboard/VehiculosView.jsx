@@ -95,6 +95,7 @@ function VehiculosView() {
   const [loadingVehicleImages, setLoadingVehicleImages] = useState(false);
   const [vehicleImagesError, setVehicleImagesError] = useState('');
   const [uploadingVehicleImage, setUploadingVehicleImage] = useState(false);
+  const [deletingVehicleImageId, setDeletingVehicleImageId] = useState(null);
   const [imageUploadError, setImageUploadError] = useState('');
   const imageRequestRef = useRef(0);
 
@@ -135,6 +136,7 @@ function VehiculosView() {
   const imageBasePath = selectedId ? `/api/vehiculos/${selectedId}/imagenes` : '';
   const vehicleTargetQuery = selectedId ? `idVehiculo=${encodeURIComponent(selectedId)}` : '';
   const primaryVehicleImage = vehicleImages[0] || null;
+  const vehicleImageSlotsAvailable = Math.max(0, 3 - vehicleImages.length);
 
   const updateVehiculo = (updatedV) => {
     setVehiculos((current) => current.map((v) => v.id === updatedV.id ? updatedV : v));
@@ -273,26 +275,52 @@ function VehiculosView() {
   };
 
   const handleVehicleImageChange = async (event) => {
-    const file = event.target.files?.[0];
+    const selectedFiles = Array.from(event.target.files || []);
     event.target.value = '';
-    if (!file || !imageBasePath || uploadingVehicleImage) return;
+    if (selectedFiles.length === 0 || !imageBasePath || uploadingVehicleImage || vehicleImageSlotsAvailable === 0) return;
 
-    const formDataImage = new FormData();
-    formDataImage.append('archivo', file);
+    const filesToUpload = selectedFiles.slice(0, vehicleImageSlotsAvailable);
 
     setUploadingVehicleImage(true);
-    setImageUploadError('');
+    setImageUploadError(selectedFiles.length > vehicleImageSlotsAvailable ? 'Solo puedes tener hasta 3 imagenes del vehiculo.' : '');
 
     try {
-      await apiFetch(imageBasePath, {
-        method: 'POST',
-        body: formDataImage,
-      });
+      await Promise.all(filesToUpload.map((file) => {
+        const formDataImage = new FormData();
+        formDataImage.append('archivo', file);
+
+        return apiFetch(imageBasePath, {
+          method: 'POST',
+          body: formDataImage,
+        });
+      }));
       await fetchVehicleImages();
     } catch (err) {
       setImageUploadError(err.message || 'No se pudo subir la imagen.');
     } finally {
       setUploadingVehicleImage(false);
+    }
+  };
+
+  const handleDeleteVehicleImage = async (event, image) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!image?.idArchivo || !imageBasePath || deletingVehicleImageId) return;
+
+    setDeletingVehicleImageId(image.idArchivo);
+    setImageUploadError('');
+    setVehicleImagesError('');
+
+    try {
+      await apiFetch(`${imageBasePath}/${image.idArchivo}`, {
+        method: 'DELETE',
+      });
+      await fetchVehicleImages();
+    } catch (err) {
+      setVehicleImagesError(err.message || 'No se pudo eliminar la imagen.');
+    } finally {
+      setDeletingVehicleImageId(null);
     }
   };
 
@@ -635,28 +663,51 @@ function VehiculosView() {
               {loadingVehicleImages ? (
                 <p className="text-sm">Cargando imagenes...</p>
               ) : primaryVehicleImage ? (
-                <img src={primaryVehicleImage.url} alt={v.nombre} className="h-full w-full object-cover" />
+                <>
+                  <img src={primaryVehicleImage.url} alt={v.nombre} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={(event) => handleDeleteVehicleImage(event, primaryVehicleImage)}
+                    disabled={deletingVehicleImageId === primaryVehicleImage.idArchivo}
+                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover:opacity-100"
+                    title="Eliminar imagen"
+                  >
+                    x
+                  </button>
+                </>
               ) : (
                 <div className="mb-4 scale-150 opacity-30">
                   <Icons.Truck />
                 </div>
               )}
-              <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-medium transition-colors hover:text-white ${primaryVehicleImage ? 'absolute bottom-4 opacity-0 group-hover:opacity-100' : 'relative'}`}>
+              <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-medium transition-colors hover:text-white ${vehicleImageSlotsAvailable === 0 ? 'cursor-not-allowed opacity-60' : ''} ${primaryVehicleImage ? 'absolute bottom-4 opacity-0 group-hover:opacity-100' : 'relative'}`}>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                {uploadingVehicleImage ? 'Subiendo...' : primaryVehicleImage ? 'Cambiar foto' : 'Anadir foto'}
-                <input type="file" hidden accept="image/*" onChange={handleVehicleImageChange} disabled={uploadingVehicleImage} />
+                {uploadingVehicleImage ? 'Subiendo...' : vehicleImageSlotsAvailable === 0 ? 'Limite 3/3' : primaryVehicleImage ? 'Agregar imagen' : 'Anadir imagen'}
+                <input type="file" hidden multiple accept="image/*" onChange={handleVehicleImageChange} disabled={uploadingVehicleImage || vehicleImageSlotsAvailable === 0} />
               </label>
             </div>
+            <p className="mt-2 text-xs text-text-muted">
+              {vehicleImages.length}/3 imagenes del vehiculo
+            </p>
             {(vehicleImagesError || imageUploadError) && (
               <p className="mt-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                 {vehicleImagesError || imageUploadError}
               </p>
             )}
             {vehicleImages.length > 1 && (
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {vehicleImages.slice(1, 5).map((image) => (
-                  <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded border border-dark-border">
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {vehicleImages.slice(1, 3).map((image) => (
+                  <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="group/thumb relative block overflow-hidden rounded border border-dark-border">
                     <img src={image.url} alt={image.nombre} className="h-20 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={(event) => handleDeleteVehicleImage(event, image)}
+                      disabled={deletingVehicleImageId === image.idArchivo}
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover/thumb:opacity-100"
+                      title="Eliminar imagen"
+                    >
+                      x
+                    </button>
                   </a>
                 ))}
               </div>
