@@ -88,8 +88,10 @@ function Dashboard({ setView }) {
   const [loadingUbicaciones, setLoadingUbicaciones] = useState(true);
   const [ubicacionesError, setUbicacionesError] = useState('');
   const [catalogo, setCatalogo] = useState([]);
-  const [editingCatId, setEditingCatId] = useState(null);
-  const [editCatData, setEditCatData] = useState({});
+  const [valueUpdateMaterial, setValueUpdateMaterial] = useState(null);
+  const [valueUpdateInput, setValueUpdateInput] = useState('');
+  const [savingValueUpdate, setSavingValueUpdate] = useState(false);
+  const [valueUpdateError, setValueUpdateError] = useState('');
   const [confirmCatAction, setConfirmCatAction] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState('Todos los tipos');
   const [filtroNombre, setFiltroNombre] = useState('');
@@ -1132,6 +1134,59 @@ function Dashboard({ setView }) {
     if (savingMaterial) return;
     setShowAddMaterialModal(false);
     resetNewMaterialData();
+  };
+
+  const openValueUpdateModal = (material) => {
+    setValueUpdateMaterial(material);
+    setValueUpdateInput(formatCurrency(material.valorUnitario ?? material.valor ?? 0));
+    setValueUpdateError('');
+  };
+
+  const closeValueUpdateModal = () => {
+    if (savingValueUpdate) return;
+    setValueUpdateMaterial(null);
+    setValueUpdateInput('');
+    setValueUpdateError('');
+  };
+
+  const handleValueUpdateChange = (event) => {
+    const rawValue = event.target.value.replace(/\D/g, '');
+
+    if (rawValue === '') {
+      setValueUpdateInput('');
+      return;
+    }
+
+    setValueUpdateInput(formatCurrency(rawValue));
+  };
+
+  const handleUpdateMaterialValue = async (event) => {
+    event.preventDefault();
+    if (!valueUpdateMaterial?.id) return;
+
+    const nextValue = parseCurrencyValue(valueUpdateInput);
+    setSavingValueUpdate(true);
+    setValueUpdateError('');
+
+    try {
+      await apiFetch(`/api/materiales/${valueUpdateMaterial.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ valorUnitario: nextValue }),
+      });
+
+      setCatalogo(prev => prev.map(item => (
+        item.id === valueUpdateMaterial.id
+          ? { ...item, valor: formatCurrency(nextValue), valorUnitario: nextValue }
+          : item
+      )));
+      setValueUpdateMaterial(null);
+      setValueUpdateInput('');
+      setValueUpdateError('');
+    } catch (error) {
+      setValueUpdateError(error.message || 'No se pudo actualizar el valor unitario.');
+    } finally {
+      setSavingValueUpdate(false);
+    }
   };
 
   const handleCreateMaterial = async (event) => {
@@ -2641,99 +2696,40 @@ function Dashboard({ setView }) {
                     ) : catalogo.length > 0 ? (
                       (filtroTipo === 'Todos los tipos' ? catalogo : catalogo.filter(item => item.tipo === filtroTipo))
                         .filter(item => (item.nombre || '').toLowerCase().includes(filtroNombre.toLowerCase()))
-                        .map(item => {
-                        const isEditing = editingCatId === item.id;
-                        return (
+                        .map(item => (
                           <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
                             <td className="px-6 py-4 font-medium text-white">{item.nombre}</td>
                             <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
                             <td className="px-6 py-4 text-text-muted">
-                              {isEditing ? (
-                                <input 
-                                  type="text" 
-                                  value={editCatData.valor} 
-                                  onChange={e => {
-                                    let rawValue = e.target.value.replace(/\D/g, '');
-                                    if (rawValue === '') {
-                                      setEditCatData({...editCatData, valor: ''});
-                                    } else {
-                                      const numValue = parseInt(rawValue, 10);
-                                      setEditCatData({...editCatData, valor: '$' + numValue.toLocaleString('es-CL')});
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 bg-dark-bg border border-brand-cyan rounded text-sm text-white focus:outline-none"
-                                />
-                              ) : item.valor}
+                              {item.valor}
                             </td>
                             <td className="px-6 py-4 text-center">
-                              {isEditing ? (
-                                <input 
-                                  type="checkbox" 
-                                  checked={editCatData.desechable} 
-                                  onChange={e => setEditCatData({...editCatData, desechable: e.target.checked})}
-                                  className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                                />
-                              ) : (item.desechable ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                              {item.desechable ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
                             <td className="px-6 py-4 text-center">
-                              {isEditing ? (
-                                 <input 
-                                   type="checkbox" 
-                                   checked={editCatData.serializado} 
-                                   onChange={e => setEditCatData({...editCatData, serializado: e.target.checked})}
-                                   className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                                 />
-                              ) : (item.serializado ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                              {item.serializado ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
                             <td className="px-6 py-4 text-center">
-                              {isEditing ? (
-                                 <input 
-                                   type="checkbox" 
-                                   checked={editCatData.mantencion} 
-                                   onChange={e => setEditCatData({...editCatData, mantencion: e.target.checked})}
-                                   className="accent-brand-cyan w-4 h-4 cursor-pointer"
-                                 />
-                              ) : (item.mantencion ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>)}
+                              {item.mantencion ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              {isEditing ? (
-                                 <>
-                                   <button 
-                                     onClick={() => setConfirmCatAction({ type: 'edit', id: item.id, data: editCatData })}
-                                     className="text-brand-green hover:opacity-80 transition-opacity mr-3"
-                                   >
-                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                   </button>
-                                   <button 
-                                     onClick={() => setEditingCatId(null)}
-                                     className="text-brand-red hover:opacity-80 transition-opacity"
-                                   >
-                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                   </button>
-                                 </>
-                              ) : (
-                                 <>
-                                   <button 
-                                     onClick={() => {
-                                       setEditingCatId(item.id);
-                                       setEditCatData({ ...item });
-                                     }}
-                                     className="text-text-muted hover:text-brand-cyan transition-colors mr-3"
-                                   >
-                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                   </button>
-                                   <button 
-                                     onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
-                                     className="text-text-muted hover:text-brand-red transition-colors"
-                                   >
-                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                   </button>
-                                 </>
-                              )}
+                              <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => openValueUpdateModal(item)}
+                                  className="whitespace-nowrap rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/60 hover:bg-brand-cyan/15"
+                                >
+                                  Actualizar valor
+                                </button>
+                                <button 
+                                  onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
+                                  className="whitespace-nowrap rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:border-brand-red/60 hover:bg-brand-red/15"
+                                >
+                                  Borrar
+                                </button>
+                              </div>
                             </td>
                           </tr>
-                        );
-                      })
+                        ))
                     ) : (
                       <tr>
                         <td colSpan="7" className="px-6 py-20 text-center">
@@ -3933,26 +3929,65 @@ function Dashboard({ setView }) {
           </div>
         )}
 
+        {valueUpdateMaterial && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleUpdateMaterialValue} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl fade-in">
+              <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2">
+                <h3 className="text-lg font-semibold text-white rajdhani">Actualizar valor</h3>
+                <p className="mt-1 truncate text-sm text-text-muted">{valueUpdateMaterial.nombre}</p>
+              </div>
+              <div className="p-6">
+                <label className="block text-sm font-medium text-text-muted mb-2">Valor Unitario</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={valueUpdateInput}
+                  onChange={handleValueUpdateChange}
+                  disabled={savingValueUpdate}
+                  className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  placeholder="Ej. $15.000"
+                />
+                {valueUpdateError && (
+                  <p className="mt-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {valueUpdateError}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeValueUpdateModal}
+                  disabled={savingValueUpdate}
+                  className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Volver
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingValueUpdate}
+                  className="px-4 py-2 text-sm font-medium text-white bg-brand-cyan rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_15px_rgba(56,189,248,0.3)]"
+                >
+                  {savingValueUpdate ? 'Guardando...' : 'Aceptar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {confirmCatAction && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${confirmCatAction.type === 'edit' ? 'bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20' : 'bg-brand-red/10 text-brand-red border border-brand-red/20'}`}>
-                  {confirmCatAction.type === 'edit' ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                  )}
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-red/10 text-brand-red border border-brand-red/20">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </div>
                 <h3 className="text-lg font-semibold text-white rajdhani">
-                  {confirmCatAction.type === 'edit' ? 'Confirmar Cambios' : 'Eliminar Registro'}
+                  Eliminar Registro
                 </h3>
               </div>
               <div className="p-6">
                 <p className="text-text-muted text-sm leading-relaxed">
-                  {confirmCatAction.type === 'edit' 
-                    ? '¿Estás seguro que deseas guardar los cambios realizados en este material?' 
-                    : '¿Estás seguro que deseas eliminar este material del catálogo? Esta acción no se puede deshacer.'}
+                  ¿Estás seguro que deseas eliminar este material del catálogo? Esta acción no se puede deshacer.
                 </p>
               </div>
               <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
@@ -3964,17 +3999,14 @@ function Dashboard({ setView }) {
                 </button>
                 <button
                   onClick={() => {
-                    if (confirmCatAction.type === 'edit') {
-                      setCatalogo(catalogo.map(item => item.id === confirmCatAction.id ? confirmCatAction.data : item));
-                      setEditingCatId(null);
-                    } else if (confirmCatAction.type === 'delete') {
+                    if (confirmCatAction.type === 'delete') {
                       setCatalogo(catalogo.filter(item => item.id !== confirmCatAction.id));
                     }
                     setConfirmCatAction(null);
                   }}
-                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-opacity hover:opacity-90 ${confirmCatAction.type === 'edit' ? 'bg-brand-cyan shadow-[0_4px_15px_rgba(56,189,248,0.3)]' : 'bg-brand-red shadow-[0_4px_15px_rgba(232,55,42,0.3)]'}`}
+                  className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-opacity hover:opacity-90 bg-brand-red shadow-[0_4px_15px_rgba(232,55,42,0.3)]"
                 >
-                  {confirmCatAction.type === 'edit' ? 'Guardar Cambios' : 'Eliminar'}
+                  Eliminar
                 </button>
               </div>
             </div>
