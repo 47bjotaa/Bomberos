@@ -425,9 +425,7 @@ function AuthView({ initialMode = 'register' }) {
                     setErrors(prev => ({ ...prev, turnstile: 'No se pudo completar la verificación.' }));
                   }}
                 />
-              ) : (
-                <p className="text-brand-red text-xs">Falta configurar Turnstile.</p>
-              )}
+              ) : null}
               {errors.turnstile && <p className="text-brand-red text-xs mt-1">{errors.turnstile}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
