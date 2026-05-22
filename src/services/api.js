@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "https://api-staging-bomberos-afabenevecetgwhf.brazilsouth-01.azurewebsites.net";
+const API_URL = import.meta.env.VITE_API_URL || "https://api.cuartelamigo.cl";
 
 const clearSession = () => {
   localStorage.removeItem('token');
