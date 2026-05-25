@@ -654,7 +654,13 @@ function Dashboard({ setView }) {
   );
 
   const getCurrentTimeValue = () => (
-    new Date().toISOString().slice(11, 19)
+    new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date())
   );
 
   const fetchLibrosGuardia = async () => {
