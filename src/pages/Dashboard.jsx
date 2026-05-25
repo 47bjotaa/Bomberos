@@ -1180,7 +1180,7 @@ function Dashboard({ setView }) {
 
     const payload = {
       fecha: newRegistroData.fecha,
-      hora: `${newRegistroData.hora}.000Z`,
+      hora: newRegistroData.hora.length === 5 ? `${newRegistroData.hora}:00` : newRegistroData.hora,
       detalle: newRegistroData.detalle.trim(),
     };
 
