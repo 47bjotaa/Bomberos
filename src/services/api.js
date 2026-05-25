@@ -1,8 +1,12 @@
 const API_URL = import.meta.env.VITE_API_URL || "https://api.cuartelamigo.cl";
+const ACCESS_TOKEN_REFRESH_MARGIN_MS = 60 * 1000;
+let refreshRequest = null;
 
 const clearSession = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
+  localStorage.removeItem('accessTokenExpiresAt');
+  localStorage.removeItem('refreshTokenExpiresAt');
   localStorage.removeItem('user');
 };
 
@@ -13,9 +17,121 @@ const redirectToLogin = () => {
   }
 };
 
+const saveSessionTokens = (data) => {
+  if (!data?.token || !data?.refreshToken) {
+    throw new Error('La respuesta de autenticacion no incluye ambos tokens.');
+  }
+
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('refreshToken', data.refreshToken);
+
+  if (data.accessTokenExpiresAt) {
+    localStorage.setItem('accessTokenExpiresAt', data.accessTokenExpiresAt);
+  } else {
+    localStorage.removeItem('accessTokenExpiresAt');
+  }
+
+  if (data.refreshTokenExpiresAt) {
+    localStorage.setItem('refreshTokenExpiresAt', data.refreshTokenExpiresAt);
+  } else {
+    localStorage.removeItem('refreshTokenExpiresAt');
+  }
+};
+
+const getJwtExpiration = (token) => {
+  try {
+    const rawPayload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const encodedPayload = rawPayload.padEnd(Math.ceil(rawPayload.length / 4) * 4, '=');
+    const payload = JSON.parse(window.atob(encodedPayload));
+    return payload.exp ? Number(payload.exp) * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
+const getAccessTokenExpiration = (token) => {
+  const storedExpiration = localStorage.getItem('accessTokenExpiresAt');
+  const parsedExpiration = storedExpiration ? new Date(storedExpiration).getTime() : NaN;
+
+  return Number.isNaN(parsedExpiration) ? getJwtExpiration(token) : parsedExpiration;
+};
+
+const accessTokenNeedsRefresh = (token) => {
+  if (!token || !localStorage.getItem('refreshToken')) return false;
+
+  const expiration = getAccessTokenExpiration(token);
+  return expiration !== null && expiration <= Date.now() + ACCESS_TOKEN_REFRESH_MARGIN_MS;
+};
+
+const readApiError = async (response) => {
+  let errorMessage = `Error API: ${response.status}`;
+  const errorText = await response.text().catch(() => "");
+  if (!errorText) return errorMessage;
+
+  try {
+    const errorData = JSON.parse(errorText);
+    errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
+    if (errorData.errors) {
+      const errorDetails = Array.isArray(errorData.errors)
+        ? errorData.errors
+        : Object.values(errorData.errors).flat();
+
+      if (errorDetails.length > 0) {
+        errorMessage = `${errorMessage}: ${errorDetails.join(' ')}`;
+      }
+    }
+  } catch {
+    errorMessage = errorText;
+  }
+
+  return errorMessage;
+};
+
+const refreshAccessToken = async () => {
+  if (refreshRequest) return refreshRequest;
+
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    clearSession();
+    redirectToLogin();
+    throw new Error('La sesion expiro. Inicia sesion nuevamente.');
+  }
+
+  refreshRequest = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readApiError(response));
+      }
+
+      const data = await response.json();
+      saveSessionTokens(data);
+      return data.token;
+    } catch (error) {
+      clearSession();
+      redirectToLogin();
+      throw error;
+    } finally {
+      refreshRequest = null;
+    }
+  })();
+
+  return refreshRequest;
+};
+
 export const apiFetch = async (endpoint, options = {}) => {
-  const { skipAuth = false, responseType = 'auto', ...fetchOptions } = options;
-  const token = localStorage.getItem('token');
+  const { skipAuth = false, responseType = 'auto', retryAfterRefresh = true, ...fetchOptions } = options;
+  let token = localStorage.getItem('token');
+
+  if (!skipAuth && retryAfterRefresh && accessTokenNeedsRefresh(token)) {
+    token = await refreshAccessToken();
+  }
+
   const isFormData = fetchOptions.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -32,31 +148,17 @@ export const apiFetch = async (endpoint, options = {}) => {
   });
 
   if (!response.ok) {
+    if (response.status === 401 && !skipAuth && retryAfterRefresh) {
+      await refreshAccessToken();
+      return apiFetch(endpoint, { ...options, retryAfterRefresh: false });
+    }
+
     if (response.status === 401 && !skipAuth) {
       clearSession();
       redirectToLogin();
     }
 
-    let errorMessage = `Error API: ${response.status}`;
-    const errorText = await response.text().catch(() => "");
-    if (errorText) {
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
-        if (errorData.errors) {
-          const errorDetails = Array.isArray(errorData.errors)
-            ? errorData.errors
-            : Object.values(errorData.errors).flat();
-
-          if (errorDetails.length > 0) {
-            errorMessage = `${errorMessage}: ${errorDetails.join(' ')}`;
-          }
-        }
-      } catch {
-        errorMessage = errorText;
-      }
-    }
-    throw new Error(errorMessage);
+    throw new Error(await readApiError(response));
   }
 
   if (responseType === 'blob') {
@@ -78,13 +180,11 @@ export const authService = {
   login: async (rut, password, turnstileToken) => {
     const data = await apiFetch('/api/Auth/login', {
       method: 'POST',
+      skipAuth: true,
       body: JSON.stringify({ rut, password, turnstileToken }),
     });
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      if (data.refreshToken) {
-        localStorage.setItem('refreshToken', data.refreshToken);
-      }
+    if (data.token && data.refreshToken) {
+      saveSessionTokens(data);
       // Guardar información del perfil para mostrar en la interfaz
       const userInfo = {
         idUsuario: data.idUsuario,
@@ -101,6 +201,7 @@ export const authService = {
     // userData expects { idCuerpoBomberos, nombreCompania, rutUsuario, emailUsuario, password, nombreBombero, telefonoBombero, rol }
     const data = await apiFetch('/api/Companias/registrar-compania', {
       method: 'POST',
+      skipAuth: true,
       body: JSON.stringify(userData),
     });
     return data;
