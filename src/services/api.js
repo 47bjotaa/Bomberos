@@ -14,7 +14,7 @@ const redirectToLogin = () => {
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
-  const { skipAuth = false, ...fetchOptions } = options;
+  const { skipAuth = false, responseType = 'auto', ...fetchOptions } = options;
   const token = localStorage.getItem('token');
   const isFormData = fetchOptions.body instanceof FormData;
   const headers = {
@@ -57,6 +57,10 @@ export const apiFetch = async (endpoint, options = {}) => {
       }
     }
     throw new Error(errorMessage);
+  }
+
+  if (responseType === 'blob') {
+    return response.blob();
   }
 
   const text = await response.text();

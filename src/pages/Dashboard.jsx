@@ -24,6 +24,20 @@ const TIPOS_PRODUCTO = [
   { id: 5, nombre: 'Material especifico' },
 ];
 
+const DEFAULT_PAYMENT_CONFIG = {
+  apiKey: '',
+  secretKey: '',
+  commerceId: '',
+  ambiente: 'Sandbox',
+  urlApi: 'https://sandbox.flow.cl/api',
+  urlConfirmacion: 'https://api.cuartelamigo.cl/api/donaciones/flow/confirmacion',
+  urlRetorno: 'https://cuartelamigo.cl/donacion-gracias',
+  paymentMethodDefault: '9',
+  monedaDefault: 'CLP',
+  timeoutSegundos: '',
+  activo: true,
+};
+
 const getMaterialDetailRoute = (pathname) => {
   const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
   if (eppItemMatch) {
@@ -98,6 +112,13 @@ function Dashboard({ setView }) {
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [savingMaterial, setSavingMaterial] = useState(false);
   const [addMaterialError, setAddMaterialError] = useState('');
+  const [catalogImportFile, setCatalogImportFile] = useState(null);
+  const [catalogImportMode, setCatalogImportMode] = useState('Crear');
+  const [downloadingCatalogTemplate, setDownloadingCatalogTemplate] = useState(false);
+  const [uploadingCatalogImport, setUploadingCatalogImport] = useState(false);
+  const [catalogImportError, setCatalogImportError] = useState('');
+  const [catalogImportSuccess, setCatalogImportSuccess] = useState('');
+  const [catalogImportInputKey, setCatalogImportInputKey] = useState(0);
   const [showInventoryMaterialModal, setShowInventoryMaterialModal] = useState(false);
   const [movingMaterial, setMovingMaterial] = useState(null);
   const [newMaterialData, setNewMaterialData] = useState({
@@ -184,6 +205,11 @@ function Dashboard({ setView }) {
   const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
   const [filtroNombreDonante, setFiltroNombreDonante] = useState('');
   const [filtroNombreBomberoDonacion, setFiltroNombreBomberoDonacion] = useState('');
+  const [donacionesView, setDonacionesView] = useState('campanas');
+  const [paymentConfigData, setPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
+  const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
+  const [paymentConfigError, setPaymentConfigError] = useState('');
+  const [paymentConfigSuccess, setPaymentConfigSuccess] = useState('');
   const [librosGuardia, setLibrosGuardia] = useState([]);
   const [loadingLibrosGuardia, setLoadingLibrosGuardia] = useState(false);
   const [librosGuardiaError, setLibrosGuardiaError] = useState('');
@@ -872,6 +898,9 @@ function Dashboard({ setView }) {
     setStockMinimoInventoryError('');
     setShowNotificationsMenu(false);
     setShowProfileMenu(false);
+    if (tab !== 'donaciones') {
+      setSelectedCampanaDetalle(null);
+    }
 
     const nextPath = tab === 'mis-datos' ? '/dashboard/mis-datos' : '/dashboard';
     if (
@@ -1058,6 +1087,79 @@ function Dashboard({ setView }) {
     setFiltroNombreBomberoDonacion('');
   };
 
+  const selectDonacionesView = (view) => {
+    setDonacionesView(view);
+    setPaymentConfigError('');
+    setPaymentConfigSuccess('');
+    if (view !== 'campanas') {
+      closeCampanaDetalle();
+    }
+  };
+
+  const handlePaymentConfigChange = (field, value) => {
+    setPaymentConfigData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+    setPaymentConfigError('');
+    setPaymentConfigSuccess('');
+  };
+
+  const resetPaymentConfigData = () => {
+    setPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
+    setPaymentConfigError('');
+    setPaymentConfigSuccess('');
+  };
+
+  const handleSavePaymentConfig = async (event) => {
+    event.preventDefault();
+    setPaymentConfigError('');
+    setPaymentConfigSuccess('');
+
+    const payload = {
+      apiKey: paymentConfigData.apiKey.trim(),
+      secretKey: paymentConfigData.secretKey.trim(),
+      commerceId: paymentConfigData.commerceId.trim() || null,
+      ambiente: paymentConfigData.ambiente,
+      urlApi: paymentConfigData.urlApi.trim(),
+      urlConfirmacion: paymentConfigData.urlConfirmacion.trim(),
+      urlRetorno: paymentConfigData.urlRetorno.trim(),
+      paymentMethodDefault: Number(paymentConfigData.paymentMethodDefault),
+      monedaDefault: paymentConfigData.monedaDefault.trim() || 'CLP',
+      timeoutSegundos: paymentConfigData.timeoutSegundos === '' ? null : Number(paymentConfigData.timeoutSegundos),
+      activo: paymentConfigData.activo,
+    };
+
+    if (!payload.apiKey || !payload.secretKey || !payload.urlApi || !payload.urlConfirmacion || !payload.urlRetorno) {
+      setPaymentConfigError('Completa API Key, Secret Key y URLs para guardar la configuracion.');
+      return;
+    }
+
+    if (!Number.isFinite(payload.paymentMethodDefault) || payload.paymentMethodDefault <= 0) {
+      setPaymentConfigError('El metodo de pago debe ser un numero mayor a cero.');
+      return;
+    }
+
+    if (payload.timeoutSegundos !== null && (!Number.isFinite(payload.timeoutSegundos) || payload.timeoutSegundos <= 0)) {
+      setPaymentConfigError('El timeout debe quedar vacio o ser un numero mayor a cero.');
+      return;
+    }
+
+    setSavingPaymentConfig(true);
+
+    try {
+      await apiFetch('/api/configuracionespagos', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setPaymentConfigSuccess('Configuracion de pago guardada correctamente.');
+    } catch (error) {
+      setPaymentConfigError(error.message || 'No se pudo guardar la configuracion de pago.');
+    } finally {
+      setSavingPaymentConfig(false);
+    }
+  };
+
   const resetNewCampanaData = () => {
     setNewCampanaData({
       nombre: '',
@@ -1221,6 +1323,81 @@ function Dashboard({ setView }) {
       setAddMaterialError(error.message || 'No se pudo crear el material.');
     } finally {
       setSavingMaterial(false);
+    }
+  };
+
+  const resetCatalogImportFeedback = () => {
+    setCatalogImportError('');
+    setCatalogImportSuccess('');
+  };
+
+  const openCatalogImportView = () => {
+    resetCatalogImportFeedback();
+    setInventoryView('importar-catalogo');
+  };
+
+  const handleDownloadCatalogTemplate = async () => {
+    setDownloadingCatalogTemplate(true);
+    resetCatalogImportFeedback();
+
+    try {
+      const templateBlob = await apiFetch('/api/materiales/importar-catalogo/plantilla', {
+        responseType: 'blob',
+      });
+      const downloadUrl = window.URL.createObjectURL(templateBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = 'plantilla-importacion-materiales.xlsx';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setCatalogImportSuccess('Plantilla descargada. Completala y luego cargala en el paso 2.');
+    } catch (error) {
+      setCatalogImportError(error.message || 'No se pudo descargar la plantilla.');
+    } finally {
+      setDownloadingCatalogTemplate(false);
+    }
+  };
+
+  const handleCatalogImportFileChange = (event) => {
+    setCatalogImportFile(event.target.files?.[0] || null);
+    resetCatalogImportFeedback();
+  };
+
+  const handleCatalogImport = async (event) => {
+    event.preventDefault();
+    resetCatalogImportFeedback();
+
+    if (!catalogImportFile) {
+      setCatalogImportError('Selecciona una plantilla Excel completada antes de importar.');
+      return;
+    }
+
+    const fileName = catalogImportFile.name.toLowerCase();
+    if (!fileName.endsWith('.xlsx')) {
+      setCatalogImportError('El archivo debe estar en formato .xlsx.');
+      return;
+    }
+
+    const body = new FormData();
+    body.append('archivo', catalogImportFile);
+    body.append('modoImportacion', catalogImportMode);
+    setUploadingCatalogImport(true);
+
+    try {
+      await apiFetch('/api/materiales/importar-catalogo', {
+        method: 'POST',
+        body,
+      });
+      setCatalogImportFile(null);
+      setCatalogImportInputKey(current => current + 1);
+      setCatalogImportSuccess('Importacion finalizada correctamente. El catalogo ya fue actualizado.');
+      await fetchCatalogo();
+    } catch (error) {
+      setCatalogImportError(error.message || 'No se pudo importar el catalogo.');
+    } finally {
+      setUploadingCatalogImport(false);
     }
   };
 
@@ -2110,7 +2287,7 @@ function Dashboard({ setView }) {
               )}
               {activeTab === 'bodegas' && inventoryView === 'catalogo' && (
                 <>
-                  <button className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
+                  <button onClick={openCatalogImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                     Importar catalogo
                   </button>
@@ -2128,7 +2305,7 @@ function Dashboard({ setView }) {
                   Asignar EPP
                 </button>
               )}
-              {activeTab === 'donaciones' && selectedCampanaDetalle && (
+              {activeTab === 'donaciones' && donacionesView === 'campanas' && selectedCampanaDetalle && (
                 <button
                   type="button"
                   onClick={() => generateAndCopyDonationLink(selectedCampanaDetalle)}
@@ -2139,7 +2316,7 @@ function Dashboard({ setView }) {
                   {generatingDonationLinkId === selectedCampanaDetalle.id ? 'Generando...' : copiedDonationSlug === (selectedCampanaDetalle.slug || String(selectedCampanaDetalle.id)) ? 'Link copiado' : 'Generar link'}
                 </button>
               )}
-              {activeTab === 'donaciones' && !selectedCampanaDetalle && (
+              {activeTab === 'donaciones' && donacionesView === 'campanas' && !selectedCampanaDetalle && (
                 <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <span className="text-base leading-none">+</span>
                   Crear campaña
@@ -2747,9 +2924,138 @@ function Dashboard({ setView }) {
             </div>
           )}
 
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'importar-catalogo' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Catalogo de materiales</p>
+                  <h3 className="rajdhani mt-2 text-3xl font-bold" style={{ color: palette.text }}>Importar catalogo</h3>
+                  <p className="mt-2 max-w-2xl text-sm" style={{ color: palette.muted }}>
+                    Descarga la plantilla, completala respetando sus validaciones y carga el archivo para crear o actualizar materiales masivamente.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => selectInventoryView('catalogo')}
+                  disabled={uploadingCatalogImport || downloadingCatalogTemplate}
+                  className="rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Volver al catalogo
+                </button>
+              </div>
+
+              <div className="grid max-w-6xl gap-5 lg:grid-cols-2">
+                <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-cyan/30 bg-brand-cyan/10 font-bold text-brand-cyan">1</span>
+                    <div>
+                      <h4 className="rajdhani text-xl font-bold text-text-main">Descarga la plantilla</h4>
+                      <p className="text-sm text-text-muted">Archivo Excel listo para rellenar.</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="font-semibold text-text-main">plantilla-importacion-materiales.xlsx</p>
+                    <ul className="mt-3 space-y-2 text-sm text-text-muted">
+                      <li>Hoja Catalogo con tabla, filtros y encabezado fijo.</li>
+                      <li>200 filas disponibles para completar.</li>
+                      <li>Desplegables para TipoMaterial y opciones Si / No.</li>
+                      <li>Validacion numerica para ValorUnitario y hoja Opciones.</li>
+                    </ul>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadCatalogTemplate}
+                    disabled={downloadingCatalogTemplate || uploadingCatalogImport}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-3 text-sm font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    {downloadingCatalogTemplate ? 'Descargando...' : 'Descargar plantilla'}
+                  </button>
+                </section>
+
+                <form onSubmit={handleCatalogImport} className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-red/30 bg-brand-red/10 font-bold text-brand-red">2</span>
+                    <div>
+                      <h4 className="rajdhani text-xl font-bold text-text-main">Importa el archivo</h4>
+                      <p className="text-sm text-text-muted">Carga tu plantilla completada.</p>
+                    </div>
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Modo de importacion</span>
+                    <select
+                      value={catalogImportMode}
+                      onChange={(event) => {
+                        setCatalogImportMode(event.target.value);
+                        resetCatalogImportFeedback();
+                      }}
+                      disabled={uploadingCatalogImport}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    >
+                      <option value="Crear">Crear</option>
+                      <option value="Actualizar">Actualizar</option>
+                      <option value="CrearOActualizar">Crear o actualizar</option>
+                    </select>
+                  </label>
+
+                  <label className="mt-5 block">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Archivo Excel</span>
+                    <span className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/50">
+                      <svg className="mb-2 h-6 w-6 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5.002 5.002 0 0115.9 6H16a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                      <span className="text-sm font-semibold text-text-main">
+                        {catalogImportFile?.name || 'Seleccionar plantilla completada'}
+                      </span>
+                      <span className="mt-1 text-xs text-text-muted">Formato permitido: .xlsx</span>
+                      <input
+                        key={catalogImportInputKey}
+                        type="file"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        onChange={handleCatalogImportFileChange}
+                        disabled={uploadingCatalogImport}
+                        className="sr-only"
+                      />
+                    </span>
+                  </label>
+
+                  {(catalogImportError || catalogImportSuccess) && (
+                    <p className={`mt-5 rounded-lg border px-4 py-3 text-sm ${catalogImportError ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-brand-green/30 bg-brand-green/10 text-brand-green'}`}>
+                      {catalogImportError || catalogImportSuccess}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={!catalogImportFile || uploadingCatalogImport || downloadingCatalogTemplate}
+                    className="mt-5 w-full rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {uploadingCatalogImport ? 'Importando...' : 'Importar catalogo'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'donaciones' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
-              {selectedCampanaDetalle ? (
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => selectDonacionesView('campanas')}
+                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'campanas' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-cyan/50 hover:text-white'}`}
+                >
+                  Campanas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectDonacionesView('configuracion')}
+                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-cyan/50 hover:text-white'}`}
+                >
+                  Configuracion de pago
+                </button>
+              </div>
+
+              {donacionesView === 'campanas' && selectedCampanaDetalle ? (
                 <div>
                   <button
                     type="button"
@@ -2867,6 +3173,157 @@ function Dashboard({ setView }) {
                     </div>
                   </section>
                 </div>
+              ) : donacionesView === 'configuracion' ? (
+                <form onSubmit={handleSavePaymentConfig} className="max-w-5xl rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+                  <div className="border-b border-dark-border px-6 py-5">
+                    <h3 className="rajdhani text-2xl font-bold text-white">Configuracion de pago</h3>
+                    <p className="mt-1 text-sm text-text-muted">Credenciales y URLs usadas para crear pagos Flow.</p>
+                  </div>
+
+                  <div className="grid gap-5 p-6 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">API Key Flow</span>
+                      <input
+                        type="text"
+                        value={paymentConfigData.apiKey}
+                        onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        placeholder="TU_API_KEY_FLOW"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Secret Key Flow</span>
+                      <input
+                        type="password"
+                        value={paymentConfigData.secretKey}
+                        onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        placeholder="TU_SECRET_KEY_FLOW"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Commerce ID</span>
+                      <input
+                        type="text"
+                        value={paymentConfigData.commerceId}
+                        onChange={(event) => handlePaymentConfigChange('commerceId', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        placeholder="Opcional"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Ambiente</span>
+                      <select
+                        value={paymentConfigData.ambiente}
+                        onChange={(event) => handlePaymentConfigChange('ambiente', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      >
+                        <option value="Sandbox">Sandbox</option>
+                        <option value="Produccion">Produccion</option>
+                      </select>
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">URL API Flow</span>
+                      <input
+                        type="url"
+                        value={paymentConfigData.urlApi}
+                        onChange={(event) => handlePaymentConfigChange('urlApi', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      />
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">URL confirmacion</span>
+                      <input
+                        type="url"
+                        value={paymentConfigData.urlConfirmacion}
+                        onChange={(event) => handlePaymentConfigChange('urlConfirmacion', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      />
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">URL retorno</span>
+                      <input
+                        type="url"
+                        value={paymentConfigData.urlRetorno}
+                        onChange={(event) => handlePaymentConfigChange('urlRetorno', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Metodo de pago default</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={paymentConfigData.paymentMethodDefault}
+                        onChange={(event) => handlePaymentConfigChange('paymentMethodDefault', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Moneda default</span>
+                      <input
+                        type="text"
+                        value={paymentConfigData.monedaDefault}
+                        onChange={(event) => handlePaymentConfigChange('monedaDefault', event.target.value.toUpperCase())}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Timeout segundos</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={paymentConfigData.timeoutSegundos}
+                        onChange={(event) => handlePaymentConfigChange('timeoutSegundos', event.target.value)}
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        placeholder="Opcional"
+                      />
+                    </label>
+
+                    <label className="flex items-center gap-3 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={paymentConfigData.activo}
+                        onChange={(event) => handlePaymentConfigChange('activo', event.target.checked)}
+                        className="h-4 w-4 accent-brand-cyan"
+                      />
+                      <span className="text-sm font-semibold text-white">Configuracion activa</span>
+                    </label>
+                  </div>
+
+                  {(paymentConfigError || paymentConfigSuccess) && (
+                    <div className={`mx-6 mb-5 rounded-lg border px-4 py-3 text-sm ${paymentConfigError ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-brand-green/30 bg-brand-green/10 text-brand-green'}`}>
+                      {paymentConfigError || paymentConfigSuccess}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-dark-border px-6 py-4">
+                    <button
+                      type="button"
+                      onClick={resetPaymentConfigData}
+                      disabled={savingPaymentConfig}
+                      className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Restaurar valores
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingPaymentConfig}
+                      className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingPaymentConfig ? 'Guardando...' : 'Guardar configuracion'}
+                    </button>
+                  </div>
+                </form>
               ) : (
                 <>
               <div className="mb-8">
