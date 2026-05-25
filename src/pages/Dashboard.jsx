@@ -217,6 +217,14 @@ function Dashboard({ setView }) {
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
   const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+  const [selectedLibroGuardia, setSelectedLibroGuardia] = useState(null);
+  const [registrosLibroGuardia, setRegistrosLibroGuardia] = useState([]);
+  const [loadingRegistrosLibroGuardia, setLoadingRegistrosLibroGuardia] = useState(false);
+  const [registrosLibroGuardiaError, setRegistrosLibroGuardiaError] = useState('');
+  const [showCreateRegistroModal, setShowCreateRegistroModal] = useState(false);
+  const [savingRegistroLibroGuardia, setSavingRegistroLibroGuardia] = useState(false);
+  const [createRegistroError, setCreateRegistroError] = useState('');
+  const [newRegistroData, setNewRegistroData] = useState({ fecha: '', hora: '', detalle: '' });
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -565,7 +573,7 @@ function Dashboard({ setView }) {
 
   const formatDateChile = (value) => {
     if (!value) return '';
-    const date = new Date(value);
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
     if (Number.isNaN(date.getTime())) return value;
 
     return new Intl.DateTimeFormat('es-CL', {
@@ -628,7 +636,26 @@ function Dashboard({ setView }) {
     fechaInicio: libro.fechaInicio || '',
     fechaFin: libro.fechaFin || '',
     fechaCreacion: libro.fechaCreacion || libro.createdAt || '',
+    cantidadRegistros: Number(libro.cantidadRegistros || 0),
   });
+
+  const mapRegistroLibroGuardia = (registro) => ({
+    id: registro.idRegistro || registro.id,
+    idLibro: registro.idLibro,
+    idUsuario: registro.idUsuario,
+    emailUsuario: registro.emailUsuario || '',
+    fecha: registro.fecha || '',
+    hora: registro.hora || '',
+    detalle: registro.detalle || '',
+  });
+
+  const getChileDateValue = () => (
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+  );
+
+  const getCurrentTimeValue = () => (
+    new Date().toISOString().slice(11, 19)
+  );
 
   const fetchLibrosGuardia = async () => {
     setLoadingLibrosGuardia(true);
@@ -903,6 +930,9 @@ function Dashboard({ setView }) {
     if (tab !== 'donaciones') {
       setSelectedCampanaDetalle(null);
     }
+    if (tab !== 'libro-guardia') {
+      closeRegistrosLibroGuardia();
+    }
 
     const nextPath = tab === 'mis-datos' ? '/dashboard/mis-datos' : '/dashboard';
     if (
@@ -1095,6 +1125,90 @@ function Dashboard({ setView }) {
     setPaymentConfigSuccess('');
     if (view !== 'campanas') {
       closeCampanaDetalle();
+    }
+  };
+
+  const fetchRegistrosLibroGuardia = async (libro = selectedLibroGuardia) => {
+    if (!libro?.id) return;
+
+    setLoadingRegistrosLibroGuardia(true);
+    setRegistrosLibroGuardiaError('');
+
+    try {
+      const data = await apiFetch(`/api/librosguardia/${libro.id}/registros`);
+      setRegistrosLibroGuardia(getArrayPayload(data, ['registros', 'items']).map(mapRegistroLibroGuardia));
+    } catch (error) {
+      setRegistrosLibroGuardiaError(error.message || 'No se pudieron cargar los registros del libro.');
+      setRegistrosLibroGuardia([]);
+    } finally {
+      setLoadingRegistrosLibroGuardia(false);
+    }
+  };
+
+  const openRegistrosLibroGuardia = (libro) => {
+    setSelectedLibroGuardia(libro);
+    setRegistrosLibroGuardia([]);
+    setRegistrosLibroGuardiaError('');
+    fetchRegistrosLibroGuardia(libro);
+  };
+
+  const closeRegistrosLibroGuardia = () => {
+    setSelectedLibroGuardia(null);
+    setRegistrosLibroGuardia([]);
+    setRegistrosLibroGuardiaError('');
+  };
+
+  const openCreateRegistroModal = () => {
+    setNewRegistroData({
+      fecha: getChileDateValue(),
+      hora: getCurrentTimeValue(),
+      detalle: '',
+    });
+    setCreateRegistroError('');
+    setShowCreateRegistroModal(true);
+  };
+
+  const closeCreateRegistroModal = () => {
+    if (savingRegistroLibroGuardia) return;
+    setShowCreateRegistroModal(false);
+    setCreateRegistroError('');
+  };
+
+  const handleCreateRegistroLibroGuardia = async (event) => {
+    event.preventDefault();
+    if (!selectedLibroGuardia?.id) return;
+
+    const payload = {
+      fecha: newRegistroData.fecha,
+      hora: `${newRegistroData.hora}.000Z`,
+      detalle: newRegistroData.detalle.trim(),
+    };
+
+    if (!payload.fecha || !newRegistroData.hora || !payload.detalle) {
+      setCreateRegistroError('Completa fecha, hora y detalle del registro.');
+      return;
+    }
+
+    setSavingRegistroLibroGuardia(true);
+    setCreateRegistroError('');
+
+    try {
+      await apiFetch(`/api/librosguardia/${selectedLibroGuardia.id}/registros`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setShowCreateRegistroModal(false);
+      setNewRegistroData({ fecha: '', hora: '', detalle: '' });
+      await fetchRegistrosLibroGuardia(selectedLibroGuardia);
+      setLibrosGuardia(current => current.map(libro => (
+        String(libro.id) === String(selectedLibroGuardia.id)
+          ? { ...libro, cantidadRegistros: libro.cantidadRegistros + 1 }
+          : libro
+      )));
+    } catch (error) {
+      setCreateRegistroError(error.message || 'No se pudo crear el registro.');
+    } finally {
+      setSavingRegistroLibroGuardia(false);
     }
   };
 
@@ -3459,17 +3573,80 @@ function Dashboard({ setView }) {
                   </div>
                   <button
                     type="button"
-                    onClick={openCreateLibroGuardiaModal}
+                    onClick={selectedLibroGuardia ? openCreateRegistroModal : openCreateLibroGuardiaModal}
                     className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
                   >
                     <span className="text-base leading-none">+</span>
-                    Crear libro
+                    {selectedLibroGuardia ? 'Agregar registro' : 'Crear libro'}
                   </button>
                 </div>
               </div>
 
               <div className="mx-auto max-w-6xl px-8 py-7">
-                {loadingLibrosGuardia ? (
+                {selectedLibroGuardia ? (
+                  <div>
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={closeRegistrosLibroGuardia}
+                          className="rounded-lg border border-dark-border bg-dark-surface px-3 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
+                        >
+                          Volver
+                        </button>
+                        <div>
+                          <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>{selectedLibroGuardia.nombre}</h3>
+                          <p className="mt-1 text-sm" style={{ color: palette.muted }}>Registros de novedades del libro</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1 text-xs font-semibold text-brand-cyan">
+                        {registrosLibroGuardia.length} registros
+                      </span>
+                    </div>
+                    {loadingRegistrosLibroGuardia ? (
+                      <div className="rounded-xl border px-6 py-16 text-center text-sm" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
+                        Cargando registros...
+                      </div>
+                    ) : registrosLibroGuardiaError ? (
+                      <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 px-6 py-8 text-center">
+                        <p className="text-sm font-semibold text-brand-red">{registrosLibroGuardiaError}</p>
+                        <button type="button" onClick={() => fetchRegistrosLibroGuardia(selectedLibroGuardia)} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white">
+                          Reintentar
+                        </button>
+                      </div>
+                    ) : registrosLibroGuardia.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+                        <table className="w-full text-left text-sm">
+                          <thead style={{ background: palette.bg2, color: palette.muted }}>
+                            <tr>
+                              <th className="px-5 py-4 font-semibold">Fecha</th>
+                              <th className="px-5 py-4 font-semibold">Hora</th>
+                              <th className="px-5 py-4 font-semibold">Detalle</th>
+                              <th className="px-5 py-4 font-semibold">Usuario</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {registrosLibroGuardia.map(registro => (
+                              <tr key={registro.id || `${registro.fecha}-${registro.hora}-${registro.detalle}`} className="border-t border-dark-border">
+                                <td className="whitespace-nowrap px-5 py-4 font-semibold text-brand-cyan">{formatDateChile(registro.fecha)}</td>
+                                <td className="whitespace-nowrap px-5 py-4" style={{ color: palette.muted }}>{registro.hora || '-'}</td>
+                                <td className="px-5 py-4" style={{ color: palette.text }}>{registro.detalle || 'Sin detalle'}</td>
+                                <td className="px-5 py-4" style={{ color: palette.muted }}>{registro.emailUsuario || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
+                        <p className="text-sm font-semibold" style={{ color: palette.text }}>Este libro aun no tiene registros.</p>
+                        <button type="button" onClick={openCreateRegistroModal} className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg">
+                          Agregar primer registro
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : loadingLibrosGuardia ? (
                   <div className="rounded-xl border px-6 py-16 text-center text-sm" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
                     Cargando libros de guardia...
                   </div>
@@ -3519,7 +3696,7 @@ function Dashboard({ setView }) {
                               </p>
                             )}
                             <div className="mt-5 border-t pt-4 text-right" style={{ borderColor: palette.border }}>
-                              <button type="button" className="text-sm font-semibold text-brand-cyan transition-colors hover:text-white">
+                              <button type="button" onClick={() => openRegistrosLibroGuardia(libro)} className="text-sm font-semibold text-brand-cyan transition-colors hover:text-white">
                                 Ver registros →
                               </button>
                             </div>
@@ -4235,6 +4412,81 @@ function Dashboard({ setView }) {
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingLibroGuardia ? 'Creando...' : 'Crear libro'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showCreateRegistroModal && selectedLibroGuardia && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <form onSubmit={handleCreateRegistroLibroGuardia} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Agregar registro</h3>
+                  <p className="mt-1 text-xs text-text-muted">{selectedLibroGuardia.nombre}</p>
+                </div>
+                <button type="button" onClick={closeCreateRegistroModal} disabled={savingRegistroLibroGuardia} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="space-y-4 p-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Fecha</span>
+                    <input
+                      type="date"
+                      value={newRegistroData.fecha}
+                      onChange={(event) => setNewRegistroData(current => ({ ...current, fecha: event.target.value }))}
+                      disabled={savingRegistroLibroGuardia}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Hora</span>
+                    <input
+                      type="time"
+                      step="1"
+                      value={newRegistroData.hora}
+                      onChange={(event) => setNewRegistroData(current => ({ ...current, hora: event.target.value }))}
+                      disabled={savingRegistroLibroGuardia}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Detalle</span>
+                  <textarea
+                    autoFocus
+                    rows="5"
+                    value={newRegistroData.detalle}
+                    onChange={(event) => setNewRegistroData(current => ({ ...current, detalle: event.target.value }))}
+                    disabled={savingRegistroLibroGuardia}
+                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Describe la novedad registrada..."
+                  />
+                </label>
+                {createRegistroError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {createRegistroError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={closeCreateRegistroModal}
+                  disabled={savingRegistroLibroGuardia}
+                  className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingRegistroLibroGuardia || !newRegistroData.fecha || !newRegistroData.hora || !newRegistroData.detalle.trim()}
+                  className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingRegistroLibroGuardia ? 'Guardando...' : 'Guardar registro'}
                 </button>
               </div>
             </form>
