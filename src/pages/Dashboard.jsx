@@ -216,7 +216,7 @@ function Dashboard({ setView }) {
   const [showCreateLibroGuardiaModal, setShowCreateLibroGuardiaModal] = useState(false);
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
-  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Activa' });
+  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
   const [newCampanaData, setNewCampanaData] = useState({
     nombre: '',
     descripcion: '',
@@ -644,7 +644,7 @@ function Dashboard({ setView }) {
   };
 
   const openCreateLibroGuardiaModal = () => {
-    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Activa' });
+    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
     setCreateLibroGuardiaError('');
     setShowCreateLibroGuardiaModal(true);
   };
@@ -681,7 +681,7 @@ function Dashboard({ setView }) {
       const mappedLibro = mapLibroGuardia({ ...payload, ...(createdLibro || {}) });
       setLibrosGuardia(current => (mappedLibro.id ? [mappedLibro, ...current] : current));
       setShowCreateLibroGuardiaModal(false);
-      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Activa' });
+      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
       await fetchLibrosGuardia();
     } catch (error) {
       setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
@@ -4203,7 +4203,7 @@ function Dashboard({ setView }) {
                     disabled={savingLibroGuardia}
                     className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                   >
-                    <option value="Activa">Activa</option>
+                    <option value="Abierto">Abierto</option>
                     <option value="Cerrado">Cerrado</option>
                   </select>
                 </div>
