@@ -621,10 +621,12 @@ function Dashboard({ setView }) {
   };
 
   const mapLibroGuardia = (libro) => ({
-    id: libro.idLibroGuardia || libro.id,
+    id: libro.idLibroGuardia || libro.idLibro || libro.id,
     nombre: libro.nombre || libro.name || 'Libro de guardia',
     duracion: libro.duracion || '',
     estado: libro.estado || 'Cerrado',
+    fechaInicio: libro.fechaInicio || '',
+    fechaFin: libro.fechaFin || '',
     fechaCreacion: libro.fechaCreacion || libro.createdAt || '',
   });
 
@@ -634,7 +636,7 @@ function Dashboard({ setView }) {
 
     try {
       const data = await apiFetch('/api/librosguardia');
-      setLibrosGuardia(getArrayPayload(data, ['libros', 'librosGuardia', 'items']).map(mapLibroGuardia).filter(libro => libro.id));
+      setLibrosGuardia(getArrayPayload(data, ['libros', 'librosGuardia', 'librosDeGuardia', 'items']).map(mapLibroGuardia).filter(libro => libro.id));
     } catch (error) {
       setLibrosGuardiaError(error.message || 'No se pudieron cargar los libros de guardia.');
       setLibrosGuardia([]);
@@ -3485,7 +3487,7 @@ function Dashboard({ setView }) {
                 ) : librosGuardia.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {librosGuardia.map((libro) => {
-                      const isActive = String(libro.estado).toLowerCase().includes('activa') || String(libro.estado).toLowerCase().includes('activo');
+                      const isActive = String(libro.estado).toLowerCase().includes('abierto');
                       return (
                         <article
                           key={libro.id}
@@ -3507,10 +3509,15 @@ function Dashboard({ setView }) {
                               <div className="min-w-0">
                                 <h3 className="truncate text-base font-bold" style={{ color: palette.text }}>{libro.nombre}</h3>
                                 <p className="mt-1 text-xs" style={{ color: palette.muted }}>
-                                  {libro.duracion || formatDateChile(libro.fechaCreacion) || 'Sin duracion'}
+                                  {libro.duracion || 'Sin duracion'}
                                 </p>
                               </div>
                             </div>
+                            {(libro.fechaInicio || libro.fechaFin) && (
+                              <p className="mt-4 text-xs" style={{ color: palette.muted }}>
+                                {formatDateChile(libro.fechaInicio)} - {formatDateChile(libro.fechaFin)}
+                              </p>
+                            )}
                             <div className="mt-5 border-t pt-4 text-right" style={{ borderColor: palette.border }}>
                               <button type="button" className="text-sm font-semibold text-brand-cyan transition-colors hover:text-white">
                                 Ver registros →
