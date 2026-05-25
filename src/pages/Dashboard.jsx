@@ -3588,9 +3588,9 @@ function Dashboard({ setView }) {
                 </div>
               </div>
 
-              <div className="mx-auto max-w-6xl px-8 py-7">
+              <div className="px-8 py-7">
                 {selectedLibroGuardia ? (
-                  <div>
+                  <section className="min-h-[calc(100vh-235px)] rounded-2xl border p-6 shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <button
@@ -3651,7 +3651,7 @@ function Dashboard({ setView }) {
                         </button>
                       </div>
                     )}
-                  </div>
+                  </section>
                 ) : loadingLibrosGuardia ? (
                   <div className="rounded-xl border px-6 py-16 text-center text-sm" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
                     Cargando libros de guardia...
@@ -3668,41 +3668,60 @@ function Dashboard({ setView }) {
                     </button>
                   </div>
                 ) : librosGuardia.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <section className="min-h-[calc(100vh-235px)] rounded-2xl border p-6 shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b pb-5" style={{ borderColor: palette.border }}>
+                      <div>
+                        <h3 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Libros disponibles</h3>
+                        <p className="mt-1 text-sm" style={{ color: palette.muted }}>Consulta las novedades registradas o agrega un nuevo evento de guardia.</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="rounded-lg border px-4 py-2 text-center" style={{ borderColor: palette.border, background: palette.bg }}>
+                          <p className="text-xs" style={{ color: palette.muted }}>Libros</p>
+                          <p className="mt-1 text-xl font-bold" style={{ color: palette.text }}>{librosGuardia.length}</p>
+                        </div>
+                        <div className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-2 text-center">
+                          <p className="text-xs text-brand-cyan">Abiertos</p>
+                          <p className="mt-1 text-xl font-bold text-brand-cyan">{librosGuardia.filter(libro => String(libro.estado).toLowerCase().includes('abierto')).length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                     {librosGuardia.map((libro) => {
                       const isActive = String(libro.estado).toLowerCase().includes('abierto');
                       return (
                         <article
                           key={libro.id}
-                          className={`min-h-36 rounded-xl border transition-all hover:border-brand-cyan/40 hover:shadow-lg ${isActive ? 'border-brand-cyan/50' : 'border-dark-border'}`}
-                          style={{ background: palette.card }}
+                          className={`flex min-h-60 flex-col overflow-hidden rounded-xl border transition-all hover:border-brand-cyan/50 hover:shadow-lg ${isActive ? 'border-brand-cyan/40' : 'border-dark-border'}`}
+                          style={{ background: palette.bg }}
                         >
-                          <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: palette.border }}>
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${isActive ? 'text-brand-cyan' : 'text-text-muted'}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-brand-cyan' : 'bg-slate-500'}`}></span>
+                          <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                            <span className={`inline-flex items-center gap-2 text-xs font-semibold ${isActive ? 'text-brand-cyan' : 'text-text-muted'}`}>
+                              <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-brand-cyan' : 'bg-slate-500'}`}></span>
                               {libro.estado}
                             </span>
-                            <button type="button" className="rounded px-2 text-lg leading-none text-slate-400 hover:text-slate-600">⋮</button>
+                            <span className="rounded-md border border-dark-border bg-dark-bg3 px-2 py-1 text-xs text-text-muted">
+                              {libro.cantidadRegistros} registros
+                            </span>
                           </div>
-                          <div className="px-5 py-5">
+                          <div className="flex flex-1 flex-col p-5">
                             <div className="flex items-center gap-4">
-                              <div className={`flex h-12 w-12 items-center justify-center rounded-lg border [&>svg]:h-6 [&>svg]:w-6 ${isActive ? 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
+                              <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border [&>svg]:h-7 [&>svg]:w-7 ${isActive ? 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
                                 <Icons.Traceability />
                               </div>
                               <div className="min-w-0">
-                                <h3 className="truncate text-base font-bold" style={{ color: palette.text }}>{libro.nombre}</h3>
-                                <p className="mt-1 text-xs" style={{ color: palette.muted }}>
+                                <h3 className="truncate text-lg font-bold" style={{ color: palette.text }}>{libro.nombre}</h3>
+                                <p className="mt-1 text-sm" style={{ color: palette.muted }}>
                                   {libro.duracion || 'Sin duracion'}
                                 </p>
                               </div>
                             </div>
                             {(libro.fechaInicio || libro.fechaFin) && (
-                              <p className="mt-4 text-xs" style={{ color: palette.muted }}>
+                              <p className="mt-5 rounded-lg border px-3 py-2.5 text-sm" style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.muted }}>
                                 {formatDateChile(libro.fechaInicio)} - {formatDateChile(libro.fechaFin)}
                               </p>
                             )}
-                            <div className="mt-5 border-t pt-4 text-right" style={{ borderColor: palette.border }}>
-                              <button type="button" onClick={() => openRegistrosLibroGuardia(libro)} className="text-sm font-semibold text-brand-cyan transition-colors hover:text-white">
+                            <div className="mt-auto pt-5">
+                              <button type="button" onClick={() => openRegistrosLibroGuardia(libro)} className="flex w-full items-center justify-between rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-3 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15">
                                 Ver registros →
                               </button>
                             </div>
@@ -3710,7 +3729,8 @@ function Dashboard({ setView }) {
                         </article>
                       );
                     })}
-                  </div>
+                    </div>
+                  </section>
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
                     <p className="text-sm font-semibold" style={{ color: palette.text }}>No hay libros de guardia creados.</p>
