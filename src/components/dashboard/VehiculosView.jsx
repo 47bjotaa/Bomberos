@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
 
+const VEHICLE_TYPES = [
+  'Carro bomba',
+  'Ambulancia',
+  'Rescate',
+];
+
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
 
@@ -44,6 +50,11 @@ const isImageFile = (fileItem) => {
 
   return contentType.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name);
 };
+
+const isMaintenancePending = (maintenance) => (
+  String(maintenance?.estadoMantencion || '').toLowerCase().includes('pendiente')
+  || String(maintenance?.estadoMantencion || '').toLowerCase().includes('programada')
+);
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
@@ -113,12 +124,13 @@ function VehiculosView() {
   const [observationImagesError, setObservationImagesError] = useState('');
   const observationImagesRef = useRef([]);
 
-  const [showAddMant, setShowAddMant] = useState(false);
+  const [maintenanceModalMode, setMaintenanceModalMode] = useState(null);
   const [newMant, setNewMant] = useState({ fecha: '', tipo: 'Preventiva', descripcion: '' });
   const [maintenanceFiles, setMaintenanceFiles] = useState([]);
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState('');
   const [maintenanceNotice, setMaintenanceNotice] = useState('');
+  const [markingMaintenanceId, setMarkingMaintenanceId] = useState(null);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
   const [maintenanceDetailFiles, setMaintenanceDetailFiles] = useState([]);
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
@@ -368,7 +380,7 @@ function VehiculosView() {
     setObservationError('');
     setObservationNotice('');
     setSelectedObservation(null);
-    setShowAddMant(false);
+    setMaintenanceModalMode(null);
     setNewMant({ fecha: '', tipo: 'Preventiva', descripcion: '' });
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
@@ -551,10 +563,23 @@ function VehiculosView() {
     setObservationError('');
   };
 
+  const openMaintenanceModal = (mode) => {
+    setMaintenanceModalMode(mode);
+    setNewMant({
+      fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
+      tipo: 'Preventiva',
+      descripcion: '',
+    });
+    maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    setMaintenanceFiles([]);
+    setMaintenanceError('');
+    setMaintenanceNotice('');
+  };
+
   const closeMaintenanceModal = () => {
     if (maintenanceSaving) return;
 
-    setShowAddMant(false);
+    setMaintenanceModalMode(null);
     setNewMant({ fecha: '', tipo: 'Preventiva', descripcion: '' });
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
@@ -638,11 +663,12 @@ function VehiculosView() {
 
     const descripcion = newMant.descripcion.trim();
     const tipo = newMant.tipo.trim();
-    if (!descripcion || !tipo || !selectedId || maintenanceSaving) return;
+    const isProgramada = maintenanceModalMode === 'programada';
+    if (!descripcion || !tipo || !selectedId || maintenanceSaving || (isProgramada && !newMant.fecha)) return;
 
     const payload = {
       idVehiculo: Number(selectedId),
-      ...(newMant.fecha ? { fecha: newMant.fecha } : {}),
+      ...(isProgramada ? { fecha: newMant.fecha } : {}),
       descripcion,
       tipo,
     };
@@ -652,7 +678,7 @@ function VehiculosView() {
     setMaintenanceNotice('');
 
     try {
-      const endpoint = newMant.fecha ? '/api/mantenciones/programadas' : '/api/mantenciones/realizadas';
+      const endpoint = isProgramada ? '/api/mantenciones/programadas' : '/api/mantenciones/realizadas';
       const createdMaintenance = await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -684,7 +710,7 @@ function VehiculosView() {
         ...payload,
         ...(createdMaintenance || {}),
         idMantencion: idMantencion || Date.now(),
-        estadoMantencion: createdMaintenance?.estadoMantencion || (newMant.fecha ? 'Programada' : 'Realizada'),
+        estadoMantencion: createdMaintenance?.estadoMantencion || (isProgramada ? 'Programada' : 'Realizada'),
         fecha: createdMaintenance?.fecha || payload.fecha || new Date().toISOString(),
       };
 
@@ -695,7 +721,7 @@ function VehiculosView() {
       setNewMant({ fecha: '', tipo: 'Preventiva', descripcion: '' });
       maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
       setMaintenanceFiles([]);
-      setShowAddMant(false);
+      setMaintenanceModalMode(null);
 
       if (fileUploadError) {
         setMaintenanceNotice(`La mantencion fue creada, pero no se pudieron subir los archivos: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
@@ -705,6 +731,39 @@ function VehiculosView() {
       setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
     } finally {
       setMaintenanceSaving(false);
+    }
+  };
+
+  const handleMarkMaintenanceAsDone = async (event, maintenance) => {
+    event.stopPropagation();
+
+    const idMantencion = getMaintenanceId(maintenance);
+    if (!idMantencion || !selectedId) {
+      setMaintenanceNotice('No se pudo marcar como realizada: la mantencion no tiene id.');
+      return;
+    }
+
+    setMarkingMaintenanceId(idMantencion);
+    setMaintenanceNotice('');
+
+    try {
+      const updatedMaintenance = await apiFetch(`/api/mantenciones/${idMantencion}/realizada`, {
+        method: 'PATCH',
+        body: JSON.stringify({ idVehiculo: Number(selectedId) }),
+      });
+
+      updateVehiculo({
+        ...selectedVehiculo,
+        mantenciones: (selectedVehiculo.mantenciones || []).map((item) => (
+          String(getMaintenanceId(item)) === String(idMantencion)
+            ? { ...item, ...(updatedMaintenance || {}), estadoMantencion: updatedMaintenance?.estadoMantencion || 'Realizada' }
+            : item
+        )),
+      });
+    } catch (err) {
+      setMaintenanceNotice(err.message || 'No se pudo marcar la mantencion como realizada.');
+    } finally {
+      setMarkingMaintenanceId(null);
     }
   };
 
@@ -781,7 +840,12 @@ function VehiculosView() {
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-main">Tipo de vehiculo <span className="text-brand-red">*</span></span>
-                    <input required type="text" value={formData.tipoVehiculo} onChange={(e) => setFormData({ ...formData, tipoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Ej: Carro bomba, ambulancia, rescate" />
+                    <select required value={formData.tipoVehiculo} onChange={(e) => setFormData({ ...formData, tipoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan">
+                      <option value="">Selecciona un tipo</option>
+                      {VEHICLE_TYPES.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="block">
@@ -999,9 +1063,14 @@ function VehiculosView() {
                 </h4>
                 <p className="mt-0.5 text-xs text-text-muted">{(v.mantenciones || []).length} registradas</p>
               </div>
-              <button onClick={() => setShowAddMant(true)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
-                + Agregar
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openMaintenanceModal('programada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                  Programar
+                </button>
+                <button onClick={() => openMaintenanceModal('realizada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                  + Agregar
+                </button>
+              </div>
             </div>
 
             <div className="custom-scrollbar max-h-[330px] space-y-3 overflow-y-auto pr-1">
@@ -1018,11 +1087,18 @@ function VehiculosView() {
               )}
 
               {!loadingVehicleDetail && (v.mantenciones || []).map((mant, idx) => (
-                <button
+                <article
                   key={getMaintenanceId(mant) || idx}
-                  type="button"
                   onClick={() => setSelectedMaintenance(mant)}
-                  className="block min-h-[92px] w-full rounded-lg border border-dark-border bg-dark-bg p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedMaintenance(mant);
+                    }
+                  }}
+                  className="block min-h-[92px] w-full cursor-pointer rounded-lg border border-dark-border bg-dark-bg p-4 text-left transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                 >
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <span className="text-xs font-semibold text-brand-cyan">{formatDate(mant.fecha)}</span>
@@ -1030,7 +1106,19 @@ function VehiculosView() {
                   </div>
                   <h5 className="mb-1 text-sm font-semibold text-white">{mant.tipo || 'Mantencion'}</h5>
                   <p className="text-sm leading-relaxed text-text-muted">{mant.descripcion || mant.desc || 'Sin detalle'}</p>
-                </button>
+                  {isMaintenancePending(mant) && (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={(event) => handleMarkMaintenanceAsDone(event, mant)}
+                        disabled={String(markingMaintenanceId) === String(getMaintenanceId(mant))}
+                        className="rounded-lg border border-brand-green/30 bg-brand-green/10 px-3 py-1.5 text-xs font-bold text-brand-green transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {String(markingMaintenanceId) === String(getMaintenanceId(mant)) ? 'Marcando...' : 'Marcar realizada'}
+                      </button>
+                    </div>
+                  )}
+                </article>
               ))}
 
               {!loadingVehicleDetail && (v.mantenciones || []).length === 0 && (
@@ -1255,12 +1343,12 @@ function VehiculosView() {
           </div>
         )}
 
-        {showAddMant && (
+        {maintenanceModalMode && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeMaintenanceModal}>
             <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Agregar mantencion</h3>
+                  <h3 className="text-lg font-bold text-white">{maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}</h3>
                   <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
@@ -1269,8 +1357,10 @@ function VehiculosView() {
               </div>
 
               <div className="max-h-[calc(90vh-140px)] space-y-4 overflow-y-auto p-6">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <input type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <div className={`grid gap-3 ${maintenanceModalMode === 'programada' ? 'md:grid-cols-2' : ''}`}>
+                  {maintenanceModalMode === 'programada' && (
+                    <input required type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                  )}
                   <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60">
                     <option value="Preventiva">Preventiva</option>
                     <option value="Correctiva">Correctiva</option>
@@ -1308,8 +1398,8 @@ function VehiculosView() {
                 <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
                   Cancelar
                 </button>
-                <button type="submit" disabled={!newMant.descripcion.trim() || !newMant.tipo.trim() || maintenanceSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                  {maintenanceSaving ? 'Guardando...' : 'Guardar mantencion'}
+                <button type="submit" disabled={!newMant.descripcion.trim() || !newMant.tipo.trim() || maintenanceSaving || (maintenanceModalMode === 'programada' && !newMant.fecha)} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}
                 </button>
               </div>
             </form>
