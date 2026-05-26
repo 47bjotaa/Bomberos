@@ -264,7 +264,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12345678-9" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
@@ -309,9 +309,7 @@ function AuthView({ initialMode = 'register' }) {
                   value={formData.passwordNueva} 
                   onChange={handleChange} 
                   autoComplete="new-password" 
-                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12" 
-                  placeholder="••••••••" 
-                />
+                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12"                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -331,9 +329,7 @@ function AuthView({ initialMode = 'register' }) {
                   value={formData.confirmarPasswordNueva} 
                   onChange={handleChange} 
                   autoComplete="new-password" 
-                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12" 
-                  placeholder="••••••••" 
-                />
+                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12"                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -377,7 +373,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" placeholder="12345678-9" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <div>
@@ -388,9 +384,7 @@ function AuthView({ initialMode = 'register' }) {
                   name="password" 
                   value={formData.password} 
                   onChange={handleChange} 
-                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12" 
-                  placeholder="••••••••" 
-                />
+                  className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12"                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -534,25 +528,25 @@ function AuthView({ initialMode = 'register' }) {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Nombre completo</label>
-                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej. Juan Pérez" />
+                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     {errors.nombre && <p className="text-brand-red text-sm mt-1">{errors.nombre}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-5">
                     <div>
                       <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">RUT</label>
-                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="12345678-9" />
+                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                       {errors.rut && <p className="text-brand-red text-sm mt-1">{errors.rut}</p>}
                     </div>
                     <div>
                       <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Teléfono</label>
-                      <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="+56 9 1234 5678" />
+                      <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Email</label>
-                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="juan@ejemplo.com" />
+                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     {errors.correo && <p className="text-brand-red text-sm mt-1">{errors.correo}</p>}
                   </div>
 
@@ -573,7 +567,7 @@ function AuthView({ initialMode = 'register' }) {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                       </div>
-                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" placeholder="Ej: Primera Compañía de Bomberos" />
+                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     </div>
                     {errors.cuartel && <p className="text-brand-red text-sm mt-1">{errors.cuartel}</p>}
                   </div>
@@ -586,7 +580,6 @@ function AuthView({ initialMode = 'register' }) {
                       </div>
                       <input 
                         type="text" 
-                        placeholder="Seleccione un cuerpo..." 
                         value={cuerpoSearch}
                         onFocus={() => setIsDropdownOpen(true)}
                         onChange={(e) => {
@@ -650,9 +643,7 @@ function AuthView({ initialMode = 'register' }) {
                         name="password" 
                         value={formData.password} 
                         onChange={handleChange} 
-                        className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12" 
-                        placeholder="••••••••" 
-                      />
+                        className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12"                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
@@ -672,9 +663,7 @@ function AuthView({ initialMode = 'register' }) {
                         name="confirmPassword" 
                         value={formData.confirmPassword} 
                         onChange={handleChange} 
-                        className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12" 
-                        placeholder="••••••••" 
-                      />
+                        className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12"                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
