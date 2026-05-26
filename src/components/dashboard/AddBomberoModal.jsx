@@ -104,16 +104,20 @@ function AddBomberoModal({ onClose, onAdded }) {
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium">Cargo <span className="text-brand-red">*</span></span>
-              <input
+              <select
                 required
-                type="text"
                 name="cargo"
                 value={formData.cargo}
                 onChange={handleChange}
-                className="w-full rounded-lg border px-4 py-2.5 outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                className="w-full rounded-lg border px-4 py-2.5 outline-none transition-all focus:border-brand-cyan"
                 style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
-                placeholder="Ej: Voluntario"
-              />
+              >
+                <option value="" disabled>Seleccionar cargo</option>
+                <option value="Voluntario">Voluntario</option>
+                <option value="Capitan">Capitan</option>
+                <option value="Teniente">Teniente</option>
+                <option value="Ayudante">Ayudante</option>
+              </select>
             </label>
           </div>
 
