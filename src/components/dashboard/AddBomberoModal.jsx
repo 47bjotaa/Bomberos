@@ -141,6 +141,7 @@ function AddBomberoModal({ onClose, onAdded }) {
                 style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
               >
                 <option value="" disabled>Seleccionar cargo</option>
+                <option value="Administrador">Administrador</option>
                 <option value="Bombero">Bombero</option>
                 <option value="Voluntario">Voluntario</option>
                 <option value="Capitan">Capitan</option>
