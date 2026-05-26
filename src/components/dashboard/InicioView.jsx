@@ -147,28 +147,211 @@ export default function InicioView({ onNavigate }) {
       {/* Gráficos fila 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Donut: Flota */}
+        {/* Neon Visualizer: Flota */}
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6 flex flex-col items-center">
-          <h3 className="text-white font-semibold mb-4 w-full text-left text-sm">Estado de Flota</h3>
+          <div className="flex justify-between items-center w-full mb-4">
+            <h3 className="text-white font-semibold text-sm">Estado de Flota</h3>
+            <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 px-2 py-0.5 rounded-full">
+              {flotaTotal} Vehículos
+            </span>
+          </div>
           {loading ? <Spinner /> : flotaTotal === 0 ? (
             <p className="text-text-muted text-sm py-8 text-center">Sin vehículos registrados</p>
           ) : (
             <>
-              <div className="relative w-36 h-36 rounded-full mb-5" style={{ background: conicGrad }}>
-                <div className="absolute inset-0 m-4 bg-dark-surface rounded-full flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-white">{flotaTotal}</span>
-                  <span className="text-[10px] text-text-muted">Vehículos</span>
-                </div>
+              {/* Neon SVG Chart */}
+              <div className="w-full relative h-[150px] mb-4 bg-dark-bg/40 rounded-lg border border-dark-border/50 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 300 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="glow-yellow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="glow-bright" x="-30%" y="-30%" width="160%" height="160%">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  <style>{`
+                    @keyframes waveMove {
+                      0% { transform: translateX(0px); }
+                      100% { transform: translateX(-300px); }
+                    }
+                    .wave-green {
+                      animation: waveMove 16s linear infinite;
+                    }
+                    .wave-red {
+                      animation: waveMove 10s linear infinite;
+                    }
+                    .glow-bar {
+                      transition: all 0.3s ease;
+                    }
+                    .glow-bar:hover {
+                      filter: url(#glow-bright) !important;
+                      stroke-width: 2.5px;
+                    }
+                  `}</style>
+
+                  {/* Grid Lines */}
+                  {/* Horizontal grid lines */}
+                  <line x1="10" y1="25" x2="290" y2="25" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="10" y1="55" x2="290" y2="55" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="10" y1="85" x2="290" y2="85" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="10" y1="115" x2="290" y2="115" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="10" y1="140" x2="290" y2="140" stroke="rgba(6, 182, 212, 0.15)" strokeWidth="1.5" />
+
+                  {/* Vertical grid lines */}
+                  <line x1="20" y1="15" x2="20" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="60" y1="15" x2="60" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="100" y1="15" x2="100" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="140" y1="15" x2="140" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="180" y1="15" x2="180" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="220" y1="15" x2="220" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+                  <line x1="260" y1="15" x2="260" y2="140" stroke="rgba(6, 182, 212, 0.07)" strokeWidth="1" />
+
+                  {/* Sparkles / Particles */}
+                  <circle cx="45" cy="45" r="1.5" fill="#38bdf8" opacity="0.6" />
+                  <circle cx="120" cy="105" r="2" fill="#fff" opacity="0.4" />
+                  <circle cx="210" cy="35" r="1" fill="#38bdf8" opacity="0.7" />
+                  <circle cx="275" cy="85" r="2.5" fill="#38bdf8" opacity="0.5" />
+                  <circle cx="80" cy="130" r="1.2" fill="#fff" opacity="0.6" />
+
+                  {/* Floating Green Wave (Operativos Trend) */}
+                  <g className="wave-green">
+                    <path
+                      d="M 0 70 Q 75 35 150 70 T 300 70 T 450 70 T 600 70"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      filter="url(#glow-green)"
+                      opacity="0.85"
+                    />
+                  </g>
+
+                  {/* Floating Red Wave (Fuera de Servicio Trend) */}
+                  <g className="wave-red">
+                    <path
+                      d="M 0 95 Q 75 125 150 95 T 300 95 T 450 95 T 600 95"
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      filter="url(#glow-red)"
+                      opacity="0.8"
+                    />
+                  </g>
+
+                  {/* Dynamic Glowing Neon Bars representing vehicles */}
+                  {(() => {
+                    const numSlots = Math.max(8, flotaTotal);
+                    const padding = 20;
+                    const availableWidth = 300 - (padding * 2);
+                    const barWidth = 14;
+                    const gap = (availableWidth - (numSlots * barWidth)) / (numSlots - 1);
+                    const baseHeights = [70, 95, 60, 85, 110, 75, 55, 90, 100, 80, 65, 95];
+
+                    return Array.from({ length: numSlots }).map((_, index) => {
+                      const height = baseHeights[index % baseHeights.length];
+                      const x = padding + index * (barWidth + gap);
+                      const y = 140 - height;
+
+                      // Check if there is a vehicle associated with this slot
+                      if (index < flotaTotal) {
+                        const vehicle = vehiculos[index];
+                        const estado = (vehicle.estadoVehiculo || vehicle.estado || '').toLowerCase();
+                        
+                        let strokeColor = '#06b6d4'; // default cyan
+                        let filterId = 'glow-cyan';
+                        
+                        if (estado.includes('operativ')) {
+                          strokeColor = '#10b981'; // green
+                          filterId = 'glow-green';
+                        } else if (estado.includes('mantenc')) {
+                          strokeColor = '#eab308'; // yellow/gold
+                          filterId = 'glow-yellow';
+                        } else {
+                          strokeColor = '#ef4444'; // red
+                          filterId = 'glow-red';
+                        }
+
+                        return (
+                          <rect
+                            key={vehicle.idVehiculo || index}
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={height}
+                            rx="3"
+                            fill="none"
+                            stroke={strokeColor}
+                            strokeWidth="1.5"
+                            filter={`url(#${filterId})`}
+                            className="glow-bar cursor-pointer"
+                          >
+                            <title>{`${vehicle.nomenclatura || 'Vehículo'} (${vehicle.patente || ''}): ${vehicle.estadoVehiculo || vehicle.estado || 'Sin estado'}`}</title>
+                          </rect>
+                        );
+                      } else {
+                        // Dimmed slot representing empty/available space
+                        return (
+                          <rect
+                            key={`empty-${index}`}
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={height}
+                            rx="3"
+                            fill="none"
+                            stroke="rgba(6, 182, 212, 0.2)"
+                            strokeWidth="1"
+                            strokeDasharray="2,2"
+                          />
+                        );
+                      }
+                    });
+                  })()}
+                </svg>
               </div>
-              <div className="w-full space-y-2 text-sm">
+
+              {/* Legend with matching glow colors */}
+              <div className="w-full space-y-2 text-sm mt-2">
                 {[
-                  { label: 'Operativos', n: flotaOp,   pct: pctOp,   color: '#10b981' },
-                  { label: 'Mantención', n: flotaMant, pct: pctMant, color: '#eab308' },
-                  { label: 'Fuera de Serv.', n: flotaFuera, pct: pctFuera, color: '#ef4444' },
+                  { label: 'Operativos', n: flotaOp,   pct: pctOp,   color: '#10b981', glowClass: 'shadow-[0_0_8px_#10b981]' },
+                  { label: 'Mantención', n: flotaMant, pct: pctMant, color: '#eab308', glowClass: 'shadow-[0_0_8px_#eab308]' },
+                  { label: 'Fuera de Serv.', n: flotaFuera, pct: pctFuera, color: '#ef4444', glowClass: 'shadow-[0_0_8px_#ef4444]' },
                 ].map(r => (
                   <div key={r.label} className="flex justify-between items-center text-xs">
                     <span className="flex items-center gap-2 text-text-muted">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.color }} />
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.color, boxShadow: `0 0 6px ${r.color}` }} />
                       {r.label}
                     </span>
                     <span className="font-bold text-white">{r.n} ({r.pct}%)</span>
