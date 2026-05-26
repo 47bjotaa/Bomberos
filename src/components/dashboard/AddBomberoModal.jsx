@@ -42,7 +42,31 @@ function AddBomberoModal({ onClose, onAdded }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData(current => ({ ...current, [name]: value }));
+    if (name === 'nombre') {
+      // Allow only letters, spaces, Spanish accents, hyphens, and apostrophes
+      const cleanValue = value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'-]/g, '');
+      setFormData(current => ({ ...current, nombre: cleanValue }));
+    } else if (name === 'rut') {
+      let clean = value.replace(/[^0-9kK-]/g, '');
+      if (clean.includes('-')) {
+        const parts = clean.split('-');
+        const body = parts[0].replace(/[^0-9]/g, '').slice(0, 8);
+        const dv = parts.slice(1).join('').replace(/[^0-9kK]/g, '').slice(0, 1).toUpperCase();
+        clean = dv ? `${body}-${dv}` : `${body}-`;
+      } else {
+        clean = clean.replace(/[^0-9kK]/g, '');
+        if (clean.length > 8) {
+          const body = clean.slice(0, -1).slice(0, 8);
+          const dv = clean.slice(-1).toUpperCase();
+          clean = `${body}-${dv}`;
+        } else {
+          clean = clean.toUpperCase();
+        }
+      }
+      setFormData(current => ({ ...current, rut: clean }));
+    } else {
+      setFormData(current => ({ ...current, [name]: value }));
+    }
   };
 
   const handleSubmit = async (event) => {
