@@ -70,7 +70,7 @@ const readApiError = async (response) => {
 
   try {
     const errorData = JSON.parse(errorText);
-    errorMessage = errorData.message || errorData.title || errorData.detail || errorData.error || errorText;
+    errorMessage = errorData.message || errorData.mensaje || errorData.title || errorData.detail || errorData.error || errorText;
     if (errorData.errors) {
       const errorDetails = Array.isArray(errorData.errors)
         ? errorData.errors

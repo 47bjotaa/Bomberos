@@ -10,6 +10,27 @@ const INITIAL_FORM_DATA = {
   cargo: '',
 };
 
+const normalizeRut = (rut) => rut.replace(/\./g, '').replace(/\s/g, '').toUpperCase();
+
+const isValidRut = (rut) => {
+  const normalizedRut = normalizeRut(rut);
+  const match = normalizedRut.match(/^(\d{1,8})-?([\dK])$/);
+  if (!match) return false;
+
+  const [, digits, verifier] = match;
+  let sum = 0;
+  let multiplier = 2;
+
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    sum += Number(digits[index]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+
+  const result = 11 - (sum % 11);
+  const expectedVerifier = result === 11 ? '0' : result === 10 ? 'K' : String(result);
+  return verifier === expectedVerifier;
+};
+
 function AddBomberoModal({ onClose, onAdded }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
@@ -28,6 +49,12 @@ function AddBomberoModal({ onClose, onAdded }) {
     event.preventDefault();
     if (!canSubmit || saving) return;
 
+    const normalizedRut = normalizeRut(formData.rut);
+    if (!isValidRut(normalizedRut)) {
+      setError('Ingresa un RUT valido, incluyendo su digito verificador.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
@@ -36,7 +63,7 @@ function AddBomberoModal({ onClose, onAdded }) {
         method: 'POST',
         body: JSON.stringify({
           nombre: formData.nombre.trim(),
-          rut: formData.rut.trim(),
+          rut: normalizedRut,
           email: formData.email.trim(),
           cargo: formData.cargo.trim(),
         }),
@@ -96,9 +123,10 @@ function AddBomberoModal({ onClose, onAdded }) {
                 name="rut"
                 value={formData.rut}
                 onChange={handleChange}
+                inputMode="text"
                 className="w-full rounded-lg border px-4 py-2.5 outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
                 style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
-                placeholder="12345678-9"
+                placeholder="12345678-5"
               />
             </label>
 
