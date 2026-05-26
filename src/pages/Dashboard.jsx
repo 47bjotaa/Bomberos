@@ -8,6 +8,7 @@ import EppView from '../components/dashboard/EppView';
 import EppDetailView from '../components/dashboard/EppDetailView';
 import AssignEppModal from '../components/dashboard/AssignEppModal';
 import AddInventoryMaterialModal from '../components/dashboard/AddInventoryMaterialModal';
+import AddBomberoModal from '../components/dashboard/AddBomberoModal';
 import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
@@ -102,6 +103,7 @@ function Dashboard({ setView }) {
   const [bomberosPersonalError, setBomberosPersonalError] = useState('');
   const [inactivatingUsuarioId, setInactivatingUsuarioId] = useState(null);
   const [personalActionError, setPersonalActionError] = useState('');
+  const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2599,7 +2601,7 @@ function Dashboard({ setView }) {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Exportar
                   </button>
-                  <button type="button" className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                  <button type="button" onClick={() => setShowAddBomberoModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
                     <span className="text-base leading-none">+</span>
                     Agregar bombero
                   </button>
@@ -4961,6 +4963,13 @@ function Dashboard({ setView }) {
                 ];
               });
             }}
+          />
+        )}
+
+        {showAddBomberoModal && (
+          <AddBomberoModal
+            onClose={() => setShowAddBomberoModal(false)}
+            onAdded={fetchBomberosPersonal}
           />
         )}
 
