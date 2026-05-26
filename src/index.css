@@ -16,6 +16,7 @@
   --color-brand-green: #22C55E;
   --color-text-main: #FFFFFF;
   --color-text-muted: #FFFFFF;
+  --color-form-placeholder: rgba(238, 242, 255, 0.42);
 
   /* Theme-specific overrides */
   --bg-primary: var(--color-dark-bg);
@@ -31,6 +32,7 @@
   --color-dark-border: rgba(0, 0, 0, 0.1);
   --color-text-main: #000000;
   --color-text-muted: #000000;
+  --color-form-placeholder: rgba(15, 23, 42, 0.42);
   
   --bg-primary: #F8FAFC;
   --text-primary: #000000;
@@ -42,6 +44,12 @@ body {
   color: var(--color-text-main);
   font-family: var(--font-sans);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-form-placeholder) !important;
+  opacity: 1;
 }
 
 body::before {
