@@ -266,14 +266,14 @@ function EppView({ eppData, setEppData, onDetailChange }) {
       <div className="flex gap-3 mb-6">
         <button
           onClick={() => setActiveEppTab('asignados')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'asignados' ? 'bg-dark-bg3 border-dark-border text-white' : 'bg-transparent border-transparent text-text-muted hover:text-white'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
         >
           <Icons.User className="w-4 h-4 text-brand-cyan" />
           Asignados <span className="bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full text-xs font-bold ml-1">{assignedData.length}</span>
         </button>
         <button
           onClick={() => setActiveEppTab('no-asignados')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'no-asignados' ? 'bg-dark-bg3 border-dark-border text-white' : 'bg-transparent border-transparent text-text-muted hover:text-white'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'no-asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
         >
           <Icons.Inventory className="w-4 h-4 text-text-muted" />
           No asignados <span className="bg-dark-bg3 text-text-muted px-2 py-0.5 rounded-full text-xs font-bold border border-dark-border ml-1">{unassignedData.length}</span>
@@ -286,7 +286,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
           <input
             type="text"
             placeholder="Buscar por codigo, nombre o voluntario..."
-            className="w-full pl-10 pr-4 py-2 bg-dark-surface border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted"
+            className="w-full pl-10 pr-4 py-2 bg-dark-surface border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted"
             value={filtroTexto}
             onChange={(e) => setFiltroTexto(e.target.value)}
           />
@@ -295,16 +295,16 @@ function EppView({ eppData, setEppData, onDetailChange }) {
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className={`w-full px-4 py-2 bg-dark-surface border text-white rounded-lg outline-none focus:ring-1 appearance-none text-sm pl-10 transition-all ${
+            className={`w-full px-4 py-2 bg-dark-surface border text-text-main rounded-lg outline-none focus:ring-1 appearance-none text-sm pl-10 transition-all ${
               filtroEstado === 'Operativo' ? 'border-brand-green/60 focus:border-brand-green focus:ring-brand-green' :
               filtroEstado === 'De baja' ? 'border-brand-red/60 focus:border-brand-red focus:ring-brand-red' :
               filtroEstado === 'Mantenimiento' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
               'border-dark-border focus:border-brand-cyan focus:ring-brand-cyan'
             }`}
           >
-            <option value="Filtrar">Filtrar</option>
+            <option value="Filtrar" className="bg-dark-surface text-text-main">Filtrar</option>
             {availableStates.map(state => (
-              <option key={state} value={state} className="bg-dark-surface text-white">{state}</option>
+              <option key={state} value={state} className="bg-dark-surface text-text-main">{state}</option>
             ))}
           </select>
           <svg className="w-4 h-4 absolute left-3 top-2.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>

@@ -2487,7 +2487,7 @@ function Dashboard({ setView }) {
               <div className="text-sm font-semibold" style={{ color: palette.text }}>{headerProfileName}</div>
               <div className="text-xs text-brand-cyan">{headerProfileCargo}</div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">{headerProfileInitials}</div>
+            <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-text-main font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">{headerProfileInitials}</div>
           </div>
 
           {showProfileMenu && (
@@ -3376,7 +3376,7 @@ function Dashboard({ setView }) {
                           value={filtroNombreDonante}
                           onChange={(event) => setFiltroNombreDonante(event.target.value)}
                           placeholder="Buscar por nombre donante..."
-                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         />
                       </div>
                       <div className="relative">
@@ -3386,7 +3386,7 @@ function Dashboard({ setView }) {
                           value={filtroNombreBomberoDonacion}
                           onChange={(event) => setFiltroNombreBomberoDonacion(event.target.value)}
                           placeholder="Buscar por nombre bombero..."
-                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         />
                       </div>
                     </div>
@@ -3447,7 +3447,7 @@ function Dashboard({ setView }) {
               ) : donacionesView === 'configuracion' ? (
                 <form onSubmit={handleSavePaymentConfig} className="max-w-5xl rounded-xl border border-dark-border bg-dark-surface shadow-lg">
                   <div className="border-b border-dark-border px-6 py-5">
-                    <h3 className="rajdhani text-2xl font-bold text-white">Configuracion de pago</h3>
+                    <h3 className="rajdhani text-2xl font-bold text-text-main">Configuracion de pago</h3>
                     <p className="mt-1 text-sm text-text-muted">Credenciales y URLs usadas para crear pagos Flow.</p>
                   </div>
 
@@ -3458,7 +3458,7 @@ function Dashboard({ setView }) {
                         type="text"
                         value={paymentConfigData.apiKey}
                         onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
-                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_API_KEY_FLOW"
                       />
                     </label>
@@ -3469,7 +3469,7 @@ function Dashboard({ setView }) {
                         type="password"
                         value={paymentConfigData.secretKey}
                         onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
-                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_SECRET_KEY_FLOW"
                       />
                     </label>
@@ -3486,7 +3486,7 @@ function Dashboard({ setView }) {
                       type="button"
                       onClick={resetPaymentConfigData}
                       disabled={savingPaymentConfig}
-                      className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Restaurar valores
                     </button>
@@ -3558,12 +3558,12 @@ function Dashboard({ setView }) {
                       <p className="mt-2 text-right text-xs text-brand-cyan">{campaign.progress}% logrado</p>
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
-                      <button onClick={() => openCampanaDetalle(campaign)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">Ver detalles</button>
+                      <button onClick={() => openCampanaDetalle(campaign)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/50">Ver detalles</button>
                       <button
                         type="button"
                         onClick={() => generateAndCopyDonationLink(campaign)}
                         disabled={generatingDonationLinkId === campaign.id}
-                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-200 transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-200 transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
                       </button>
@@ -3599,7 +3599,7 @@ function Dashboard({ setView }) {
                       <p className="text-xs text-text-muted">Total recaudado</p>
                       <p className="mt-1 text-xl font-bold text-white">{formatCurrency(campaign.montoRecaudado)}</p>
                     </div>
-                    <button onClick={() => openCampanaDetalle(campaign)} className="mt-4 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-brand-cyan/50">
+                    <button onClick={() => openCampanaDetalle(campaign)} className="mt-4 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/50">
                       Ver detalles
                     </button>
                   </div>
@@ -4008,8 +4008,8 @@ function Dashboard({ setView }) {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateCampana} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white rajdhani">Crear campana de donaciones</h3>
-                <button type="button" onClick={closeCreateCampanaModal} disabled={savingCampana} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
+                <h3 className="text-lg font-semibold text-text-main rajdhani">Crear campana de donaciones</h3>
+                <button type="button" onClick={closeCreateCampanaModal} disabled={savingCampana} className="text-text-muted hover:text-text-main transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
@@ -4023,7 +4023,7 @@ function Dashboard({ setView }) {
                       value={newCampanaData.nombre}
                       onChange={(e) => setNewCampanaData({ ...newCampanaData, nombre: e.target.value })}
                       disabled={savingCampana}
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                       placeholder="Ej. Compra carro"
                     />
                   </div>
@@ -4040,7 +4040,7 @@ function Dashboard({ setView }) {
                         });
                       }}
                       disabled={savingCampana}
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                       placeholder="$20.000"
                     />
                   </div>
@@ -4053,7 +4053,7 @@ function Dashboard({ setView }) {
                     value={newCampanaData.descripcion}
                     onChange={(e) => setNewCampanaData({ ...newCampanaData, descripcion: e.target.value })}
                     disabled={savingCampana}
-                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     placeholder="Describe el objetivo de la campana..."
                   />
                 </div>
@@ -4066,7 +4066,7 @@ function Dashboard({ setView }) {
                       value={newCampanaData.fechaInicio}
                       onChange={(e) => setNewCampanaData({ ...newCampanaData, fechaInicio: e.target.value })}
                       disabled={savingCampana}
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     />
                   </div>
                   <div>
@@ -4076,7 +4076,7 @@ function Dashboard({ setView }) {
                       value={newCampanaData.fechaFin}
                       onChange={(e) => setNewCampanaData({ ...newCampanaData, fechaFin: e.target.value })}
                       disabled={savingCampana}
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -4088,7 +4088,7 @@ function Dashboard({ setView }) {
                     value={newCampanaData.imagenUrl}
                     onChange={(e) => setNewCampanaData({ ...newCampanaData, imagenUrl: e.target.value })}
                     disabled={savingCampana}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     placeholder="Opcional"
                   />
                 </div>
@@ -4532,10 +4532,10 @@ function Dashboard({ setView }) {
             <form onSubmit={handleCreateRegistroLibroGuardia} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="rajdhani text-lg font-semibold text-white">Agregar registro</h3>
+                  <h3 className="rajdhani text-lg font-semibold text-text-main">Agregar registro</h3>
                   <p className="mt-1 text-xs text-text-muted">{selectedLibroGuardia.nombre}</p>
                 </div>
-                <button type="button" onClick={closeCreateRegistroModal} disabled={savingRegistroLibroGuardia} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                <button type="button" onClick={closeCreateRegistroModal} disabled={savingRegistroLibroGuardia} className="text-text-muted transition-colors hover:text-text-main disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
@@ -4548,7 +4548,7 @@ function Dashboard({ setView }) {
                       value={newRegistroData.fecha}
                       onChange={(event) => setNewRegistroData(current => ({ ...current, fecha: event.target.value }))}
                       disabled={savingRegistroLibroGuardia}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     />
                   </label>
                   <label className="block">
@@ -4559,7 +4559,7 @@ function Dashboard({ setView }) {
                       value={newRegistroData.hora}
                       onChange={(event) => setNewRegistroData(current => ({ ...current, hora: event.target.value }))}
                       disabled={savingRegistroLibroGuardia}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     />
                   </label>
                 </div>
@@ -4571,7 +4571,7 @@ function Dashboard({ setView }) {
                     value={newRegistroData.detalle}
                     onChange={(event) => setNewRegistroData(current => ({ ...current, detalle: event.target.value }))}
                     disabled={savingRegistroLibroGuardia}
-                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     placeholder="Describe la novedad registrada..."
                   />
                 </label>
