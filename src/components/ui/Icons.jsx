@@ -25,20 +25,72 @@ export const Icons = {
   Shield: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
   User: (props) => (
     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      {/* Background white sticker outline */}
-      <path d="M50 6C36.7 6 25.6 14.8 23.4 28.2c-6.7 4.5-8.9 11.2-8.9 20.2 0 11.2 6.7 20.2 15.6 24.7v9c0 4.5 4.5 9 9 9h22c4.5 0 9-4.5 9-9v-9c8.9-4.5 15.6-13.5 15.6-24.7 0-9-2.2-15.7-8.9-20.2C74.4 14.8 63.3 6 50 6z" fill="#FFFFFF" />
+      {/* 1. Jacket / Suit Base */}
+      <path d="M15 85c0-15 10-25 25-27h20c15 2 25 12 25 27v5H15v-5z" fill="#202A3A" stroke="#0C1017" strokeWidth="3" strokeLinejoin="round" />
+
+      {/* Shoulder Reflective Stripes (Yellow-Green) */}
+      <path d="M22 69l-7 14M78 69l7 14" stroke="#DDF521" strokeWidth="4" strokeLinecap="round" />
+
+      {/* Harness Straps & Buckles */}
+      <path d="M37 58v27M63 58v27" stroke="#121820" strokeWidth="6" strokeLinecap="round" />
+      <path d="M37 68v14M63 68v14" stroke="#4B5E78" strokeWidth="4" strokeLinecap="round" />
       
-      {/* Blue shirt */}
-      <path d="M30 81c0-11.2 9-18 20-18s20 6.8 20 18v6.7H30V81z" fill="#6979BC" stroke="#3D4075" strokeWidth="5" strokeLinejoin="round" />
-      {/* Neck */}
-      <path d="M43.3 60.8v9.9c0 3.6 3.1 5.8 6.7 5.8s6.7-2.2 6.7-5.8v-9.9" fill="#FCD5B5" stroke="#3D4075" strokeWidth="5" />
+      {/* Chest Reflective Stripe */}
+      <path d="M37 73h26" stroke="#DDF521" strokeWidth="5" />
+      <path d="M37 73h26" stroke="#FE3B30" strokeWidth="2" /> {/* Red center stripe */}
+
+      {/* Buckle Details */}
+      <rect x="47" y="77" width="6" height="5" rx="1.5" fill="#94A3B8" stroke="#0C1017" strokeWidth="2" />
+
+      {/* Radio Unit on Left Shoulder Strap */}
+      <rect x="67" y="65" width="10" height="18" rx="2" fill="#121820" stroke="#0C1017" strokeWidth="2" />
+      <path d="M72 65v-6" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" /> {/* Antenna */}
+      <circle cx="74" cy="79" r="1.5" fill="#FF7B00" /> {/* Orange LED dot */}
+
+      {/* 2. Neck & Protective Collar */}
+      <path d="M40 50h20v15H40z" fill="#121820" />
+      <path d="M40 54c4 4 16 4 20 0v8H40v-8z" fill="#DDF521" stroke="#0C1017" strokeWidth="2.5" />
+      <path d="M37 49c8 2 18 2 26 0v6c-8 1-18 1-26 0v-6z" fill="#0C1017" /> {/* Under-chin collar wrap */}
+
+      {/* 3. Face & Head */}
+      <path d="M36 34c0 9 6 18 14 18s14-9 14-18V28H36v6z" fill="#F0B58D" />
       {/* Ears */}
-      <circle cx="30" cy="45" r="6.7" fill="#FCD5B5" stroke="#3D4075" strokeWidth="5" />
-      <circle cx="70" cy="45" r="6.7" fill="#FCD5B5" stroke="#3D4075" strokeWidth="5" />
-      {/* Head */}
-      <path d="M34.4 45c0 11.2 6.7 18 15.6 18s15.6-6.8 15.6-18c0-12.6-6.7-20.2-15.6-20.2S34.4 32.4 34.4 45z" fill="#FCD5B5" stroke="#3D4075" strokeWidth="5" />
-      {/* Hair */}
-      <path d="M33 38.2c-0.9-6.7 3.6-15.7 17-15.7s18 9 17.1 15.7c0 0-3.6-6.7-9-6.7s-9.9 5.4-17.1 6.7z" fill="#3D4075" stroke="#3D4075" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M36 32c-2 0-3 3-2 5s2 2 2 0" fill="#F0B58D" stroke="#0C1017" strokeWidth="2.5" />
+      <path d="M64 32c2 0 3 3 2 5s-2 2-2 0" fill="#F0B58D" stroke="#0C1017" strokeWidth="2.5" />
+
+      {/* Beard & Mustache */}
+      <path d="M36 32c1 10 3 19 14 19s13-9 14-19c1 3 1 7-1 10-2 4-6 7-13 7s-11-3-13-7c-2-3-2-7-1-10z" fill="#3A2C22" stroke="#0C1017" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M43 41c2-1 5-2 7-2s5 1 7 2c-2-2-5-3-7-3s-5 1-7 3z" fill="#201813" />
+
+      {/* Eyes & Eyebrows */}
+      <path d="M42 29h4M54 29h4" stroke="#0C1017" strokeWidth="2.5" strokeLinecap="round" /> {/* Eyebrows */}
+      <circle cx="44" cy="33" r="1.5" fill="#0C1017" />
+      <circle cx="56" cy="33" r="1.5" fill="#0C1017" />
+
+      {/* Nose & Mouth */}
+      <path d="M50 32v4l-2 2" stroke="#0C1017" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M47 45c2 1 4 1 6 0" stroke="#0C1017" strokeWidth="2" strokeLinecap="round" />
+
+      {/* Hair Under Helmet */}
+      <path d="M34 26c-1 4 2 12 3 16M66 26c1 4-2 12-3 16" stroke="#0C1017" strokeWidth="4.5" strokeLinecap="round" />
+
+      {/* 4. Helmet (Casco de Bombero) */}
+      {/* Neck guard draping down the back */}
+      <path d="M32 25c-2 6-2 15 2 20h32c4-5 4-14 2-20" fill="#121820" stroke="#0C1017" strokeWidth="2.5" strokeLinejoin="round" />
+
+      {/* Red Helmet Dome */}
+      <path d="M29 24c0-13 10-18 21-18s21 5 21 18H29z" fill="#D32F2F" stroke="#0C1017" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M50 6v18" stroke="#0C1017" strokeWidth="3" /> {/* Crest centerline */}
+
+      {/* Helmet Brim */}
+      <path d="M25 24c5-3 12-4 25-4s20 1 25 4c3 1 3 3 0 4l-4 2c-6 2-13 2-21 2s-15 0-21-2l-4-2c-3-1-3-3 0-4z" fill="#B71C1C" stroke="#0C1017" strokeWidth="3" strokeLinejoin="round" />
+      
+      {/* Front Badge / Shield (Black with Fire Emblem) */}
+      <path d="M43 8l7-4 7 4v10l-7 3-7-3V8z" fill="#121820" stroke="#0C1017" strokeWidth="2" strokeLinejoin="round" />
+      
+      {/* Crossed axes & Flame (Emblem) */}
+      <path d="M46 16l8-8M54 16l-8-8" stroke="#DDF521" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M50 14c2 0 3-2 3-4s-2-3-3-3-3 1-3 3 1 4 3 4z" fill="#FE3B30" />
     </svg>
   ),
   Dashboard: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>,
