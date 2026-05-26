@@ -4457,10 +4457,10 @@ function Dashboard({ setView }) {
             <form onSubmit={handleCreateLibroGuardia} className="w-full max-w-lg overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="rajdhani text-lg font-semibold text-white">Crear libro de guardia</h3>
+                  <h3 className="rajdhani text-lg font-semibold text-text-main">Crear libro de guardia</h3>
                   <p className="mt-1 text-xs text-text-muted">Define el periodo y estado inicial del libro.</p>
                 </div>
-                <button type="button" onClick={closeCreateLibroGuardiaModal} disabled={savingLibroGuardia} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                <button type="button" onClick={closeCreateLibroGuardiaModal} disabled={savingLibroGuardia} className="text-text-muted transition-colors hover:text-text-main disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
@@ -4473,7 +4473,7 @@ function Dashboard({ setView }) {
                     value={newLibroGuardiaData.nombre}
                     onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, nombre: event.target.value }))}
                     disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     placeholder="Ej. Libro Noviembre 2026"
                   />
                 </div>
@@ -4483,11 +4483,11 @@ function Dashboard({ setView }) {
                     value={newLibroGuardiaData.duracion}
                     onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, duracion: event.target.value }))}
                     disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                   >
-                    <option value="Diario">Diario</option>
-                    <option value="Semanal">Semanal</option>
-                    <option value="Mensual">Mensual</option>
+                    <option value="Diario" className="bg-dark-surface text-text-main">Diario</option>
+                    <option value="Semanal" className="bg-dark-surface text-text-main">Semanal</option>
+                    <option value="Mensual" className="bg-dark-surface text-text-main">Mensual</option>
                   </select>
                 </div>
                 <div>
@@ -4496,10 +4496,10 @@ function Dashboard({ setView }) {
                     value={newLibroGuardiaData.estado}
                     onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, estado: event.target.value }))}
                     disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                   >
-                    <option value="Abierto">Abierto</option>
-                    <option value="Cerrado">Cerrado</option>
+                    <option value="Abierto" className="bg-dark-surface text-text-main">Abierto</option>
+                    <option value="Cerrado" className="bg-dark-surface text-text-main">Cerrado</option>
                   </select>
                 </div>
                 {createLibroGuardiaError && (
@@ -4513,7 +4513,7 @@ function Dashboard({ setView }) {
                   type="button"
                   onClick={closeCreateLibroGuardiaModal}
                   disabled={savingLibroGuardia}
-                  className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-text-main disabled:opacity-50"
                 >
                   Cancelar
                 </button>

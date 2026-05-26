@@ -772,7 +772,7 @@ function VehiculosView() {
       <div className="p-8 pb-20">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-white">Parque Automotriz</h3>
+            <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Parque Automotriz</h3>
             <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
           </div>
           <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
@@ -797,7 +797,7 @@ function VehiculosView() {
                   <Icons.Truck />
                 </div>
                 <div className="w-full border-t border-dark-border bg-dark-bg/50 px-4 py-3 text-center">
-                  <div className="mb-1 text-sm font-semibold text-white">{v.nombre}</div>
+                  <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
                   <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
                 </div>
               </div>
@@ -816,10 +816,10 @@ function VehiculosView() {
             <div className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border px-6 py-4">
                 <div>
-                  <h3 className="rajdhani text-xl font-bold text-white">Agregar Vehiculo</h3>
+                  <h3 className="rajdhani text-xl font-bold text-text-main">Agregar Vehiculo</h3>
                   <p className="mt-1 text-sm text-text-muted">Registra una nueva unidad del parque automotriz.</p>
                 </div>
-                <button type="button" onClick={closeAddModal} className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-dark-bg3 hover:text-white">
+                <button type="button" onClick={closeAddModal} className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-dark-bg3 hover:text-text-main">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -830,36 +830,36 @@ function VehiculosView() {
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-main">Nomenclatura <span className="text-brand-red">*</span></span>
-                    <input required type="text" value={formData.nomenclatura} onChange={(e) => setFormData({ ...formData, nomenclatura: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Ej: B-1, RX-2, AB1234" />
+                    <input required type="text" value={formData.nomenclatura} onChange={(e) => setFormData({ ...formData, nomenclatura: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Ej: B-1, RX-2, AB1234" />
                   </label>
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-main">Patente <span className="text-brand-red">*</span></span>
-                    <input required type="text" value={formData.patente} onChange={(e) => setFormData({ ...formData, patente: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Ej: AB-12-34" />
+                    <input required type="text" value={formData.patente} onChange={(e) => setFormData({ ...formData, patente: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Ej: AB-12-34" />
                   </label>
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-main">Tipo de vehiculo <span className="text-brand-red">*</span></span>
-                    <select required value={formData.tipoVehiculo} onChange={(e) => setFormData({ ...formData, tipoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan">
-                      <option value="">Selecciona un tipo</option>
+                    <select required value={formData.tipoVehiculo} onChange={(e) => setFormData({ ...formData, tipoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan">
+                      <option value="" className="bg-dark-surface text-text-main">Selecciona un tipo</option>
                       {VEHICLE_TYPES.map((type) => (
-                        <option key={type} value={type}>{type}</option>
+                        <option key={type} value={type} className="bg-dark-surface text-text-main">{type}</option>
                       ))}
                     </select>
                   </label>
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
-                    <select value={formData.estadoVehiculo} onChange={(e) => setFormData({ ...formData, estadoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan">
-                      <option value="Operativo">Operativo</option>
-                      <option value="En Mantencion">En Mantencion</option>
-                      <option value="Fuera de Servicio">Fuera de Servicio</option>
+                    <select value={formData.estadoVehiculo} onChange={(e) => setFormData({ ...formData, estadoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan">
+                      <option value="Operativo" className="bg-dark-surface text-text-main">Operativo</option>
+                      <option value="En Mantencion" className="bg-dark-surface text-text-main">En Mantencion</option>
+                      <option value="Fuera de Servicio" className="bg-dark-surface text-text-main">Fuera de Servicio</option>
                     </select>
                   </label>
 
                   <label className="block md:col-span-2">
                     <span className="mb-2 block text-sm font-medium text-text-main">Descripcion</span>
-                    <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="min-h-[110px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Marca, modelo, capacidad, observaciones generales..." />
+                    <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="min-h-[110px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Marca, modelo, capacidad, observaciones generales..." />
                   </label>
                 </div>
 
@@ -870,7 +870,7 @@ function VehiculosView() {
                 )}
 
                 <div className="mt-6 flex justify-end gap-3 border-t border-dark-border pt-5">
-                  <button type="button" onClick={closeAddModal} className="rounded-lg border border-dark-border bg-dark-bg px-5 py-2.5 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg3 hover:text-white">
+                  <button type="button" onClick={closeAddModal} className="rounded-lg border border-dark-border bg-dark-bg px-5 py-2.5 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg3 hover:text-text-main">
                     Cancelar
                   </button>
                   <button type="submit" disabled={savingVehiculo} className="rounded-lg bg-brand-cyan px-5 py-2.5 text-sm font-bold text-dark-bg transition-opacity disabled:cursor-not-allowed disabled:opacity-50">
@@ -892,11 +892,11 @@ function VehiculosView() {
       <div className="h-full w-full max-w-none overflow-y-auto p-6 pb-36 lg:p-8 lg:pb-40">
         <div className="mb-8 flex items-center justify-between border-b border-dark-border pb-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => setView('list')} className="flex items-center gap-2 border-r border-dark-border pr-4 text-sm font-medium text-text-muted transition-colors hover:text-white">
+            <button onClick={() => setView('list')} className="flex items-center gap-2 border-r border-dark-border pr-4 text-sm font-medium text-text-muted transition-colors hover:text-text-main">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Volver
             </button>
-            <h3 className="rajdhani text-xl font-bold text-white">Detalle del Vehiculo</h3>
+            <h3 className="rajdhani text-xl font-bold text-text-main">Detalle del Vehiculo</h3>
           </div>
           <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -963,16 +963,22 @@ function VehiculosView() {
 
           <div className="flex min-w-0 flex-col justify-center">
             <div className="mb-2 flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-brand-green/20 bg-brand-green/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-brand-green">Estado: {v.estado}</span>
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                (v.estado || '').toLowerCase().includes('operativ')
+                  ? 'border-brand-green/20 bg-brand-green/10 text-brand-green'
+                  : (v.estado || '').toLowerCase().includes('mantenc')
+                  ? 'border-brand-gold/20 bg-brand-gold/10 text-brand-gold'
+                  : 'border-brand-red/20 bg-brand-red/10 text-brand-red'
+              }`}>Estado: {v.estado}</span>
               <span className="text-xs font-medium text-brand-cyan">{v.tipo}</span>
             </div>
-            <h2 className="rajdhani mb-3 text-3xl font-bold text-white">{v.nombre}</h2>
+            <h2 className="rajdhani mb-3 text-3xl font-bold text-text-main">{v.nombre}</h2>
             <p className="mb-8 max-w-5xl leading-relaxed text-text-muted">{v.descripcion}</p>
 
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-lg border border-dark-border bg-dark-bg px-5 py-3">
                 <div className="mb-1 text-xs text-text-muted">Tipo de Vehiculo</div>
-                <div className="text-sm font-semibold text-white">{v.tipo}</div>
+                <div className="text-sm font-semibold text-text-main">{v.tipo}</div>
               </div>
               <div className="flex flex-col justify-center rounded-lg border border-dark-border bg-dark-bg px-5 py-3">
                 <div className="mb-1 flex items-center justify-between text-xs text-text-muted">
@@ -985,12 +991,12 @@ function VehiculosView() {
                 </div>
                 {isEditingPatente ? (
                   <div className="mt-1 flex items-center gap-2">
-                    <input autoFocus type="text" value={tempPatente} onChange={(e) => setTempPatente(e.target.value)} className="w-full rounded border border-brand-cyan bg-dark-bg2 px-2 py-1 text-sm text-white focus:outline-none" />
+                    <input autoFocus type="text" value={tempPatente} onChange={(e) => setTempPatente(e.target.value)} className="w-full rounded border border-brand-cyan bg-dark-bg2 px-2 py-1 text-sm text-text-main focus:outline-none" />
                     <button onClick={() => { updateVehiculo({ ...v, patente: tempPatente }); setIsEditingPatente(false); }} className="text-brand-green hover:opacity-80"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
                     <button onClick={() => setIsEditingPatente(false)} className="text-brand-red hover:opacity-80"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                   </div>
                 ) : (
-                  <div className="text-sm font-semibold text-white">{v.patente}</div>
+                  <div className="text-sm font-semibold text-text-main">{v.patente}</div>
                 )}
               </div>
             </div>
@@ -1007,7 +1013,7 @@ function VehiculosView() {
           <section className="rounded-xl border border-dark-border bg-dark-surface/40 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
             <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-3">
               <div>
-                <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
+                <h4 className="flex items-center gap-2 text-lg font-semibold text-text-main">
                   <svg className="h-5 w-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   Observaciones
                 </h4>
@@ -1057,7 +1063,7 @@ function VehiculosView() {
           <section className="rounded-xl border border-dark-border bg-dark-surface/40 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
             <div className="mb-4 flex items-center justify-between border-b border-dark-border pb-3">
               <div>
-                <h4 className="flex items-center gap-2 text-lg font-semibold text-white">
+                <h4 className="flex items-center gap-2 text-lg font-semibold text-text-main">
                   <svg className="h-5 w-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   Mantenciones
                 </h4>
