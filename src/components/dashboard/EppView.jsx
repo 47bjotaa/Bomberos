@@ -268,14 +268,14 @@ function EppView({ eppData, setEppData, onDetailChange }) {
           onClick={() => setActiveEppTab('asignados')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'asignados' ? 'bg-dark-bg3 border-dark-border text-white' : 'bg-transparent border-transparent text-text-muted hover:text-white'}`}
         >
-          <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          <Icons.User className="w-4 h-4 text-brand-cyan" />
           Asignados <span className="bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full text-xs font-bold ml-1">{assignedData.length}</span>
         </button>
         <button
           onClick={() => setActiveEppTab('no-asignados')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'no-asignados' ? 'bg-dark-bg3 border-dark-border text-white' : 'bg-transparent border-transparent text-text-muted hover:text-white'}`}
         >
-          <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+          <Icons.Inventory className="w-4 h-4 text-text-muted" />
           No asignados <span className="bg-dark-bg3 text-text-muted px-2 py-0.5 rounded-full text-xs font-bold border border-dark-border ml-1">{unassignedData.length}</span>
         </button>
       </div>

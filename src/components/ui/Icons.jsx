@@ -22,7 +22,50 @@ export const Icons = {
       <path d="M52 64c5-2 11-1 15 3" stroke="#222" strokeWidth="4" strokeLinecap="round" />
     </svg>
   ),
-  Shield: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
+  Shield: (props) => (
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      {/* Left Orange Vest */}
+      <path d="M43 42c-2.3 0-5 2-6.5 4L28 52v20c0 5 4.5 9 9 9h9c2 0 4-2 4-4V42H43z" fill="#FF7824" stroke="#0F172A" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M42 42v39M35 52v29M28 62h15" stroke="#DDF521" strokeWidth="4" strokeLinecap="round" />
+      <path d="M42 42v39M35 52v29M28 62h15" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Right Green/Yellow Vest */}
+      <path d="M57 42c2.3 0 5 2 6.5 4L72 52v20c0 5-4.5 9-9 9h-9c-2 0-4-2-4-4V42H57z" fill="#C1DF1F" stroke="#0F172A" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M58 42v39M65 52v29M58 62h14" stroke="#DDF521" strokeWidth="4" strokeLinecap="round" />
+      <path d="M58 42v39M65 52v29M58 62h14" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Earmuffs Headband */}
+      <path d="M37 38.5c5-9.5 21-9.5 26 0" stroke="#334155" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+
+      {/* Safety Helmet (Yellow) */}
+      <path d="M35 34c0-9.4 6.7-17 15-17s15 7.6 15 17H35z" fill="#FFCB14" stroke="#0F172A" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d="M32 34c4-2 9-3 18-3s14 1 18 3c1.5.5 1.5 2 0 2.5l-3 1c-5 1.5-10 1.5-15 1.5s-10 0-15-1.5l-3-1c-1.5-.5-1.5-2 0-2.5z" fill="#E2AB09" stroke="#0F172A" strokeWidth="3" strokeLinejoin="round" />
+      <rect x="47" y="16" width="6" height="15" rx="1.5" fill="#FFCB14" stroke="#0F172A" strokeWidth="2.5" />
+
+      {/* Goggles on Helmet */}
+      <path d="M36 28h28v6H36v-6z" fill="#1E293B" rx="2" />
+      {/* Left Lens */}
+      <rect x="39" y="29.5" width="9" height="5" rx="1.5" fill="#E2E8F0" stroke="#0F172A" strokeWidth="1.5" />
+      {/* Right Lens */}
+      <rect x="52" y="29.5" width="9" height="5" rx="1.5" fill="#E2E8F0" stroke="#0F172A" strokeWidth="1.5" />
+      {/* Goggles Strap */}
+      <path d="M32 30h4M64 30h4" stroke="#0F172A" strokeWidth="3" strokeLinecap="round" />
+
+      {/* Earmuffs Cups */}
+      {/* Right Cup */}
+      <rect x="63" y="38" width="8" height="12" rx="3" fill="#FFCB14" stroke="#0F172A" strokeWidth="2.5" />
+      <rect x="61" y="40" width="2" height="8" rx="1" fill="#0F172A" />
+      {/* Left Cup */}
+      <rect x="29" y="38" width="8" height="12" rx="3" fill="#FFCB14" stroke="#0F172A" strokeWidth="2.5" />
+      <rect x="35" y="40" width="2" height="8" rx="1" fill="#0F172A" />
+
+      {/* Glove (on the right) */}
+      <path d="M64 62c-2.5 0-5 3.5-3 6.5l8 13c1.5 2.5 5.5 2.5 7 0l8-13c2-3-.5-6.5-3-6.5h-17z" fill="#FFCB14" stroke="#0F172A" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M68 70c0 4 2.5 7 5 7s5-3 5-7" fill="#475569" stroke="#0F172A" strokeWidth="2.5" strokeLinejoin="round" />
+      {/* Fingers lines */}
+      <path d="M67 63v7M71 62v7M75 62v7M79 63v7" stroke="#0F172A" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  ),
   User: (props) => (
     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       {/* 1. Jacket / Suit Base */}
