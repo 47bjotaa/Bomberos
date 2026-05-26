@@ -178,7 +178,7 @@ function AssignEppModal({ onClose, onAssign }) {
         <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <svg className="w-5 h-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-            <h3 className="text-lg font-bold text-white rajdhani tracking-wide">Asignar Equipo de Proteccion Personal</h3>
+            <h3 className="text-lg font-bold text-text-main rajdhani tracking-wide">Asignar Equipo de Proteccion Personal</h3>
           </div>
           <button onClick={onClose} disabled={saving} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -193,13 +193,13 @@ function AssignEppModal({ onClose, onAssign }) {
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-white mb-2 rajdhani tracking-wide">Seleccionar Bombero <span className="text-brand-red">*</span></label>
+            <label className="block text-sm font-semibold text-text-main mb-2 rajdhani tracking-wide">Seleccionar Bombero <span className="text-brand-red">*</span></label>
             <div className="relative">
               <select
                 value={selectedBomberoId}
                 onChange={(e) => setSelectedBomberoId(e.target.value)}
                 disabled={loading || saving || bomberos.length === 0}
-                className="w-full pl-12 pr-10 py-3 bg-dark-bg border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none transition-all disabled:opacity-50"
+                className="w-full pl-12 pr-10 py-3 bg-dark-bg border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none transition-all disabled:opacity-50"
               >
                 <option value="">{loading ? 'Cargando bomberos...' : 'Seleccionar bombero...'}</option>
                 {bomberos.map(bombero => (
@@ -215,7 +215,7 @@ function AssignEppModal({ onClose, onAssign }) {
 
           <div>
             <div className="flex justify-between items-end mb-2">
-              <label className="block text-sm font-semibold text-white rajdhani tracking-wide">Seleccionar EPP disponibles <span className="text-brand-red">*</span></label>
+              <label className="block text-sm font-semibold text-text-main rajdhani tracking-wide">Seleccionar EPP disponibles <span className="text-brand-red">*</span></label>
               <span className="text-xs text-text-muted">{selectedEppIds.length} seleccionados</span>
             </div>
 
@@ -223,8 +223,8 @@ function AssignEppModal({ onClose, onAssign }) {
               <svg className="w-4 h-4 absolute left-3 top-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               <input
                 type="text"
-                placeholder="Buscar por nombre o codigo..."
-                className="w-full pl-9 pr-4 py-2 bg-dark-bg border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted disabled:opacity-50"
+                placeholder="Buscar por equipo, talla, codigo..."
+                className="w-full pl-9 pr-4 py-2 bg-dark-bg border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted disabled:opacity-50"
                 value={searchEpp}
                 onChange={(e) => setSearchEpp(e.target.value)}
                 disabled={loading || saving}
@@ -251,7 +251,7 @@ function AssignEppModal({ onClose, onAssign }) {
                         {isSelected && <svg className="w-3.5 h-3.5 text-dark-bg font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
                       </div>
                       <div className="min-w-0">
-                        <div className={`font-medium text-sm truncate ${isSelected ? 'text-brand-cyan' : 'text-white'}`}>{item.equipo}</div>
+                        <div className={`font-medium text-sm truncate ${isSelected ? 'text-brand-cyan' : 'text-text-main'}`}>{item.equipo}</div>
                         <div className="text-xs text-text-muted font-mono truncate">{item.codigo}</div>
                       </div>
                     </div>

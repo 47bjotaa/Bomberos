@@ -4130,7 +4130,7 @@ function Dashboard({ setView }) {
                     value={newUbicacionData.idTipoUbicacion}
                     onChange={(e) => setNewUbicacionData({ ...newUbicacionData, idTipoUbicacion: e.target.value })}
                     disabled={loadingTiposUbicacion || savingUbicacion || tiposUbicacion.length === 0}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                   >
                     <option value="">{loadingTiposUbicacion ? 'Cargando tipos...' : 'Selecciona un tipo'}</option>
                     {tiposUbicacion.map(tipo => (
@@ -4151,7 +4151,7 @@ function Dashboard({ setView }) {
                 <label className="block text-sm font-medium text-text-muted mb-2">Nombre de la ubicación</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                   placeholder="Ej. Gaveta 3, Bodega central..."
                   value={newUbicacionData.nombre}
                   onChange={(e) => setNewUbicacionData({ ...newUbicacionData, nombre: e.target.value })}
@@ -4161,7 +4161,7 @@ function Dashboard({ setView }) {
                   <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
                   <textarea
                     rows={4}
-                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     placeholder="Detalle breve de la ubicacion"
                     value={newUbicacionData.descripcion}
                     onChange={(e) => setNewUbicacionData({ ...newUbicacionData, descripcion: e.target.value })}
@@ -4217,7 +4217,7 @@ function Dashboard({ setView }) {
                   <input
                     autoFocus
                     type="text"
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     placeholder="Ej. Bodega, Caja, Gaveta..."
                     value={newTipoUbicacionData.nombre}
                     onChange={(e) => setNewTipoUbicacionData({ ...newTipoUbicacionData, nombre: e.target.value })}
@@ -4226,7 +4226,7 @@ function Dashboard({ setView }) {
                 </div>
                 <label className="flex items-center justify-between gap-4 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
                   <span>
-                    <span className="block text-sm font-semibold text-white">Tipo raiz</span>
+                    <span className="block text-sm font-semibold text-text-main">Tipo raiz</span>
                     <span className="block text-xs text-text-muted">Aparecera como opcion para crear ubicaciones principales.</span>
                   </span>
                   <input
@@ -4279,7 +4279,7 @@ function Dashboard({ setView }) {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <p className="text-sm font-semibold text-white">Que tipos pueden contener este tipo?</p>
+                  <p className="text-sm font-semibold text-text-main">Que tipos pueden contener este tipo?</p>
                   <p className="mt-1 text-xs text-text-muted">Se creara una relacion por cada tipo seleccionado.</p>
                 </div>
 
@@ -4295,7 +4295,7 @@ function Dashboard({ setView }) {
                         className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-3 text-left transition-colors disabled:opacity-50 ${isSelected ? 'border-brand-cyan/40 bg-brand-cyan/10' : 'border-dark-border bg-dark-bg hover:border-brand-cyan/30'}`}
                       >
                         <span>
-                          <span className="block text-sm font-semibold text-white">{tipo.nombre}</span>
+                          <span className="block text-sm font-semibold text-text-main">{tipo.nombre}</span>
                           <span className="block text-xs text-text-muted">{tipo.esTipoRaiz ? 'Tipo raiz' : 'Sububicacion'}{tipo.idCompania ? ` - Compania ${tipo.idCompania}` : ''}</span>
                         </span>
                         <span className={`flex h-5 w-5 items-center justify-center rounded border ${isSelected ? 'border-brand-cyan bg-brand-cyan text-dark-bg' : 'border-dark-border bg-dark-bg3'}`}>
@@ -4622,7 +4622,7 @@ function Dashboard({ setView }) {
                     <input
                       autoFocus
                       type="text"
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                       placeholder="Ej. Stock Gaveta 1"
                       value={newStockMinimoData.nombre}
                       onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, nombre: e.target.value })}
@@ -4635,7 +4635,7 @@ function Dashboard({ setView }) {
                       value={newStockMinimoData.idUbicacion}
                       onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, idUbicacion: e.target.value })}
                       disabled={savingStockMinimo || ubicaciones.length === 0}
-                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     >
                       <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicacion' : 'No hay ubicaciones disponibles'}</option>
                       {ubicaciones.map(ubicacion => (
@@ -4648,7 +4648,7 @@ function Dashboard({ setView }) {
                 <div>
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-white">Materiales del stock</p>
+                      <p className="text-sm font-semibold text-text-main">Materiales del stock</p>
                       <p className="mt-1 text-xs text-text-muted">Selecciona materiales y define la cantidad minima de cada uno.</p>
                     </div>
                     <span className="rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-1 text-xs text-brand-cyan">
@@ -4663,7 +4663,7 @@ function Dashboard({ setView }) {
                         value={stockMaterialSearch}
                         onChange={(e) => setStockMaterialSearch(e.target.value)}
                         disabled={savingStockMinimo || loadingStockMateriales}
-                        className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2.5 text-sm text-white placeholder-text-muted outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
+                        className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2.5 text-sm text-text-main placeholder-text-muted outline-none transition-all disabled:opacity-50 focus:border-brand-cyan"
                         placeholder="Buscar material por nombre..."
                       />
                     </div>
