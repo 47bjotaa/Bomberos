@@ -3100,7 +3100,7 @@ function Dashboard({ setView }) {
                   <input 
                     type="text" 
                     placeholder="Buscar por nombre..." 
-                    className="w-full pl-10 pr-4 py-2 bg-dark-bg3 border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted" 
+                    className="w-full pl-10 pr-4 py-2 bg-dark-bg3 border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted" 
                     value={filtroNombre}
                     onChange={(e) => setFiltroNombre(e.target.value)}
                   />
@@ -3109,7 +3109,7 @@ function Dashboard({ setView }) {
                   <select 
                     value={filtroTipo}
                     onChange={(e) => setFiltroTipo(e.target.value)}
-                    className="w-full px-4 py-2 bg-dark-bg3 border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none text-sm"
+                    className="w-full px-4 py-2 bg-dark-bg3 border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none text-sm"
                   >
                     <option value="Todos los tipos">Todos los tipos</option>
                     {Array.from(new Set(catalogo.map(item => item.tipo))).map(tipo => (
@@ -4771,7 +4771,7 @@ function Dashboard({ setView }) {
                   value={valueUpdateInput}
                   onChange={handleValueUpdateChange}
                   disabled={savingValueUpdate}
-                  className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                  className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                   placeholder="Ej. $15.000"
                 />
                 {valueUpdateError && (
@@ -4855,7 +4855,7 @@ function Dashboard({ setView }) {
                   <input
                     autoFocus
                     type="text"
-                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
+                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
                     placeholder="Ej. Esmeril Angular..."
                     value={newMaterialData.nombre}
                     disabled={savingMaterial}
@@ -4868,7 +4868,7 @@ function Dashboard({ setView }) {
                     value={newMaterialData.idTipoProducto}
                     onChange={(e) => setNewMaterialData({...newMaterialData, idTipoProducto: e.target.value})}
                     disabled={savingMaterial}
-                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none disabled:opacity-50"
+                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none disabled:opacity-50"
                   >
                     <option value="">Seleccionar tipo...</option>
                     {TIPOS_PRODUCTO.map(tipo => (
@@ -4880,7 +4880,7 @@ function Dashboard({ setView }) {
                   <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
                   <textarea
                     rows="3"
-                    className="w-full resize-none px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
+                    className="w-full resize-none px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     placeholder="Ej. Herramienta para corte y desbaste..."
                     value={newMaterialData.descripcion}
                     disabled={savingMaterial}
@@ -4891,7 +4891,7 @@ function Dashboard({ setView }) {
                   <label className="block text-sm font-medium text-text-muted mb-2">Valor Unitario</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
+                    className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
                     placeholder="Ej. $15.000"
                     value={newMaterialData.valorUnitario}
                     disabled={savingMaterial}

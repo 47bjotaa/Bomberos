@@ -1110,7 +1110,7 @@ function VehiculosView() {
                     <span className="text-xs font-semibold text-brand-cyan">{formatDate(mant.fecha)}</span>
                     <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[11px] font-bold text-brand-cyan">{mant.estadoMantencion || mant.tipo || 'Mantencion'}</span>
                   </div>
-                  <h5 className="mb-1 text-sm font-semibold text-white">{mant.tipo || 'Mantencion'}</h5>
+                  <h5 className="mb-1 text-sm font-semibold text-text-main">{mant.tipo || 'Mantencion'}</h5>
                   <p className="text-sm leading-relaxed text-text-muted">{mant.descripcion || mant.desc || 'Sin detalle'}</p>
                   {isMaintenancePending(mant) && (
                     <div className="mt-3 flex justify-end">
@@ -1142,7 +1142,7 @@ function VehiculosView() {
               <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div className="min-w-0">
                   <p className="text-xs text-text-muted">{formatDate(selectedObservation.fecha)}</p>
-                  <h3 className="mt-1 text-lg font-bold text-white">Detalle de observacion</h3>
+                  <h3 className="mt-1 text-lg font-bold text-text-main">Detalle de observacion</h3>
                   <p className="mt-0.5 truncate text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={() => setSelectedObservation(null)} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
@@ -1154,11 +1154,11 @@ function VehiculosView() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Fecha</p>
-                    <p className="mt-2 text-sm font-bold text-white">{formatDate(selectedObservation.fecha)}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{formatDate(selectedObservation.fecha)}</p>
                   </div>
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID observacion</p>
-                    <p className="mt-2 text-sm font-bold text-white">{getObservationId(selectedObservation) || 'Sin id'}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{getObservationId(selectedObservation) || 'Sin id'}</p>
                   </div>
                 </div>
 
@@ -1170,7 +1170,7 @@ function VehiculosView() {
                 </div>
 
                 <div className="mt-5">
-                  <h4 className="mb-3 text-sm font-bold text-white">Imagenes</h4>
+                  <h4 className="mb-3 text-sm font-bold text-text-main">Imagenes</h4>
                   {loadingObservationImages ? (
                     <div className="rounded-lg border border-dark-border py-8 text-center text-sm text-text-muted">
                       Cargando imagenes...
@@ -1191,7 +1191,7 @@ function VehiculosView() {
                         >
                           <img src={image.url} alt={image.nombre} className="h-44 w-full object-cover" />
                           <div className="px-3 py-2">
-                            <p className="truncate text-xs font-semibold text-white">{image.nombre}</p>
+                            <p className="truncate text-xs font-semibold text-text-main">{image.nombre}</p>
                             {image.fechaSubida && (
                               <p className="mt-1 text-[11px] text-text-muted">{formatDate(image.fechaSubida)}</p>
                             )}
@@ -1216,7 +1216,7 @@ function VehiculosView() {
               <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div className="min-w-0">
                   <p className="text-xs text-text-muted">{formatDate(selectedMaintenance.fecha)}</p>
-                  <h3 className="mt-1 text-lg font-bold text-white">Detalle de mantencion</h3>
+                  <h3 className="mt-1 text-lg font-bold text-text-main">Detalle de mantencion</h3>
                   <p className="mt-0.5 truncate text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={() => setSelectedMaintenance(null)} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
@@ -1228,15 +1228,15 @@ function VehiculosView() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Fecha</p>
-                    <p className="mt-2 text-sm font-bold text-white">{formatDate(selectedMaintenance.fecha)}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{formatDate(selectedMaintenance.fecha)}</p>
                   </div>
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tipo</p>
-                    <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.tipo || 'Mantencion'}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{selectedMaintenance.tipo || 'Mantencion'}</p>
                   </div>
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</p>
-                    <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.estadoMantencion || 'Sin estado'}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{selectedMaintenance.estadoMantencion || 'Sin estado'}</p>
                   </div>
                 </div>
 
@@ -1249,11 +1249,11 @@ function VehiculosView() {
 
                 <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID mantencion</p>
-                  <p className="mt-2 text-sm font-bold text-white">{getMaintenanceId(selectedMaintenance) || 'Sin id'}</p>
+                  <p className="mt-2 text-sm font-bold text-text-main">{getMaintenanceId(selectedMaintenance) || 'Sin id'}</p>
                 </div>
 
                 <div className="mt-5">
-                  <h4 className="mb-3 text-sm font-bold text-white">Imagenes y archivos</h4>
+                  <h4 className="mb-3 text-sm font-bold text-text-main">Imagenes y archivos</h4>
                   {loadingMaintenanceFiles ? (
                     <div className="rounded-lg border border-dark-border py-8 text-center text-sm text-text-muted">
                       Cargando archivos...
@@ -1280,7 +1280,7 @@ function VehiculosView() {
                             </div>
                           )}
                           <div className="px-3 py-2">
-                            <p className="truncate text-xs font-semibold text-white">{file.nombre}</p>
+                            <p className="truncate text-xs font-semibold text-text-main">{file.nombre}</p>
                             {file.fechaSubida && (
                               <p className="mt-1 text-[11px] text-text-muted">{formatDate(file.fechaSubida)}</p>
                             )}
@@ -1304,7 +1304,7 @@ function VehiculosView() {
             <form onSubmit={handleCreateObservation} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Agregar observacion</h3>
+                  <h3 className="text-lg font-bold text-text-main">Agregar observacion</h3>
                   <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={closeObservationModal} disabled={observationSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
@@ -1313,9 +1313,9 @@ function VehiculosView() {
               </div>
 
               <div className="space-y-4 p-6">
-                <textarea placeholder="Detalle de la observacion" value={newObs.observacion} onChange={(e) => setNewObs({ observacion: e.target.value })} disabled={observationSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <textarea placeholder="Detalle de la observacion" value={newObs.observacion} onChange={(e) => setNewObs({ observacion: e.target.value })} disabled={observationSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm font-semibold text-text-main">
                     {observationImages.length >= 3 ? 'Limite de 3 imagenes alcanzado' : 'Seleccionar imagenes'}
                   </span>
                   <span className="mt-1 text-xs text-text-muted">Puedes adjuntar hasta 3 imagenes.</span>
@@ -1354,7 +1354,7 @@ function VehiculosView() {
             <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">{maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}</h3>
+                  <h3 className="text-lg font-bold text-text-main">{maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}</h3>
                   <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
@@ -1365,16 +1365,16 @@ function VehiculosView() {
               <div className="max-h-[calc(90vh-140px)] space-y-4 overflow-y-auto p-6">
                 <div className={`grid gap-3 ${maintenanceModalMode === 'programada' ? 'md:grid-cols-2' : ''}`}>
                   {maintenanceModalMode === 'programada' && (
-                    <input required type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                    <input required type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                   )}
-                  <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60">
+                  <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60">
                     <option value="Preventiva">Preventiva</option>
                     <option value="Correctiva">Correctiva</option>
                   </select>
                 </div>
-                <textarea placeholder="Detalle de la mantencion" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} disabled={maintenanceSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <textarea placeholder="Detalle de la mantencion" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} disabled={maintenanceSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
-                  <span className="text-sm font-semibold text-white">Seleccionar archivos</span>
+                  <span className="text-sm font-semibold text-text-main">Seleccionar archivos</span>
                   <span className="mt-1 text-xs text-text-muted">Puedes adjuntar imagenes, PDF u otros documentos.</span>
                   <input type="file" multiple className="hidden" onChange={handleMaintenanceFileChange} disabled={maintenanceSaving} />
                 </label>
@@ -1389,7 +1389,7 @@ function VehiculosView() {
                             PDF
                           </div>
                         )}
-                        <p className="truncate pr-7 text-xs font-semibold text-white">{fileItem.file.name}</p>
+                        <p className="truncate pr-7 text-xs font-semibold text-text-main">{fileItem.file.name}</p>
                         <button type="button" onClick={() => removeMaintenanceFile(index)} disabled={maintenanceSaving} className="absolute right-2 top-2 text-sm font-bold text-white drop-shadow transition-colors hover:text-brand-red disabled:opacity-50">
                           x
                         </button>

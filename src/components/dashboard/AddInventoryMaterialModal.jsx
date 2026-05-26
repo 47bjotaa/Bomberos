@@ -258,7 +258,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                       value={formData.cantidad}
                       disabled={usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, cantidad: e.target.value }))}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                     />
                   </label>
 
@@ -269,7 +269,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                       value={formData.codigoUnico}
                       disabled={!usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, codigoUnico: e.target.value }))}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                       placeholder="Ej: EXT-MANG-001"
                     />
                   </label>
@@ -280,7 +280,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                       value={formData.estado}
                       disabled={!usesItemEndpoint}
                       onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                     >
                       <option value="Operativo">Operativo</option>
                       <option value="De baja">De baja</option>
@@ -296,7 +296,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                           type="text"
                           value={formData.talla}
                           onChange={(e) => setFormData(prev => ({ ...prev, talla: e.target.value }))}
-                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
                           placeholder="Ej: M, L, 42..."
                         />
                       </label>
@@ -307,7 +307,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                           type="date"
                           value={formData.fechaVencimiento}
                           onChange={(e) => setFormData(prev => ({ ...prev, fechaVencimiento: e.target.value }))}
-                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all focus:border-brand-cyan"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan"
                         />
                       </label>
                     </>
@@ -318,7 +318,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                     <textarea
                       value={formData.motivo}
                       onChange={(e) => setFormData(prev => ({ ...prev, motivo: e.target.value }))}
-                      className="min-h-[92px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
+                      className="min-h-[92px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
                       placeholder="Ej: Ingreso inicial de inventario"
                     />
                   </label>
