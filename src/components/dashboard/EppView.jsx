@@ -26,6 +26,21 @@ const formatDate = (value) => {
   }).format(date);
 };
 
+const normalizeEstado = (estadoRaw) => {
+  if (!estadoRaw) return 'Operativo';
+  const lower = estadoRaw.toLowerCase().trim();
+  if (lower.includes('operativo') && !lower.includes('no')) {
+    return 'Operativo';
+  }
+  if (lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
+    return 'De baja';
+  }
+  if (lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
+    return 'Mantenimiento';
+  }
+  return 'Operativo';
+};
+
 const getInitial = (name) => (name?.trim()?.charAt(0) || '-').toUpperCase();
 const isAssigned = (item) => Boolean(item.idBomberoAsignado || item.nombreBomberoAsignado || item.asignadoA);
 
@@ -72,7 +87,7 @@ const mapEppItem = (item) => {
     inicial: getInitial(assignedName),
     fecha: formatDate(item.fechaAsignacion || item.fecha),
     fechaVencimientoFormateada: formatDate(item.fechaVencimiento),
-    estado: item.estadoInventario || item.estadoEpp || item.estado || 'Sin estado',
+    estado: normalizeEstado(item.estadoInventario || item.estadoEpp || item.estado),
   };
 };
 
@@ -137,10 +152,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
   const unassignedData = useMemo(() => eppData.filter(item => !isAssigned(item)), [eppData]);
   const currentTabData = activeEppTab === 'asignados' ? assignedData : unassignedData;
 
-  const availableStates = useMemo(() => {
-    const states = new Set(eppData.map(item => item.estado).filter(Boolean));
-    return Array.from(states).sort((a, b) => a.localeCompare(b, 'es'));
-  }, [eppData]);
+  const availableStates = ['Operativo', 'De baja', 'Mantenimiento'];
 
   const filteredData = currentTabData.filter(item => {
     const search = filtroTexto.trim().toLowerCase();
@@ -283,11 +295,16 @@ function EppView({ eppData, setEppData, onDetailChange }) {
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="w-full px-4 py-2 bg-dark-surface border border-dark-border text-white rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none text-sm pl-10"
+            className={`w-full px-4 py-2 bg-dark-surface border text-white rounded-lg outline-none focus:ring-1 appearance-none text-sm pl-10 transition-all ${
+              filtroEstado === 'Operativo' ? 'border-brand-green/60 focus:border-brand-green focus:ring-brand-green' :
+              filtroEstado === 'De baja' ? 'border-brand-red/60 focus:border-brand-red focus:ring-brand-red' :
+              filtroEstado === 'Mantenimiento' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
+              'border-dark-border focus:border-brand-cyan focus:ring-brand-cyan'
+            }`}
           >
             <option value="Filtrar">Filtrar</option>
             {availableStates.map(state => (
-              <option key={state} value={state}>{state}</option>
+              <option key={state} value={state} className="bg-dark-surface text-white">{state}</option>
             ))}
           </select>
           <svg className="w-4 h-4 absolute left-3 top-2.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
@@ -367,7 +384,12 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                           ))}
                         </select>
                       ) : (
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${item.estado === 'Operativo' ? 'bg-brand-red/10 border-brand-red/20 text-brand-red' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          item.estado === 'Operativo' ? 'bg-brand-green border-brand-green/20 text-white' :
+                          item.estado === 'De baja' ? 'bg-brand-red border-brand-red/20 text-white' :
+                          item.estado === 'Mantenimiento' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                          'bg-dark-bg3 border-dark-border text-text-muted'
+                        }`}>
                           {item.estado}
                         </span>
                       )}

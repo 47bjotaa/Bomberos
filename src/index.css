@@ -87,3 +87,7 @@ body::before {
     color: var(--color-text-main) !important;
   }
 }
+
+html {
+  font-size: 115%;
+}

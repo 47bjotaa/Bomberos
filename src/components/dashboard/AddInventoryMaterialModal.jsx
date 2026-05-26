@@ -283,8 +283,8 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
                     >
                       <option value="Operativo">Operativo</option>
-                      <option value="En Reparacion">En Reparacion</option>
-                      <option value="Fuera de Servicio">Fuera de Servicio</option>
+                      <option value="De baja">De baja</option>
+                      <option value="Mantenimiento">Mantenimiento</option>
                     </select>
                   </label>
 

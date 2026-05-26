@@ -29,6 +29,21 @@ const getChileDateTime = () => {
   }).format(date).replace(' ', 'T');
 };
 
+const normalizeEstado = (estadoRaw) => {
+  if (!estadoRaw) return 'Operativo';
+  const lower = estadoRaw.toLowerCase().trim();
+  if (lower.includes('operativo') && !lower.includes('no')) {
+    return 'Operativo';
+  }
+  if (lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
+    return 'De baja';
+  }
+  if (lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
+    return 'Mantenimiento';
+  }
+  return 'Operativo';
+};
+
 const getDateInputValue = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -206,7 +221,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   const openEditModal = () => {
     setEditForm({
       talla: detail?.talla || '',
-      estadoEpp: detail?.estadoEpp || detail?.estadoInventario || 'Operativo',
+      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Operativo'),
       fechaVencimiento: getDateInputValue(detail?.fechaVencimiento),
     });
     setEditError('');
@@ -306,7 +321,11 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         ]);
 
         if (!ignore) {
-          setDetail(eppData);
+          const normalizedEppData = {
+            ...eppData,
+            estadoEpp: normalizeEstado(eppData.estadoEpp || eppData.estadoInventario),
+          };
+          setDetail(normalizedEppData);
           setHistory({
             observaciones: Array.isArray(generalData?.observaciones) ? generalData.observaciones : [],
             mantenciones: Array.isArray(generalData?.mantenciones) ? generalData.mantenciones : [],
@@ -727,6 +746,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         ...current,
         ...(updatedDetail || {}),
         ...payload,
+        estadoEpp: normalizeEstado(payload.estadoEpp),
       }));
       setShowEditModal(false);
     } catch (saveError) {
@@ -868,7 +888,12 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <h2 className="rajdhani mt-1 text-3xl font-bold text-white">{detail.nombreMaterial || 'EPP sin nombre'}</h2>
                     <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripcion registrada.'}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${detail.estadoEpp === 'Operativo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-brand-red/20 bg-brand-red/10 text-brand-red'}`}>
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Operativo' ? 'bg-brand-green border-brand-green/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'De baja' ? 'bg-brand-red border-brand-red/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mantenimiento' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        'bg-dark-bg3 border-dark-border text-text-muted'
+                      }`}>
                         {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
                       </span>
                       {detail.nombreTipoProducto && (
@@ -895,7 +920,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                   </div>
                   <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Inventario</p>
-                    <p className="mt-1 text-lg font-bold text-white">{detail.estadoInventario || '-'}</p>
+                    <p className="mt-1 text-lg font-bold text-white">{normalizeEstado(detail.estadoInventario || detail.estadoEpp) || '-'}</p>
                   </div>
                 </div>
               </div>
@@ -1034,8 +1059,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                 disabled={editSaving}
               >
                 <option value="Operativo">Operativo</option>
-                <option value="En reparacion">En reparacion</option>
-                <option value="No operativo">No operativo</option>
+                <option value="De baja">De baja</option>
+                <option value="Mantenimiento">Mantenimiento</option>
               </select>
             </label>
             <label className="block">
