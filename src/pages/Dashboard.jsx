@@ -89,6 +89,10 @@ function Dashboard({ setView }) {
   const [bomberoProfile, setBomberoProfile] = useState(null);
   const [loadingBomberoProfile, setLoadingBomberoProfile] = useState(false);
   const [bomberoProfileError, setBomberoProfileError] = useState('');
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [contactProfileData, setContactProfileData] = useState({ email: '', telefono: '', genero: '' });
+  const [savingContactProfile, setSavingContactProfile] = useState(false);
+  const [contactProfileError, setContactProfileError] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
@@ -96,6 +100,8 @@ function Dashboard({ setView }) {
   const [bomberosPersonal, setBomberosPersonal] = useState([]);
   const [loadingBomberosPersonal, setLoadingBomberosPersonal] = useState(false);
   const [bomberosPersonalError, setBomberosPersonalError] = useState('');
+  const [inactivatingUsuarioId, setInactivatingUsuarioId] = useState(null);
+  const [personalActionError, setPersonalActionError] = useState('');
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1030,6 +1036,7 @@ function Dashboard({ setView }) {
   const fetchBomberosPersonal = async () => {
     setLoadingBomberosPersonal(true);
     setBomberosPersonalError('');
+    setPersonalActionError('');
 
     try {
       const data = await apiFetch('/api/bomberos');
@@ -1039,6 +1046,83 @@ function Dashboard({ setView }) {
       setBomberosPersonal([]);
     } finally {
       setLoadingBomberosPersonal(false);
+    }
+  };
+
+  const isBomberoActivo = (bombero) => String(bombero.estado).toLowerCase() === 'activo';
+
+  const handleInactivateUsuario = async (bombero) => {
+    if (!bombero?.idUsuario || inactivatingUsuarioId) {
+      if (!bombero?.idUsuario) setPersonalActionError('No se pudo identificar el usuario que deseas dar de baja.');
+      return;
+    }
+
+    if (!window.confirm(`Dar de baja a ${bombero.nombre}? El usuario quedara inactivo.`)) return;
+
+    setInactivatingUsuarioId(bombero.idUsuario);
+    setPersonalActionError('');
+
+    try {
+      await apiFetch(`/api/Usuarios/${bombero.idUsuario}/inactivar`, {
+        method: 'PATCH',
+      });
+      setBomberosPersonal(current => current.map(item => (
+        String(item.idUsuario) === String(bombero.idUsuario)
+          ? { ...item, estado: 'Inactivo' }
+          : item
+      )));
+    } catch (error) {
+      setPersonalActionError(error.message || 'No se pudo dar de baja al usuario.');
+    } finally {
+      setInactivatingUsuarioId(null);
+    }
+  };
+
+  const openEditContactModal = () => {
+    setContactProfileData({
+      email: bomberoProfile?.email || '',
+      telefono: bomberoProfile?.telefono || '',
+      genero: bomberoProfile?.genero || '',
+    });
+    setContactProfileError('');
+    setShowEditContactModal(true);
+  };
+
+  const closeEditContactModal = () => {
+    if (savingContactProfile) return;
+    setShowEditContactModal(false);
+    setContactProfileError('');
+  };
+
+  const handleUpdateContactProfile = async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      email: contactProfileData.email.trim(),
+      telefono: contactProfileData.telefono.trim(),
+      genero: contactProfileData.genero,
+    };
+
+    if (!payload.email || !payload.telefono || !payload.genero) {
+      setContactProfileError('Completa email, telefono y genero.');
+      return;
+    }
+
+    setSavingContactProfile(true);
+    setContactProfileError('');
+
+    try {
+      await apiFetch('/api/Usuarios/perfil/contacto', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      setBomberoProfile(current => ({ ...current, ...payload }));
+      localStorage.setItem('user', JSON.stringify({ ...getSessionUser(), email: payload.email }));
+      setShowEditContactModal(false);
+    } catch (error) {
+      setContactProfileError(error.message || 'No se pudieron actualizar los datos de contacto.');
+    } finally {
+      setSavingContactProfile(false);
     }
   };
 
@@ -1551,6 +1635,72 @@ function Dashboard({ setView }) {
     : isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
   const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
   const palette = getThemePalette(theme);
+  const bomberosActivos = bomberosPersonal.filter(isBomberoActivo);
+  const bomberosInactivos = bomberosPersonal.filter(bombero => !isBomberoActivo(bombero));
+  const renderPersonalTable = (bomberos, canInactivate) => (
+    <div className="overflow-x-auto overflow-y-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+      <table className="w-full text-left text-sm">
+        <thead className="border-b" style={{ borderColor: palette.border, background: palette.bg2, color: palette.muted }}>
+          <tr>
+            <th className="px-5 py-3 font-semibold">Nombre del Bombero</th>
+            <th className="px-5 py-3 font-semibold">RUT</th>
+            <th className="px-5 py-3 font-semibold">Cargo</th>
+            <th className="px-5 py-3 font-semibold">Estado</th>
+            <th className="px-5 py-3 text-right font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bomberos.length > 0 ? bomberos.map(bombero => (
+            <tr key={bombero.id} className="border-b last:border-b-0" style={{ borderColor: palette.border }}>
+              <td className="px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-brand-cyan/30 bg-brand-cyan/10 text-sm font-bold text-brand-cyan">
+                    {getBomberoInitials(bombero.nombre)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold" style={{ color: palette.text }}>{bombero.nombre}</p>
+                    <p className="mt-1 truncate text-xs" style={{ color: palette.muted }}>{bombero.email || 'Sin email registrado'}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-5 py-4 font-mono text-xs" style={{ color: palette.muted }}>{bombero.rut || '-'}</td>
+              <td className="px-5 py-4">
+                <span className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
+                  {bombero.cargo}
+                </span>
+              </td>
+              <td className="px-5 py-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: canInactivate ? '#22C55E' : palette.muted }}>
+                  <span className={`h-2 w-2 rounded-full ${canInactivate ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+                  {bombero.estado}
+                </span>
+              </td>
+              <td className="px-5 py-4 text-right">
+                {canInactivate ? (
+                  <button
+                    type="button"
+                    onClick={() => handleInactivateUsuario(bombero)}
+                    disabled={String(inactivatingUsuarioId) === String(bombero.idUsuario)}
+                    className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {String(inactivatingUsuarioId) === String(bombero.idUsuario) ? 'Procesando...' : 'Dar Baja'}
+                  </button>
+                ) : (
+                  <span className="text-xs" style={{ color: palette.muted }}>Sin acciones</span>
+                )}
+              </td>
+            </tr>
+          )) : (
+            <tr>
+              <td colSpan="5" className="px-5 py-10 text-center" style={{ color: palette.muted }}>
+                No hay bomberos {canInactivate ? 'activos' : 'inactivos'}.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
   const inventoryViews = [
     { id: 'ubicaciones', label: 'Ubicaciones Principales' },
     { id: 'arbol', label: 'Arbol de Ubicaciones' },
@@ -3762,88 +3912,40 @@ function Dashboard({ setView }) {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto overflow-y-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
-                  <table className="w-full text-left text-sm">
-                    <thead className="border-b" style={{ borderColor: palette.border, background: palette.bg2, color: palette.muted }}>
-                      <tr>
-                        <th className="px-5 py-3 font-semibold">Nombre del Bombero</th>
-                        <th className="px-5 py-3 font-semibold">RUT</th>
-                        <th className="px-5 py-3 font-semibold">Cargo</th>
-                        <th className="px-5 py-3 font-semibold">Estado</th>
-                        <th className="px-5 py-3 text-right font-semibold">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loadingBomberosPersonal ? (
-                        <tr>
-                          <td colSpan="5" className="px-5 py-16 text-center" style={{ color: palette.muted }}>Cargando personal...</td>
-                        </tr>
-                      ) : bomberosPersonalError ? (
-                        <tr>
-                          <td colSpan="5" className="px-5 py-12">
-                            <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
-                              <p className="font-semibold text-brand-red">{bomberosPersonalError}</p>
-                              <button
-                                type="button"
-                                onClick={fetchBomberosPersonal}
-                                className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20"
-                              >
-                                Reintentar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : bomberosPersonal.length > 0 ? (
-                        bomberosPersonal.map((bombero) => {
-                          const isActive = String(bombero.estado).toLowerCase() === 'activo';
-                          return (
-                            <tr key={bombero.id} className="border-b last:border-b-0" style={{ borderColor: palette.border }}>
-                              <td className="px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-brand-cyan/30 bg-brand-cyan/10 text-sm font-bold text-brand-cyan">
-                                    {getBomberoInitials(bombero.nombre)}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="truncate font-semibold" style={{ color: palette.text }}>{bombero.nombre}</p>
-                                    <p className="mt-1 truncate text-xs" style={{ color: palette.muted }}>{bombero.email || 'Sin email registrado'}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-5 py-4 font-mono text-xs" style={{ color: palette.muted }}>{bombero.rut || '-'}</td>
-                              <td className="px-5 py-4">
-                                <span className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-                                  {bombero.cargo}
-                                </span>
-                              </td>
-                              <td className="px-5 py-4">
-                                <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: isActive ? '#22C55E' : palette.muted }}>
-                                  <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-500'}`}></span>
-                                  {bombero.estado}
-                                </span>
-                              </td>
-                              <td className="px-5 py-4">
-                                <div className="flex justify-end gap-2">
-                                  <button type="button" className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan" style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}>
-                                    Editar
-                                  </button>
-                                  <button type="button" className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20">
-                                    Eliminar
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan="5" className="px-5 py-16 text-center" style={{ color: palette.muted }}>
-                            No hay bomberos registrados.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                {loadingBomberosPersonal ? (
+                  <div className="rounded-xl border px-5 py-16 text-center" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
+                    Cargando personal...
+                  </div>
+                ) : bomberosPersonalError ? (
+                  <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
+                    <p className="font-semibold text-brand-red">{bomberosPersonalError}</p>
+                    <button type="button" onClick={fetchBomberosPersonal} className="mt-4 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-red/20">
+                      Reintentar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-7">
+                    {personalActionError && (
+                      <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                        {personalActionError}
+                      </p>
+                    )}
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Bomberos activos</h4>
+                        <span className="rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-semibold text-brand-green">{bomberosActivos.length}</span>
+                      </div>
+                      {renderPersonalTable(bomberosActivos, true)}
+                    </section>
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Bomberos inactivos</h4>
+                        <span className="rounded-full border border-dark-border bg-dark-bg3 px-3 py-1 text-xs font-semibold text-text-muted">{bomberosInactivos.length}</span>
+                      </div>
+                      {renderPersonalTable(bomberosInactivos, false)}
+                    </section>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3885,9 +3987,18 @@ function Dashboard({ setView }) {
                           <h3 className="rajdhani text-3xl font-bold text-white">{bomberoProfile?.nombre || 'Sin nombre registrado'}</h3>
                           <p className="mt-1 text-sm text-brand-cyan">{bomberoProfile?.cargo || 'Sin cargo registrado'}</p>
                         </div>
-                        <span className={`ml-auto rounded-full border px-3 py-1 text-xs font-semibold ${bomberoProfile?.estadoUsuario === 'Activo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
-                          {bomberoProfile?.estadoUsuario || 'Sin estado'}
-                        </span>
+                        <div className="ml-auto flex flex-wrap items-center gap-3">
+                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${bomberoProfile?.estadoUsuario === 'Activo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
+                            {bomberoProfile?.estadoUsuario || 'Sin estado'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={openEditContactModal}
+                            className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15"
+                          >
+                            Editar contacto
+                          </button>
+                        </div>
                       </div>
                     </section>
 
@@ -3920,6 +4031,75 @@ function Dashboard({ setView }) {
             </div>
           )}
         </div>
+
+        {showEditContactModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <form onSubmit={handleUpdateContactProfile} className="w-full max-w-lg overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de contacto</h3>
+                  <p className="mt-1 text-xs text-text-muted">Actualiza tu informacion personal visible.</p>
+                </div>
+                <button type="button" onClick={closeEditContactModal} disabled={savingContactProfile} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Email</span>
+                  <input
+                    autoFocus
+                    type="email"
+                    value={contactProfileData.email}
+                    onChange={(event) => setContactProfileData(current => ({ ...current, email: event.target.value }))}
+                    disabled={savingContactProfile}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="bombero@correo.cl"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
+                  <input
+                    type="tel"
+                    value={contactProfileData.telefono}
+                    onChange={(event) => setContactProfileData(current => ({ ...current, telefono: event.target.value }))}
+                    disabled={savingContactProfile}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="+56912345678"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Genero</span>
+                  <select
+                    value={contactProfileData.genero}
+                    onChange={(event) => setContactProfileData(current => ({ ...current, genero: event.target.value }))}
+                    disabled={savingContactProfile}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                  >
+                    <option value="">Selecciona genero</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                    <option value="Otro">Otro</option>
+                    <option value="Prefiero no informar">Prefiero no informar</option>
+                  </select>
+                </label>
+                {contactProfileError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {contactProfileError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeEditContactModal} disabled={savingContactProfile} className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={savingContactProfile} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {savingContactProfile ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {showCreateCampanaModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
