@@ -2546,7 +2546,6 @@ function Dashboard({ setView }) {
                   </h2>
                 )}
                 {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
-                {activeTab === 'bodegas' && <span className="text-xs text-text-muted mt-0.5">Controla inventario, movimientos y stock de materiales</span>}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
                 {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
                 {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
