@@ -2536,7 +2536,7 @@ function Dashboard({ setView }) {
                         key={view.id}
                         type="button"
                         onClick={() => selectInventoryView(view.id)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-dark-bg3 hover:text-white'}`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
                       >
                         {view.label}
                       </button>
