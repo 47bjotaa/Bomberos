@@ -98,7 +98,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
         ) : (
           <div>
             <div
-              className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 border-b px-4 pb-4 pt-4 shadow-sm"
+              className="sticky -top-4 z-10 -mx-4 -mt-4 mb-4 border-b px-4 pb-4 pt-4 shadow-sm"
               style={{ background: palette.surface, borderColor: palette.border }}
             >
               <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-red">

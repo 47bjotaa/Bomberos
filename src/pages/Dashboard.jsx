@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import BodegaCard from '../components/dashboard/BodegaCard';
 import LocationItemsView from '../components/dashboard/LocationItemsView';
@@ -24,6 +24,7 @@ const TIPOS_PRODUCTO = [
   { id: 4, nombre: 'Acceso y ventilacion' },
   { id: 5, nombre: 'Material especifico' },
 ];
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 const DEFAULT_PAYMENT_CONFIG = {
   apiKey: '',
@@ -118,6 +119,12 @@ function Dashboard({ setView }) {
   const [confirmCatAction, setConfirmCatAction] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState('Todos los tipos');
   const [filtroNombre, setFiltroNombre] = useState('');
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [catalogPageSize, setCatalogPageSize] = useState(20);
+  const [catalogTotal, setCatalogTotal] = useState(0);
+  const [catalogTotalPages, setCatalogTotalPages] = useState(1);
+  const [catalogServerPaginated, setCatalogServerPaginated] = useState(false);
+  const catalogRequestId = useRef(0);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [savingMaterial, setSavingMaterial] = useState(false);
   const [addMaterialError, setAddMaterialError] = useState('');
@@ -234,6 +241,12 @@ function Dashboard({ setView }) {
   const [registrosLibroGuardia, setRegistrosLibroGuardia] = useState([]);
   const [loadingRegistrosLibroGuardia, setLoadingRegistrosLibroGuardia] = useState(false);
   const [registrosLibroGuardiaError, setRegistrosLibroGuardiaError] = useState('');
+  const [registrosPage, setRegistrosPage] = useState(1);
+  const [registrosPageSize, setRegistrosPageSize] = useState(20);
+  const [registrosTotal, setRegistrosTotal] = useState(0);
+  const [registrosTotalPages, setRegistrosTotalPages] = useState(1);
+  const [registrosServerPaginated, setRegistrosServerPaginated] = useState(false);
+  const registrosRequestId = useRef(0);
   const [showCreateRegistroModal, setShowCreateRegistroModal] = useState(false);
   const [savingRegistroLibroGuardia, setSavingRegistroLibroGuardia] = useState(false);
   const [createRegistroError, setCreateRegistroError] = useState('');
@@ -315,9 +328,16 @@ function Dashboard({ setView }) {
 
   useEffect(() => {
     if (activeTab === 'bodegas' && inventoryView === 'catalogo') {
-      fetchCatalogo();
+      const timeoutId = window.setTimeout(
+        () => fetchCatalogo(catalogPage, catalogPageSize),
+        filtroNombre.trim() ? 250 : 0,
+      );
+
+      return () => window.clearTimeout(timeoutId);
     }
-  }, [activeTab, inventoryView]);
+
+    return undefined;
+  }, [activeTab, inventoryView, catalogPage, catalogPageSize, filtroNombre, filtroTipo]);
 
   useEffect(() => {
     if (activeTab === 'donaciones') {
@@ -336,6 +356,12 @@ function Dashboard({ setView }) {
       fetchLibrosGuardia();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedLibroGuardia) {
+      fetchRegistrosLibroGuardia(selectedLibroGuardia, registrosPage, registrosPageSize);
+    }
+  }, [registrosPage, registrosPageSize]);
 
   useEffect(() => {
     if (activeTab !== 'donaciones') return undefined;
@@ -392,6 +418,29 @@ function Dashboard({ setView }) {
     }
 
     return [];
+  };
+
+  const getPaginationPayload = (payload) => {
+    if (!payload || Array.isArray(payload)) return null;
+
+    const source = payload.pagination
+      || payload.paginacion
+      || payload.meta
+      || payload.data?.pagination
+      || payload.data?.paginacion
+      || payload.data?.meta
+      || (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data) ? payload.data : null)
+      || (payload.result && typeof payload.result === 'object' && !Array.isArray(payload.result) ? payload.result : null)
+      || payload;
+    const total = source.totalItems ?? source.totalRegistros ?? source.totalCount ?? source.total;
+    const totalPages = source.totalPages ?? source.totalPaginas;
+
+    if (total === undefined && totalPages === undefined) return null;
+
+    return {
+      total: total === undefined ? null : Number(total),
+      totalPages: totalPages === undefined ? null : Number(totalPages),
+    };
   };
 
   const getArrayByKey = (payload, key) => (
@@ -980,10 +1029,24 @@ function Dashboard({ setView }) {
   };
 
 
-  const fetchCatalogo = async () => {
+  const fetchCatalogo = async (page = catalogPage, pageSize = catalogPageSize) => {
+    const requestId = ++catalogRequestId.current;
     setLoading(true);
     try {
-      const data = await apiFetch('/api/materiales/creados');
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+
+      if (filtroNombre.trim()) {
+        query.set('search', filtroNombre.trim());
+      }
+
+      if (filtroTipo !== 'Todos los tipos') {
+        query.set('tipo', filtroTipo);
+      }
+
+      const data = await apiFetch(`/api/materiales/creados?${query.toString()}`);
       const mappedData = getArrayPayload(data, ['materiales', 'items']).map(m => ({
         id: m.idMaterial || m.id,
         idMaterial: m.idMaterial || m.id,
@@ -997,12 +1060,26 @@ function Dashboard({ setView }) {
         serializado: toBoolean(m.serializado) || toBoolean(m.esSerializado) || toBoolean(m.esSerializacion),
         mantencion: toBoolean(m.requiereMantencion) || toBoolean(m.mantencion)
       })).filter(material => material.id);
+      const pagination = getPaginationPayload(data);
+
+      if (requestId !== catalogRequestId.current) return;
+
       setCatalogo(mappedData);
+      setCatalogServerPaginated(Boolean(pagination));
+      setCatalogTotal(pagination?.total ?? mappedData.length);
+      setCatalogTotalPages(Math.max(1, pagination?.totalPages ?? Math.ceil((pagination?.total ?? mappedData.length) / pageSize)));
     } catch (error) {
+      if (requestId !== catalogRequestId.current) return;
+
       console.error("Error al cargar catalogo:", error);
       setCatalogo([]);
+      setCatalogTotal(0);
+      setCatalogTotalPages(1);
+      setCatalogServerPaginated(false);
     } finally {
-      setLoading(false);
+      if (requestId === catalogRequestId.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -1238,32 +1315,57 @@ function Dashboard({ setView }) {
     }
   };
 
-  const fetchRegistrosLibroGuardia = async (libro = selectedLibroGuardia) => {
+  const fetchRegistrosLibroGuardia = async (libro = selectedLibroGuardia, page = registrosPage, pageSize = registrosPageSize) => {
     if (!libro?.id) return;
 
+    const requestId = ++registrosRequestId.current;
     setLoadingRegistrosLibroGuardia(true);
     setRegistrosLibroGuardiaError('');
 
     try {
-      const data = await apiFetch(`/api/librosguardia/${libro.id}/registros`);
-      setRegistrosLibroGuardia(getArrayPayload(data, ['registros', 'items']).map(mapRegistroLibroGuardia));
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const data = await apiFetch(`/api/librosguardia/${libro.id}/registros?${query.toString()}`);
+      const mappedRegistros = getArrayPayload(data, ['registros', 'items']).map(mapRegistroLibroGuardia);
+      const pagination = getPaginationPayload(data);
+
+      if (requestId !== registrosRequestId.current) return;
+
+      setRegistrosLibroGuardia(mappedRegistros);
+      setRegistrosServerPaginated(Boolean(pagination));
+      setRegistrosTotal(pagination?.total ?? mappedRegistros.length);
+      setRegistrosTotalPages(Math.max(1, pagination?.totalPages ?? Math.ceil((pagination?.total ?? mappedRegistros.length) / pageSize)));
     } catch (error) {
+      if (requestId !== registrosRequestId.current) return;
+
       setRegistrosLibroGuardiaError(error.message || 'No se pudieron cargar los registros del libro.');
       setRegistrosLibroGuardia([]);
+      setRegistrosTotal(0);
+      setRegistrosTotalPages(1);
+      setRegistrosServerPaginated(false);
     } finally {
-      setLoadingRegistrosLibroGuardia(false);
+      if (requestId === registrosRequestId.current) {
+        setLoadingRegistrosLibroGuardia(false);
+      }
     }
   };
 
   const openRegistrosLibroGuardia = (libro) => {
     setSelectedLibroGuardia(libro);
+    setRegistrosPage(1);
     setRegistrosLibroGuardia([]);
     setRegistrosLibroGuardiaError('');
-    fetchRegistrosLibroGuardia(libro);
+    if (registrosPage === 1) {
+      fetchRegistrosLibroGuardia(libro, 1, registrosPageSize);
+    }
   };
 
   const closeRegistrosLibroGuardia = () => {
+    registrosRequestId.current += 1;
     setSelectedLibroGuardia(null);
+    setRegistrosPage(1);
     setRegistrosLibroGuardia([]);
     setRegistrosLibroGuardiaError('');
   };
@@ -1309,7 +1411,7 @@ function Dashboard({ setView }) {
       });
       setShowCreateRegistroModal(false);
       setNewRegistroData({ fecha: '', hora: '', detalle: '' });
-      await fetchRegistrosLibroGuardia(selectedLibroGuardia);
+      await fetchRegistrosLibroGuardia(selectedLibroGuardia, registrosPage, registrosPageSize);
       setLibrosGuardia(current => current.map(libro => (
         String(libro.id) === String(selectedLibroGuardia.id)
           ? { ...libro, cantidadRegistros: libro.cantidadRegistros + 1 }
@@ -2379,6 +2481,23 @@ function Dashboard({ setView }) {
 
   const filtroDonanteNormalizado = filtroNombreDonante.trim().toLowerCase();
   const filtroBomberoDonacionNormalizado = filtroNombreBomberoDonacion.trim().toLowerCase();
+  const catalogoFiltrado = catalogo
+    .filter(item => filtroTipo === 'Todos los tipos' || item.tipo === filtroTipo)
+    .filter(item => (item.nombre || '').toLowerCase().includes(filtroNombre.trim().toLowerCase()));
+  const catalogRows = catalogServerPaginated
+    ? catalogo
+    : catalogoFiltrado.slice((catalogPage - 1) * catalogPageSize, catalogPage * catalogPageSize);
+  const catalogItemCount = catalogServerPaginated ? catalogTotal : catalogoFiltrado.length;
+  const catalogPageCount = catalogServerPaginated
+    ? catalogTotalPages
+    : Math.max(1, Math.ceil(catalogItemCount / catalogPageSize));
+  const registrosRows = registrosServerPaginated
+    ? registrosLibroGuardia
+    : registrosLibroGuardia.slice((registrosPage - 1) * registrosPageSize, registrosPage * registrosPageSize);
+  const registrosItemCount = registrosServerPaginated ? registrosTotal : registrosLibroGuardia.length;
+  const registrosPageCount = registrosServerPaginated
+    ? registrosTotalPages
+    : Math.max(1, Math.ceil(registrosItemCount / registrosPageSize));
   const donacionesCampanaFiltradas = donacionesCampana.filter((donacion) => {
     const nombreDonante = String(donacion.nombreDonante || '').toLowerCase();
     const nombreBombero = String(donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '').toLowerCase();
@@ -3182,17 +3301,23 @@ function Dashboard({ setView }) {
                     placeholder="Buscar por nombre..." 
                     className="w-full pl-10 pr-4 py-2 bg-dark-bg3 border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted" 
                     value={filtroNombre}
-                    onChange={(e) => setFiltroNombre(e.target.value)}
+                    onChange={(e) => {
+                      setFiltroNombre(e.target.value);
+                      setCatalogPage(1);
+                    }}
                   />
                 </div>
                 <div className="w-64 relative">
                   <select 
                     value={filtroTipo}
-                    onChange={(e) => setFiltroTipo(e.target.value)}
+                    onChange={(e) => {
+                      setFiltroTipo(e.target.value);
+                      setCatalogPage(1);
+                    }}
                     className="w-full px-4 py-2 bg-dark-bg3 border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none text-sm"
                   >
                     <option value="Todos los tipos">Todos los tipos</option>
-                    {Array.from(new Set(catalogo.map(item => item.tipo))).map(tipo => (
+                    {Array.from(new Set([...TIPOS_PRODUCTO.map(tipo => tipo.nombre), ...catalogo.map(item => item.tipo)])).map(tipo => (
                       <option key={tipo} value={tipo}>{tipo}</option>
                     ))}
                   </select>
@@ -3223,10 +3348,8 @@ function Dashboard({ setView }) {
                           </div>
                         </td>
                       </tr>
-                    ) : catalogo.length > 0 ? (
-                      (filtroTipo === 'Todos los tipos' ? catalogo : catalogo.filter(item => item.tipo === filtroTipo))
-                        .filter(item => (item.nombre || '').toLowerCase().includes(filtroNombre.toLowerCase()))
-                        .map(item => (
+                    ) : catalogRows.length > 0 ? (
+                      catalogRows.map(item => (
                           <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
                             <td className="px-6 py-4 font-medium text-white">{item.nombre}</td>
                             <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
@@ -3265,7 +3388,11 @@ function Dashboard({ setView }) {
                         <td colSpan="7" className="px-6 py-20 text-center">
                           <div className="flex flex-col items-center justify-center border-2 border-dashed border-dark-border rounded-xl p-8">
                             <Icons.Traceability size={48} className="text-text-muted mb-4 opacity-20" />
-                            <p className="text-text-muted rajdhani text-lg">No hay materiales registrados en el catálogo.</p>
+                            <p className="text-text-muted rajdhani text-lg">
+                              {filtroNombre.trim() || filtroTipo !== 'Todos los tipos'
+                                ? 'No hay materiales que coincidan con los filtros.'
+                                : 'No hay materiales registrados en el catálogo.'}
+                            </p>
                             <button onClick={() => setShowAddMaterialModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar el primer material</button>
                           </div>
                         </td>
@@ -3274,6 +3401,43 @@ function Dashboard({ setView }) {
                   </tbody>
                 </table>
               </div>
+              {!loading && catalogItemCount > 0 && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm text-text-muted">
+                  <div className="flex items-center gap-2">
+                    <span>Mostrar</span>
+                    <select
+                      value={catalogPageSize}
+                      onChange={(event) => {
+                        setCatalogPageSize(Number(event.target.value));
+                        setCatalogPage(1);
+                      }}
+                      className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2 text-text-main outline-none focus:border-brand-cyan"
+                    >
+                      {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+                    </select>
+                    <span>por pagina</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span>{catalogItemCount} registros - Pagina {catalogPage} de {catalogPageCount}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCatalogPage(current => Math.max(1, current - 1))}
+                      disabled={catalogPage <= 1}
+                      className="rounded-lg border border-dark-border px-3 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCatalogPage(current => Math.min(catalogPageCount, current + 1))}
+                      disabled={catalogPage >= catalogPageCount}
+                      className="rounded-lg border border-dark-border px-3 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3741,7 +3905,7 @@ function Dashboard({ setView }) {
                         </div>
                       </div>
                       <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1 text-xs font-semibold text-brand-cyan">
-                        {registrosLibroGuardia.length} registros
+                        {registrosItemCount} registros
                       </span>
                     </div>
                     {loadingRegistrosLibroGuardia ? (
@@ -3755,29 +3919,69 @@ function Dashboard({ setView }) {
                           Reintentar
                         </button>
                       </div>
-                    ) : registrosLibroGuardia.length > 0 ? (
-                      <div className="overflow-x-auto rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
-                        <table className="w-full text-left text-sm">
-                          <thead style={{ background: palette.bg2, color: palette.muted }}>
-                            <tr>
-                              <th className="px-5 py-4 font-semibold">Fecha</th>
-                              <th className="px-5 py-4 font-semibold">Hora</th>
-                              <th className="px-5 py-4 font-semibold">Detalle</th>
-                              <th className="px-5 py-4 font-semibold">Usuario</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {registrosLibroGuardia.map(registro => (
-                              <tr key={registro.id || `${registro.fecha}-${registro.hora}-${registro.detalle}`} className="border-t border-dark-border">
-                                <td className="whitespace-nowrap px-5 py-4 font-semibold text-brand-cyan">{formatDateChile(registro.fecha)}</td>
-                                <td className="whitespace-nowrap px-5 py-4" style={{ color: palette.muted }}>{registro.hora || '-'}</td>
-                                <td className="px-5 py-4" style={{ color: palette.text }}>{registro.detalle || 'Sin detalle'}</td>
-                                <td className="px-5 py-4" style={{ color: palette.muted }}>{registro.emailUsuario || '-'}</td>
+                    ) : registrosRows.length > 0 ? (
+                      <>
+                        <div className="overflow-x-auto rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
+                          <table className="w-full text-left text-sm">
+                            <thead style={{ background: palette.bg2, color: palette.muted }}>
+                              <tr>
+                                <th className="px-5 py-4 font-semibold">Fecha</th>
+                                <th className="px-5 py-4 font-semibold">Hora</th>
+                                <th className="px-5 py-4 font-semibold">Detalle</th>
+                                <th className="px-5 py-4 font-semibold">Usuario</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {registrosRows.map(registro => (
+                                <tr key={registro.id || `${registro.fecha}-${registro.hora}-${registro.detalle}`} className="border-t border-dark-border">
+                                  <td className="whitespace-nowrap px-5 py-4 font-semibold text-brand-cyan">{formatDateChile(registro.fecha)}</td>
+                                  <td className="whitespace-nowrap px-5 py-4" style={{ color: palette.muted }}>{registro.hora || '-'}</td>
+                                  <td className="px-5 py-4" style={{ color: palette.text }}>{registro.detalle || 'Sin detalle'}</td>
+                                  <td className="px-5 py-4" style={{ color: palette.muted }}>{registro.emailUsuario || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm" style={{ color: palette.muted }}>
+                          <div className="flex items-center gap-2">
+                            <span>Mostrar</span>
+                            <select
+                              value={registrosPageSize}
+                              onChange={(event) => {
+                                setRegistrosPageSize(Number(event.target.value));
+                                setRegistrosPage(1);
+                              }}
+                              className="rounded-lg border px-3 py-2 outline-none focus:border-brand-cyan"
+                              style={{ borderColor: palette.border, background: palette.bg3, color: palette.text }}
+                            >
+                              {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+                            </select>
+                            <span>por pagina</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span>{registrosItemCount} registros - Pagina {registrosPage} de {registrosPageCount}</span>
+                            <button
+                              type="button"
+                              onClick={() => setRegistrosPage(current => Math.max(1, current - 1))}
+                              disabled={registrosPage <= 1}
+                              className="rounded-lg border px-3 py-2 transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderColor: palette.border, color: palette.text }}
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setRegistrosPage(current => Math.min(registrosPageCount, current + 1))}
+                              disabled={registrosPage >= registrosPageCount}
+                              className="rounded-lg border px-3 py-2 transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderColor: palette.border, color: palette.text }}
+                            >
+                              Siguiente
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     ) : (
                       <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
                         <p className="text-sm font-semibold" style={{ color: palette.text }}>Este libro aun no tiene registros.</p>
