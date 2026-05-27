@@ -54,6 +54,31 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.75) rgba(15, 23, 41, 0.95);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 41, 0.95);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.95), rgba(232, 55, 42, 0.8));
+  border: 2px solid rgba(15, 23, 41, 0.95);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(125, 211, 252, 1), rgba(255, 107, 53, 0.95));
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--color-form-placeholder) !important;

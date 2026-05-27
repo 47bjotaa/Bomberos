@@ -198,7 +198,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                           onSelectMaterial?.(item);
                         }
                       }}
-                      className="group flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:border-brand-cyan/30"
+                      className="group flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:shadow-[0_0_20px_rgba(56,189,248,0.12),inset_3px_0_0_rgba(56,189,248,0.65)]"
                       style={{ background: palette.cardSoft, borderColor: palette.border }}
                     >
                     <div

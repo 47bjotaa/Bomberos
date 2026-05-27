@@ -164,6 +164,9 @@ function Dashboard({ setView }) {
   const [tiposArbolUbicacion, setTiposArbolUbicacion] = useState([]);
   const [loadingTiposArbol, setLoadingTiposArbol] = useState(false);
   const [tiposArbolError, setTiposArbolError] = useState('');
+  const [tiposArbolSearch, setTiposArbolSearch] = useState('');
+  const [tiposArbolPage, setTiposArbolPage] = useState(1);
+  const [tiposArbolPageSize, setTiposArbolPageSize] = useState(10);
   const [deletingTipoUbicacionId, setDeletingTipoUbicacionId] = useState(null);
   const [deleteTipoUbicacionError, setDeleteTipoUbicacionError] = useState('');
   const [tipoUbicacionPendingDelete, setTipoUbicacionPendingDelete] = useState(null);
@@ -2505,6 +2508,17 @@ function Dashboard({ setView }) {
   const catalogPageCount = catalogServerPaginated
     ? catalogTotalPages
     : Math.max(1, Math.ceil(catalogItemCount / catalogPageSize));
+  const tiposArbolSearchNormalized = tiposArbolSearch.trim().toLowerCase();
+  const tiposArbolFiltrados = tiposArbolUbicacion.filter(tipo => (
+    !tiposArbolSearchNormalized || String(tipo.nombre || '').toLowerCase().includes(tiposArbolSearchNormalized)
+  ));
+  const tiposArbolItemCount = tiposArbolFiltrados.length;
+  const tiposArbolPageCount = Math.max(1, Math.ceil(tiposArbolItemCount / tiposArbolPageSize));
+  const safeTiposArbolPage = Math.min(tiposArbolPage, tiposArbolPageCount);
+  const tiposArbolRows = tiposArbolFiltrados.slice(
+    (safeTiposArbolPage - 1) * tiposArbolPageSize,
+    safeTiposArbolPage * tiposArbolPageSize
+  );
   const registrosRows = registrosServerPaginated
     ? registrosLibroGuardia
     : registrosLibroGuardia.slice((registrosPage - 1) * registrosPageSize, registrosPage * registrosPageSize);
@@ -3200,8 +3214,27 @@ function Dashboard({ setView }) {
                         {deleteTipoUbicacionError}
                       </div>
                     )}
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {tiposArbolUbicacion.map(tipo => {
+                    <div className="mb-5">
+                      <div className="relative">
+                        <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          value={tiposArbolSearch}
+                          onChange={(event) => {
+                            setTiposArbolSearch(event.target.value);
+                            setTiposArbolPage(1);
+                          }}
+                          placeholder="Buscar tipo de ubicacion..."
+                          className="w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                          style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
+                        />
+                      </div>
+                    </div>
+                    {tiposArbolRows.length > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {tiposArbolRows.map(tipo => {
                         const isDeletingTipo = String(deletingTipoUbicacionId) === String(tipo.id);
 
                         return (
@@ -3213,17 +3246,13 @@ function Dashboard({ setView }) {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="rajdhani text-lg font-bold" style={{ color: palette.text }}>{tipo.nombre}</p>
-                                <p className="mt-1 text-xs" style={{ color: palette.muted }}>ID tipo {tipo.id}</p>
                               </div>
                               <span
                                 className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tipo.esTipoRaiz ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}
                               >
-                                {tipo.esTipoRaiz ? 'Raiz' : 'Sububicacion'}
+                                {tipo.esTipoRaiz ? 'Ubicacion principal' : 'Sububicacion'}
                               </span>
                             </div>
-                            {tipo.idCompania && (
-                              <p className="mt-4 text-xs" style={{ color: palette.muted }}>Compania {tipo.idCompania}</p>
-                            )}
                             <div className="mt-5 flex flex-wrap gap-2">
                               <button
                                 type="button"
@@ -3246,7 +3275,50 @@ function Dashboard({ setView }) {
                             </div>
                           </div>
                         );
-                      })}
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed px-6 py-12 text-center" style={{ borderColor: palette.borderStrong }}>
+                        <p className="font-semibold" style={{ color: palette.text }}>No hay tipos que coincidan con la busqueda.</p>
+                      </div>
+                    )}
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-sm" style={{ color: palette.muted }}>
+                      <div className="flex items-center gap-2">
+                        <span>Mostrar</span>
+                        <select
+                          value={tiposArbolPageSize}
+                          onChange={(event) => {
+                            setTiposArbolPageSize(Number(event.target.value));
+                            setTiposArbolPage(1);
+                          }}
+                          className="rounded-lg border px-3 py-2 outline-none focus:border-brand-cyan"
+                          style={{ borderColor: palette.border, background: palette.bg3, color: palette.text }}
+                        >
+                          {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+                        </select>
+                        <span>por pagina</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span>{tiposArbolItemCount} registros - Pagina {safeTiposArbolPage} de {tiposArbolPageCount}</span>
+                        <button
+                          type="button"
+                          onClick={() => setTiposArbolPage(current => Math.max(1, current - 1))}
+                          disabled={safeTiposArbolPage <= 1}
+                          className="rounded-lg border px-3 py-2 transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                          style={{ borderColor: palette.border, color: palette.text }}
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTiposArbolPage(current => Math.min(tiposArbolPageCount, current + 1))}
+                          disabled={safeTiposArbolPage >= tiposArbolPageCount}
+                          className="rounded-lg border px-3 py-2 transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                          style={{ borderColor: palette.border, color: palette.text }}
+                        >
+                          Siguiente
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -3293,16 +3365,7 @@ function Dashboard({ setView }) {
                     {stockMinimos.map(stock => (
                       <div
                         key={stock.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => openStockMinimoDetail(stock)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            openStockMinimoDetail(stock);
-                          }
-                        }}
-                        className="group cursor-pointer rounded-xl border p-5 transition-all hover:border-brand-cyan/40 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
+                        className="group rounded-xl border p-5 transition-all hover:border-brand-cyan/40 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                         style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -3310,21 +3373,15 @@ function Dashboard({ setView }) {
                             <p className="rajdhani text-lg font-bold transition-colors group-hover:text-brand-cyan" style={{ color: palette.text }}>{stock.nombre}</p>
                             <p className="mt-1 text-sm" style={{ color: palette.muted }}>{stock.nombreUbicacion}</p>
                           </div>
-                          <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
+                          <button
+                            type="button"
+                            onClick={() => openStockMinimoDetail(stock)}
+                            className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/20"
+                          >
                             Ver detalle
-                          </span>
+                          </button>
                         </div>
-                        <div className="mt-5 flex items-end justify-between gap-3">
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
-                              ID stock {stock.id}
-                            </span>
-                            {stock.idUbicacion && (
-                              <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
-                                ID ubicacion {stock.idUbicacion}
-                              </span>
-                            )}
-                          </div>
+                        <div className="mt-5 flex justify-end">
                           <button
                             type="button"
                             onClick={(event) => openDeleteStockMinimoModal(event, stock)}
@@ -3386,7 +3443,10 @@ function Dashboard({ setView }) {
                 </div>
               </div>
 
-              <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+              <div
+                className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
+                style={{ scrollbarGutter: 'stable' }}
+              >
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-dark-bg2 border-b border-dark-border text-text-muted font-medium rajdhani text-base">
                     <tr>
@@ -3411,7 +3471,7 @@ function Dashboard({ setView }) {
                       </tr>
                     ) : catalogRows.length > 0 ? (
                       catalogRows.map(item => (
-                          <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
+                          <tr key={item.id} className="cursor-pointer transition-all hover:bg-brand-cyan/10 hover:shadow-[inset_3px_0_0_rgba(56,189,248,0.75),0_0_18px_rgba(56,189,248,0.08)]">
                             <td className="px-6 py-4 font-medium text-text-main">{item.nombre}</td>
                             <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
                             <td className="px-6 py-4 text-text-muted">
