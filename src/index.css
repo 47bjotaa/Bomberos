@@ -46,6 +46,14 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--color-form-placeholder) !important;
