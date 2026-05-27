@@ -103,6 +103,7 @@ function Dashboard({ setView }) {
   const [bomberosPersonalError, setBomberosPersonalError] = useState('');
   const [inactivatingUsuarioId, setInactivatingUsuarioId] = useState(null);
   const [personalActionError, setPersonalActionError] = useState('');
+  const [bomberoPendingInactivation, setBomberoPendingInactivation] = useState(null);
   const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
 
   const [ubicaciones, setUbicaciones] = useState([]);
@@ -155,6 +156,7 @@ function Dashboard({ setView }) {
   const [tiposArbolError, setTiposArbolError] = useState('');
   const [deletingTipoUbicacionId, setDeletingTipoUbicacionId] = useState(null);
   const [deleteTipoUbicacionError, setDeleteTipoUbicacionError] = useState('');
+  const [tipoUbicacionPendingDelete, setTipoUbicacionPendingDelete] = useState(null);
   const [showAddTipoUbicacionModal, setShowAddTipoUbicacionModal] = useState(false);
   const [newTipoUbicacionData, setNewTipoUbicacionData] = useState({ nombre: '', esTipoRaiz: false });
   const [savingTipoUbicacion, setSavingTipoUbicacion] = useState(false);
@@ -1053,13 +1055,25 @@ function Dashboard({ setView }) {
 
   const isBomberoActivo = (bombero) => String(bombero.estado).toLowerCase() === 'activo';
 
-  const handleInactivateUsuario = async (bombero) => {
+  const openInactivateUsuarioModal = (bombero) => {
     if (!bombero?.idUsuario || inactivatingUsuarioId) {
       if (!bombero?.idUsuario) setPersonalActionError('No se pudo identificar el usuario que deseas dar de baja.');
       return;
     }
 
-    if (!window.confirm(`Dar de baja a ${bombero.nombre}? El usuario quedara inactivo.`)) return;
+    setPersonalActionError('');
+    setBomberoPendingInactivation(bombero);
+  };
+
+  const closeInactivateUsuarioModal = () => {
+    if (inactivatingUsuarioId) return;
+    setBomberoPendingInactivation(null);
+    setPersonalActionError('');
+  };
+
+  const handleInactivateUsuario = async () => {
+    const bombero = bomberoPendingInactivation;
+    if (!bombero?.idUsuario || inactivatingUsuarioId) return;
 
     setInactivatingUsuarioId(bombero.idUsuario);
     setPersonalActionError('');
@@ -1073,6 +1087,7 @@ function Dashboard({ setView }) {
           ? { ...item, estado: 'Inactivo' }
           : item
       )));
+      setBomberoPendingInactivation(null);
     } catch (error) {
       setPersonalActionError(error.message || 'No se pudo dar de baja al usuario.');
     } finally {
@@ -1681,7 +1696,7 @@ function Dashboard({ setView }) {
                 {canInactivate ? (
                   <button
                     type="button"
-                    onClick={() => handleInactivateUsuario(bombero)}
+                    onClick={() => openInactivateUsuarioModal(bombero)}
                     disabled={String(inactivatingUsuarioId) === String(bombero.idUsuario)}
                     className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -1848,11 +1863,22 @@ function Dashboard({ setView }) {
     }
   };
 
-  const handleDeleteTipoUbicacion = async (tipo) => {
+  const openDeleteTipoUbicacionModal = (tipo) => {
     if (!tipo?.id || deletingTipoUbicacionId) return;
 
-    const confirmed = window.confirm(`Eliminar el tipo de ubicacion "${tipo.nombre}"?`);
-    if (!confirmed) return;
+    setDeleteTipoUbicacionError('');
+    setTipoUbicacionPendingDelete(tipo);
+  };
+
+  const closeDeleteTipoUbicacionModal = () => {
+    if (deletingTipoUbicacionId) return;
+    setTipoUbicacionPendingDelete(null);
+    setDeleteTipoUbicacionError('');
+  };
+
+  const handleDeleteTipoUbicacion = async () => {
+    const tipo = tipoUbicacionPendingDelete;
+    if (!tipo?.id || deletingTipoUbicacionId) return;
 
     setDeletingTipoUbicacionId(tipo.id);
     setDeleteTipoUbicacionError('');
@@ -1865,6 +1891,7 @@ function Dashboard({ setView }) {
       setTiposArbolUbicacion(prev => prev.filter(item => String(item.id) !== String(tipo.id)));
       setTiposUbicacion(prev => prev.filter(item => String(item.id) !== String(tipo.id)));
       await fetchTiposArbolUbicacion();
+      setTipoUbicacionPendingDelete(null);
     } catch (error) {
       setDeleteTipoUbicacionError(error.message || 'No se pudo eliminar el tipo de ubicacion.');
     } finally {
@@ -2988,7 +3015,7 @@ function Dashboard({ setView }) {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteTipoUbicacion(tipo)}
+                                onClick={() => openDeleteTipoUbicacionModal(tipo)}
                                 disabled={isDeletingTipo || Boolean(deletingTipoUbicacionId)}
                                 className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
                                 title="Eliminar tipo de ubicacion"
@@ -4265,6 +4292,68 @@ function Dashboard({ setView }) {
           </div>
         )}
 
+        {tipoUbicacionPendingDelete && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ background: palette.overlay }}
+            onClick={closeDeleteTipoUbicacionModal}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-xl border shadow-2xl"
+              style={{ borderColor: palette.border, background: palette.surface }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar tipo de ubicacion</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Arbol de ubicaciones</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeDeleteTipoUbicacionModal}
+                  disabled={Boolean(deletingTipoUbicacionId)}
+                  className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                  aria-label="Cerrar"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
+                  Estas a punto de eliminar el tipo <span className="font-semibold" style={{ color: palette.text }}>{tipoUbicacionPendingDelete.nombre}</span>. Esta accion no se puede deshacer.
+                </p>
+                {deleteTipoUbicacionError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {deleteTipoUbicacionError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <button
+                  type="button"
+                  onClick={closeDeleteTipoUbicacionModal}
+                  disabled={Boolean(deletingTipoUbicacionId)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteTipoUbicacion}
+                  disabled={Boolean(deletingTipoUbicacionId)}
+                  className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingTipoUbicacionId ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showTipoRelationsModal && createdTipoUbicacion && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateTipoRelations} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
@@ -4971,6 +5060,68 @@ function Dashboard({ setView }) {
             onClose={() => setShowAddBomberoModal(false)}
             onAdded={fetchBomberosPersonal}
           />
+        )}
+
+        {bomberoPendingInactivation && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ background: palette.overlay }}
+            onClick={closeInactivateUsuarioModal}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-xl border shadow-2xl"
+              style={{ borderColor: palette.border, background: palette.surface }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Dar de baja bombero</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Cambio de estado de usuario</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeInactivateUsuarioModal}
+                  disabled={Boolean(inactivatingUsuarioId)}
+                  className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                  aria-label="Cerrar"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
+                  Estas a punto de dar de baja a <span className="font-semibold" style={{ color: palette.text }}>{bomberoPendingInactivation.nombre}</span>. El usuario quedara inactivo y ya no aparecera en la lista de bomberos activos.
+                </p>
+                {personalActionError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {personalActionError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <button
+                  type="button"
+                  onClick={closeInactivateUsuarioModal}
+                  disabled={Boolean(inactivatingUsuarioId)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleInactivateUsuario}
+                  disabled={Boolean(inactivatingUsuarioId)}
+                  className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {inactivatingUsuarioId ? 'Procesando...' : 'Confirmar baja'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {showInventoryMaterialModal && (

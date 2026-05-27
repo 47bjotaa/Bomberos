@@ -770,46 +770,48 @@ function VehiculosView() {
   if (view === 'list') {
     return (
       <div className="p-8 pb-20">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Parque Automotriz</h3>
-            <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
+        <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg lg:p-8">
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-dark-border pb-6">
+            <div>
+              <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehiculos</h3>
+              <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
+            </div>
+            <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
+              Agregar vehiculo
+            </button>
           </div>
-          <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
-            Agregar vehiculo
-          </button>
-        </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {loading ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-20">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
-              <p className="rajdhani text-lg text-text-muted">Cargando parque automotriz...</p>
-            </div>
-          ) : vehiculos.length > 0 ? (
-            vehiculos.map((v) => (
-              <div
-                key={v.id}
-                onClick={() => openDetail(v)}
-                className="group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dark-border bg-dark-surface pt-8 pb-4 transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
-              >
-                <div className="mb-6 flex h-20 w-20 items-center justify-center text-text-muted transition-transform group-hover:scale-110">
-                  <Icons.Truck />
-                </div>
-                <div className="w-full border-t border-dark-border bg-dark-bg/50 px-4 py-3 text-center">
-                  <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
-                  <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
-                </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {loading ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-20">
+                <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
+                <p className="rajdhani text-lg text-text-muted">Cargando vehiculos...</p>
               </div>
-            ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border py-20">
-              <Icons.Truck size={48} className="mb-4 text-text-muted opacity-20" />
-              <p className="rajdhani text-lg text-text-muted">No hay vehiculos registrados.</p>
-              <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehiculo</button>
-            </div>
-          )}
-        </div>
+            ) : vehiculos.length > 0 ? (
+              vehiculos.map((v) => (
+                <div
+                  key={v.id}
+                  onClick={() => openDetail(v)}
+                  className="group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dark-border bg-dark-bg pt-8 pb-4 transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
+                >
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center text-text-muted transition-transform group-hover:scale-110">
+                    <Icons.Truck />
+                  </div>
+                  <div className="w-full border-t border-dark-border bg-dark-bg2/60 px-4 py-3 text-center">
+                    <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
+                    <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border bg-dark-bg py-20">
+                <Icons.Truck size={48} className="mb-4 text-text-muted opacity-20" />
+                <p className="rajdhani text-lg text-text-muted">No hay vehiculos registrados.</p>
+                <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehiculo</button>
+              </div>
+            )}
+          </div>
+        </section>
 
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
