@@ -59,7 +59,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
       style={{ background: palette.surface, borderColor: palette.border, color: palette.text }}
     >
       <div
-        className="flex-shrink-0 border-b p-6"
+        className="flex-shrink-0 border-b p-4"
         style={{ background: palette.bg2, borderColor: palette.border }}
       >
         <div className="flex items-start gap-3">
@@ -67,7 +67,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
             {getIcon('package')}
           </div>
           <div>
-            <h3 className="rajdhani text-xl font-bold tracking-wide" style={{ color: palette.text }}>Materiales</h3>
+            <h3 className="rajdhani text-lg font-bold tracking-wide" style={{ color: palette.text }}>Materiales</h3>
             <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>
               {hasSelection ? `Contenido de ${locationName}` : 'Selecciona una ubicacion para cargar su inventario'}
             </p>
@@ -75,7 +75,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
+      <div className="custom-scrollbar flex-1 overflow-y-auto p-3">
         {!hasSelection ? (
           <div
             className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-8 text-center"
@@ -98,14 +98,14 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
         ) : (
           <div>
             <div
-              className="sticky -top-4 z-10 -mx-4 -mt-4 mb-4 border-b px-4 pb-4 pt-4 shadow-sm"
+              className="sticky -top-3 z-10 -mx-3 -mt-3 mb-3 border-b px-3 pb-3 pt-3 shadow-sm"
               style={{ background: palette.surface, borderColor: palette.border }}
             >
-              <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-red">
+              <h4 className="mb-2.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-red">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-red shadow-[0_0_5px_rgba(232,55,42,0.5)]"></span>
                 Materiales en {locationName}
               </h4>
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_190px]">
                 <div className="relative">
                   <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -137,7 +137,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                 </div>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item) => (
                   <div
@@ -151,11 +151,11 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                         onSelectMaterial?.(item);
                       }
                     }}
-                    className="group flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-all hover:border-brand-cyan/30"
+                    className="group flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:border-brand-cyan/30"
                     style={{ background: palette.cardSoft, borderColor: palette.border }}
                   >
                     <div
-                      className="flex h-12 w-12 items-center justify-center rounded-xl border transition-colors group-hover:border-brand-cyan/20 group-hover:text-brand-cyan"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors group-hover:border-brand-cyan/20 group-hover:text-brand-cyan"
                       style={{ background: palette.bg2, borderColor: palette.border, color: palette.muted }}
                     >
                       {getIcon(item.icon)}
@@ -213,11 +213,11 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
 
       {hasSelection && !loading && (
         <div
-          className="flex-shrink-0 border-t p-4"
+          className="flex-shrink-0 border-t p-3"
           style={{ background: palette.bg2, borderColor: palette.border }}
         >
           {addMaterialDisabledReason && (
-            <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+            <p className="mb-2.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
               {addMaterialDisabledReason}
             </p>
           )}
@@ -225,7 +225,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
             onClick={onAddMaterial}
             disabled={Boolean(addMaterialDisabledReason)}
             title={addMaterialDisabledReason || 'Añadir material'}
-            className="w-full rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 py-3 text-sm font-bold text-brand-cyan shadow-[0_0_15px_rgba(56,189,248,0.05)] transition-all hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:border-dark-border disabled:bg-dark-bg3 disabled:text-text-muted disabled:shadow-none"
+            className="w-full rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 py-2.5 text-sm font-bold text-brand-cyan shadow-[0_0_15px_rgba(56,189,248,0.05)] transition-all hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:border-dark-border disabled:bg-dark-bg3 disabled:text-text-muted disabled:shadow-none"
           >
             + Añadir material
           </button>

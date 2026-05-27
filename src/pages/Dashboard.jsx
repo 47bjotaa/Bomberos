@@ -15,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
 import InicioView from '../components/dashboard/InicioView';
+import ReportsView from '../components/dashboard/ReportsView';
 
 const GENERAL_INVENTORY_ID = 'general-inventory';
 const TIPOS_PRODUCTO = [
@@ -71,6 +72,7 @@ const getInitialDashboardTab = (pathname) => {
   if (pathname.startsWith('/dashboard/epp')) return 'epp';
   if (pathname.startsWith('/dashboard/donaciones')) return 'donaciones';
   if (pathname.startsWith('/dashboard/personal')) return 'personal';
+  if (pathname.startsWith('/dashboard/reportes')) return 'reportes';
   if (pathname.startsWith('/dashboard/libro-guardia')) return 'libro-guardia';
   return 'inicio';
 };
@@ -1002,13 +1004,19 @@ function Dashboard({ setView }) {
       closeRegistrosLibroGuardia();
     }
 
-    const nextPath = tab === 'mis-datos' ? '/dashboard/mis-datos' : '/dashboard';
+    const nextPath = tab === 'mis-datos'
+      ? '/dashboard/mis-datos'
+      : tab === 'reportes'
+        ? '/dashboard/reportes'
+        : '/dashboard';
     if (
       window.location.pathname.startsWith('/dashboard/materiales/')
       || window.location.pathname.startsWith('/dashboard/epp/items/')
       || window.location.pathname.startsWith('/dashboard/stockminimos/')
       || window.location.pathname.startsWith('/dashboard/mis-datos')
+      || window.location.pathname.startsWith('/dashboard/reportes')
       || tab === 'mis-datos'
+      || tab === 'reportes'
     ) {
       window.history.pushState({}, '', nextPath);
     }
@@ -2543,42 +2551,45 @@ function Dashboard({ setView }) {
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="flex justify-between items-center px-6 py-4 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
+      <header className="flex justify-between items-center px-5 py-3 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
         {/* Left: Logo */}
-        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-4 md:mr-8" onClick={() => setView('landing')}>
-          <LogoCuartelAmigo size={80} />
+        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-3 md:mr-6" onClick={() => setView('landing')}>
+          <LogoCuartelAmigo size={68} />
         </div>
 
         {/* Center: Navigation Icons */}
-        <nav className="flex-1 flex items-center justify-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+        <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
-          <button onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Inventory /> <span className="hidden lg:inline">Inventario</span>
           </button>
-          <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
           </button>
-          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
-          <button onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Traceability /> <span className="hidden lg:inline">Libro Guardia</span>
           </button>
-          <button onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
           </button>
-          <button onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.User /> <span className="hidden lg:inline">Personal</span>
+          </button>
+          <button onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Report /> <span className="hidden lg:inline">Reportes</span>
           </button>
         </nav>
 
         {/* Right: User Profile & Actions */}
-        <div className="flex items-center gap-4 ml-4 md:ml-8 relative">
+        <div className="flex items-center gap-3 ml-3 md:ml-6 relative">
           <button 
             onClick={toggleTheme} 
-            className="theme-toggle" 
+            className="theme-toggle !h-9 !w-9"
             title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
           >
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
@@ -2594,7 +2605,7 @@ function Dashboard({ setView }) {
                   fetchNotifications();
                 }
               }}
-              className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
+              className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
               title="Notificaciones"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"></path></svg>
@@ -2673,7 +2684,7 @@ function Dashboard({ setView }) {
               <div className="text-sm font-semibold" style={{ color: palette.text }}>{headerProfileName}</div>
               <div className="text-xs text-brand-cyan">{headerProfileCargo}</div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-text-main font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">{headerProfileInitials}</div>
+            <div className="w-8 h-8 rounded-full bg-dark-bg2 border border-brand-cyan flex items-center justify-center text-text-main font-bold text-xs shadow-[0_0_10px_rgba(56,189,248,0.2)]">{headerProfileInitials}</div>
           </div>
 
           {showProfileMenu && (
@@ -2707,10 +2718,10 @@ function Dashboard({ setView }) {
       }}>
         {/* Sub Header (Actions specific to active tab) */}
         {activeTab !== 'vehiculos' && activeTab !== 'libro-guardia' && !materialDetailRoute && !stockMinimoDetailId && (
-          <div className="flex justify-between items-center px-8 py-4 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
+          <div className="flex justify-between items-center px-6 py-3 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
-                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'personal' || activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
+                {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'reportes' ? <Icons.Report /> : activeTab === 'personal' || activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
               </div>
               <div className="flex flex-col">
                 {activeTab === 'bodegas' ? (
@@ -2728,7 +2739,7 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
@@ -2740,7 +2751,7 @@ function Dashboard({ setView }) {
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
-                <button onClick={openAddUbicacionModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
+                <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
               )}
               {activeTab === 'bodegas' && inventoryView === 'catalogo' && (
                 <>
@@ -2992,12 +3003,12 @@ function Dashboard({ setView }) {
                   overflowY: 'auto',
                   background: palette.bg,
                   color: palette.text,
-                  padding: '32px',
+                  padding: '24px',
                   borderLeft: `1px solid ${palette.border}`,
                   boxSizing: 'border-box'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '18px' }}>
                   <div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', color: palette.muted, fontSize: '12px' }}>
                       <button onClick={() => goToPathIndex(-1)} style={{ color: palette.cyan, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}>Ubicaciones</button>
@@ -3008,10 +3019,10 @@ function Dashboard({ setView }) {
                         </span>
                       ))}
                     </div>
-                    <h3 style={{ color: palette.text, fontSize: '24px', fontWeight: 700, margin: 0 }}>
+                    <h3 style={{ color: palette.text, fontSize: '21px', fontWeight: 700, margin: 0 }}>
                       {currentUbicacion ? currentUbicacion.name : 'Ubicaciones Principales'}
                     </h3>
-                    <p style={{ color: palette.muted, fontSize: '14px', margin: '8px 0 0' }}>
+                    <p style={{ color: palette.muted, fontSize: '13px', margin: '6px 0 0' }}>
                       {currentUbicacion ? 'Selecciona General para ver la ubicacion actual o abre una sububicacion.' : 'Selecciona una ubicacion principal para cargar sus materiales y sububicaciones.'}
                     </p>
                   </div>
@@ -3033,24 +3044,24 @@ function Dashboard({ setView }) {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
                     {!currentUbicacion && (
                       <button
                         onClick={selectGeneralInventario}
                         className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
-                          minHeight: '150px',
-                          borderRadius: '14px',
+                          minHeight: '122px',
+                          borderRadius: '10px',
                           border: isGeneralInventario ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
                           background: isGeneralInventario ? palette.cyanSoft : palette.card,
                           color: palette.text,
                           cursor: 'pointer',
-                          padding: '20px',
+                          padding: '16px',
                           textAlign: 'center',
                           fontWeight: 700
                         }}
                       >
-                        <div style={{ marginBottom: '10px', color: palette.cyan }}>General</div>
+                        <div style={{ marginBottom: '8px', color: palette.cyan }}>General</div>
                         Todos los materiales
                       </button>
                     )}
@@ -3059,8 +3070,8 @@ function Dashboard({ setView }) {
                         onClick={selectGeneralUbicacion}
                         className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
-                          minHeight: '150px',
-                          borderRadius: '14px',
+                          minHeight: '122px',
+                          borderRadius: '10px',
                           border: activeUbicacion === currentUbicacion.id ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
                           background: activeUbicacion === currentUbicacion.id ? palette.cyanSoft : palette.card,
                           color: palette.text,
@@ -3078,18 +3089,18 @@ function Dashboard({ setView }) {
                         onClick={() => openUbicacion(ubi)}
                         className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
-                          minHeight: '150px',
-                          borderRadius: '14px',
+                          minHeight: '122px',
+                          borderRadius: '10px',
                           border: activeUbicacion === ubi.id ? `1px solid ${palette.cyan}` : `1px solid ${palette.borderStrong}`,
                           background: activeUbicacion === ubi.id ? palette.cyanSoft : palette.card,
                           color: palette.text,
                           cursor: 'pointer',
-                          padding: '20px',
+                          padding: '16px',
                           textAlign: 'center',
                           fontWeight: 700
                         }}
                       >
-                        <div style={{ marginBottom: '10px', color: palette.cyan }}>▣</div>
+                        <div style={{ marginBottom: '8px', color: palette.cyan }}>▣</div>
                         {ubi.name}
                       </button>
                     )) : (
@@ -4139,6 +4150,10 @@ function Dashboard({ setView }) {
             </div>
           )}
 
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'reportes' && (
+            <ReportsView palette={palette} />
+          )}
+
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'vehiculos' && (
             <VehiculosView />
           )}
@@ -4214,7 +4229,7 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && !stockMinimoDetailId && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'personal' && activeTab !== 'mis-datos' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab !== 'bodegas' && activeTab !== 'catalogo' && activeTab !== 'vehiculos' && activeTab !== 'epp' && activeTab !== 'donaciones' && activeTab !== 'personal' && activeTab !== 'reportes' && activeTab !== 'mis-datos' && (
             <div className="p-8 flex items-center justify-center h-full">
               <p className="text-text-muted text-lg">Contenido en construcción...</p>
             </div>

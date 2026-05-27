@@ -364,13 +364,13 @@ function AuthView({ initialMode = 'register' }) {
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
           </button>
         </div>
-        <div className="bg-dark-surface rounded-xl shadow-lg border border-dark-border p-8 w-full max-w-md">
-          <div className="text-center mb-8">
+        <div className="bg-dark-surface rounded-xl shadow-lg border border-dark-border p-6 sm:p-7 w-full max-w-sm">
+          <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-[var(--color-text-main)] mb-2 rajdhani">Iniciar Sesión</h2>
             <p className="text-text-muted text-sm">Ingresa tus credenciales para acceder</p>
           </div>
           {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
               <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" placeholder="Ej. 12.345.678-9" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
@@ -423,11 +423,11 @@ function AuthView({ initialMode = 'register' }) {
               ) : null}
               {errors.turnstile && <p className="text-brand-red text-xs mt-1">{errors.turnstile}</p>}
             </div>
-            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-4 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
               {isSubmitting ? 'Ingresando...' : 'Iniciar Sesion'}
             </button>
           </form>
-          <div className="mt-6 text-center text-sm text-text-muted">
+          <div className="mt-5 text-center text-sm text-text-muted">
             ¿No tienes una cuenta? <button onClick={() => navigateToMode('register')} className="text-brand-cyan font-medium hover:text-text-main transition-colors">Regístrate</button>
           </div>
         </div>
