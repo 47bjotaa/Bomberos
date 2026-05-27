@@ -191,6 +191,9 @@ function Dashboard({ setView }) {
   const [stockMaterialesError, setStockMaterialesError] = useState('');
   const [savingStockMinimo, setSavingStockMinimo] = useState(false);
   const [addStockMinimoError, setAddStockMinimoError] = useState('');
+  const [stockMinimoPendingDelete, setStockMinimoPendingDelete] = useState(null);
+  const [deletingStockMinimoId, setDeletingStockMinimoId] = useState(null);
+  const [deleteStockMinimoError, setDeleteStockMinimoError] = useState('');
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Operativo' },
@@ -2271,6 +2274,41 @@ function Dashboard({ setView }) {
     }
   };
 
+  const openDeleteStockMinimoModal = (event, stock) => {
+    event.stopPropagation();
+    if (!stock?.id || deletingStockMinimoId) return;
+
+    setDeleteStockMinimoError('');
+    setStockMinimoPendingDelete(stock);
+  };
+
+  const closeDeleteStockMinimoModal = () => {
+    if (deletingStockMinimoId) return;
+
+    setStockMinimoPendingDelete(null);
+    setDeleteStockMinimoError('');
+  };
+
+  const handleDeleteStockMinimo = async () => {
+    const stock = stockMinimoPendingDelete;
+    if (!stock?.id || deletingStockMinimoId) return;
+
+    setDeletingStockMinimoId(stock.id);
+    setDeleteStockMinimoError('');
+
+    try {
+      await apiFetch(`/api/stockminimos/${stock.id}`, {
+        method: 'DELETE',
+      });
+      setStockMinimos(current => current.filter(item => String(item.id) !== String(stock.id)));
+      setStockMinimoPendingDelete(null);
+    } catch (error) {
+      setDeleteStockMinimoError(error.message || 'No se pudo eliminar el stock minimo.');
+    } finally {
+      setDeletingStockMinimoId(null);
+    }
+  };
+
   const loadTiposUbicacion = async () => {
     setLoadingTiposUbicacion(true);
     setAddUbicacionError('');
@@ -3093,15 +3131,27 @@ function Dashboard({ setView }) {
                             Ver detalle
                           </span>
                         </div>
-                        <div className="mt-5 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
-                            ID stock {stock.id}
-                          </span>
-                          {stock.idUbicacion && (
+                        <div className="mt-5 flex items-end justify-between gap-3">
+                          <div className="flex flex-wrap gap-2 text-xs">
                             <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
-                              ID ubicacion {stock.idUbicacion}
+                              ID stock {stock.id}
                             </span>
-                          )}
+                            {stock.idUbicacion && (
+                              <span className="rounded border px-2 py-1" style={{ borderColor: palette.border, background: palette.bg3, color: palette.muted }}>
+                                ID ubicacion {stock.idUbicacion}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(event) => openDeleteStockMinimoModal(event, stock)}
+                            onKeyDown={(event) => event.stopPropagation()}
+                            disabled={Boolean(deletingStockMinimoId)}
+                            className="flex-shrink-0 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Eliminar stock minimo"
+                          >
+                            {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -4887,6 +4937,68 @@ function Dashboard({ setView }) {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {stockMinimoPendingDelete && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ background: palette.overlay }}
+            onClick={closeDeleteStockMinimoModal}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-xl border shadow-2xl"
+              style={{ borderColor: palette.border, background: palette.surface }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar stock minimo</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Configuracion de reposicion</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeDeleteStockMinimoModal}
+                  disabled={Boolean(deletingStockMinimoId)}
+                  className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                  aria-label="Cerrar"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
+                  Estas a punto de eliminar <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoPendingDelete.nombre}</span>. Esta accion no se puede deshacer.
+                </p>
+                {deleteStockMinimoError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {deleteStockMinimoError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <button
+                  type="button"
+                  onClick={closeDeleteStockMinimoModal}
+                  disabled={Boolean(deletingStockMinimoId)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteStockMinimo}
+                  disabled={Boolean(deletingStockMinimoId)}
+                  className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingStockMinimoId ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
