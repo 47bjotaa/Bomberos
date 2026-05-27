@@ -373,7 +373,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" placeholder="Ej. 12.345.678-9" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <div>
@@ -384,6 +384,7 @@ function AuthView({ initialMode = 'register' }) {
                   name="password" 
                   value={formData.password} 
                   onChange={handleChange} 
+                  placeholder="Ingresa tu contrasena"
                   className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors pr-12"                 />
                 <button
                   type="button"

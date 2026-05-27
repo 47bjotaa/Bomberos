@@ -181,8 +181,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                           event.stopPropagation();
                           onMoveMaterial?.(item);
                         }}
-                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan"
-                        style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
+                        className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-semibold text-text-main transition-all hover:border-brand-cyan/60 hover:bg-brand-cyan/15 hover:text-brand-cyan hover:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:border-brand-cyan/60 focus-visible:bg-brand-cyan/15 focus-visible:text-brand-cyan focus-visible:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:outline-none"
                       >
                         Mover
                       </button>
