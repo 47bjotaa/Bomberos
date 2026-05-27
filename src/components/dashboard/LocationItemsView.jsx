@@ -53,6 +53,49 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
     }
   };
 
+  const getLocationChips = (item) => {
+    const values = [item.ubicacionRaiz, item.ubicacion || locationName].filter(Boolean);
+    const seen = new Set();
+
+    return values.filter((value) => {
+      const key = String(value).trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const getSerializedStatus = (estado) => {
+    const normalized = String(estado || '').trim().toLowerCase();
+    if (!normalized) return null;
+
+    if (normalized.includes('mal') || normalized.includes('malo') || normalized.includes('inoper') || normalized.includes('baja')) {
+      return {
+        label: 'Mal estado',
+        className: 'border-brand-red/20 bg-brand-red/10 text-brand-red',
+      };
+    }
+
+    if (normalized.includes('desgast') || normalized.includes('regular') || normalized.includes('repar') || normalized.includes('mantencion')) {
+      return {
+        label: 'Desgastado',
+        className: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-300',
+      };
+    }
+
+    if (normalized.includes('buen') || normalized.includes('bueno') || normalized.includes('operativo') || normalized.includes('activo')) {
+      return {
+        label: 'Buen estado',
+        className: 'border-brand-green/20 bg-brand-green/10 text-brand-green',
+      };
+    }
+
+    return {
+      label: estado,
+      className: 'border-dark-border bg-dark-bg3 text-text-muted',
+    };
+  };
+
   return (
     <section
       className="themed-ui flex h-full w-full flex-col border-r shadow-xl"
@@ -139,21 +182,25 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
             </div>
             <div className="space-y-2.5">
               {filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <div
-                    key={`${item.id}-${item.codigo || item.nombre}`}
-                    onClick={() => onSelectMaterial?.(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onSelectMaterial?.(item);
-                      }
-                    }}
-                    className="group flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:border-brand-cyan/30"
-                    style={{ background: palette.cardSoft, borderColor: palette.border }}
-                  >
+                filteredItems.map((item) => {
+                  const locationChips = getLocationChips(item);
+                  const serializedStatus = item.serializado ? getSerializedStatus(item.estadoInventario) : null;
+
+                  return (
+                    <div
+                      key={`${item.id}-${item.codigo || item.nombre}`}
+                      onClick={() => onSelectMaterial?.(item)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onSelectMaterial?.(item);
+                        }
+                      }}
+                      className="group flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all hover:border-brand-cyan/30"
+                      style={{ background: palette.cardSoft, borderColor: palette.border }}
+                    >
                     <div
                       className="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors group-hover:border-brand-cyan/20 group-hover:text-brand-cyan"
                       style={{ background: palette.bg2, borderColor: palette.border, color: palette.muted }}
@@ -170,14 +217,19 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                           {item.categoria}
                         </span>
                         {item.codigo && <span className="font-mono text-[10px] text-brand-cyan/70">#{item.codigo}</span>}
-                        {item.ubicacionRaiz && (
-                          <span className="rounded border border-brand-red/10 bg-brand-red/5 px-1.5 py-0.5 text-[10px] text-brand-red/80">
-                            {item.ubicacionRaiz}
+                        {locationChips.map((ubicacion, index) => (
+                          <span
+                            key={ubicacion}
+                            className={`rounded border px-1.5 py-0.5 text-[10px] ${index === 0 ? 'border-brand-red/10 bg-brand-red/5 text-brand-red/80' : 'border-brand-cyan/10 bg-brand-cyan/5 text-brand-cyan/80'}`}
+                          >
+                            {ubicacion}
+                          </span>
+                        ))}
+                        {serializedStatus && (
+                          <span className={`rounded border px-1.5 py-0.5 text-[10px] ${serializedStatus.className}`}>
+                            {serializedStatus.label}
                           </span>
                         )}
-                        <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-1.5 py-0.5 text-[10px] text-brand-cyan/80">
-                          {item.ubicacion || locationName}
-                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -194,8 +246,9 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                         x{item.cantidad}
                       </span>
                     </div>
-                  </div>
-                ))
+                    </div>
+                  );
+                })
               ) : (
                 <div
                   className="rounded-2xl border-2 border-dashed py-10 text-center opacity-70"

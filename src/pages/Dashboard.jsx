@@ -108,6 +108,7 @@ function Dashboard({ setView }) {
   const [personalActionError, setPersonalActionError] = useState('');
   const [bomberoPendingInactivation, setBomberoPendingInactivation] = useState(null);
   const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
+  const [activePersonalTab, setActivePersonalTab] = useState('activos');
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -239,6 +240,9 @@ function Dashboard({ setView }) {
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
   const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+  const [activeLibrosGuardiaTab, setActiveLibrosGuardiaTab] = useState('abiertos');
+  const [librosGuardiaMonthFilter, setLibrosGuardiaMonthFilter] = useState('');
+  const [librosGuardiaYearFilter, setLibrosGuardiaYearFilter] = useState('');
   const [selectedLibroGuardia, setSelectedLibroGuardia] = useState(null);
   const [registrosLibroGuardia, setRegistrosLibroGuardia] = useState([]);
   const [loadingRegistrosLibroGuardia, setLoadingRegistrosLibroGuardia] = useState(false);
@@ -824,6 +828,7 @@ function Dashboard({ setView }) {
     categoria: item.nombreTipoProducto || item.tipoMaterial || 'General',
     cantidad: item.cantidad || 1,
     codigo: item.codigoUnico || null,
+    estadoInventario: item.estadoInventario || item.estadoItem || item.estadoMaterial || item.estado || '',
     idUbicacion: item.idUbicacion || item.idUbicacionActual,
     idUbicacionRaiz: item.idUbicacionRaiz,
     ubicacionRaiz: item.nombreUbicacionRaiz || item.ubicacionRaiz || '',
@@ -1767,6 +1772,7 @@ function Dashboard({ setView }) {
   const palette = getThemePalette(theme);
   const bomberosActivos = bomberosPersonal.filter(isBomberoActivo);
   const bomberosInactivos = bomberosPersonal.filter(bombero => !isBomberoActivo(bombero));
+  const currentPersonalData = activePersonalTab === 'activos' ? bomberosActivos : bomberosInactivos;
   const renderPersonalTable = (bomberos, canInactivate) => (
     <div className="overflow-x-auto overflow-y-hidden rounded-xl border shadow-lg" style={{ borderColor: palette.border, background: palette.card }}>
       <table className="w-full text-left text-sm">
@@ -2506,6 +2512,50 @@ function Dashboard({ setView }) {
   const registrosPageCount = registrosServerPaginated
     ? registrosTotalPages
     : Math.max(1, Math.ceil(registrosItemCount / registrosPageSize));
+  const librosGuardiaMonths = [
+    { value: '01', label: 'Enero' },
+    { value: '02', label: 'Febrero' },
+    { value: '03', label: 'Marzo' },
+    { value: '04', label: 'Abril' },
+    { value: '05', label: 'Mayo' },
+    { value: '06', label: 'Junio' },
+    { value: '07', label: 'Julio' },
+    { value: '08', label: 'Agosto' },
+    { value: '09', label: 'Septiembre' },
+    { value: '10', label: 'Octubre' },
+    { value: '11', label: 'Noviembre' },
+    { value: '12', label: 'Diciembre' },
+  ];
+  const getLibroGuardiaDate = (value) => {
+    if (!value) return null;
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const getLibroGuardiaDates = (libro) => (
+    [libro.fechaInicio, libro.fechaFin, libro.fechaCreacion]
+      .map(getLibroGuardiaDate)
+      .filter(Boolean)
+  );
+  const libroGuardiaMatchesDateFilters = (libro) => {
+    if (!librosGuardiaMonthFilter && !librosGuardiaYearFilter) return true;
+
+    const dates = getLibroGuardiaDates(libro);
+    return dates.some(date => {
+      const monthMatches = !librosGuardiaMonthFilter || String(date.getMonth() + 1).padStart(2, '0') === librosGuardiaMonthFilter;
+      const yearMatches = !librosGuardiaYearFilter || String(date.getFullYear()) === librosGuardiaYearFilter;
+      return monthMatches && yearMatches;
+    });
+  };
+  const librosGuardiaAbiertos = librosGuardia.filter(libro => String(libro.estado).toLowerCase().includes('abierto'));
+  const librosGuardiaCerrados = librosGuardia.filter(libro => !String(libro.estado).toLowerCase().includes('abierto'));
+  const filteredLibrosGuardiaAbiertos = librosGuardiaAbiertos.filter(libroGuardiaMatchesDateFilters);
+  const filteredLibrosGuardiaCerrados = librosGuardiaCerrados.filter(libroGuardiaMatchesDateFilters);
+  const currentLibrosGuardia = activeLibrosGuardiaTab === 'abiertos' ? filteredLibrosGuardiaAbiertos : filteredLibrosGuardiaCerrados;
+  const librosGuardiaYearOptions = Array.from(new Set(
+    librosGuardia
+      .flatMap(getLibroGuardiaDates)
+      .map(date => String(date.getFullYear()))
+  )).sort((a, b) => Number(b) - Number(a));
   const donacionesCampanaFiltradas = donacionesCampana.filter((donacion) => {
     const nombreDonante = String(donacion.nombreDonante || '').toLowerCase();
     const nombreBombero = String(donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '').toLowerCase();
@@ -4031,12 +4081,70 @@ function Dashboard({ setView }) {
                         </div>
                         <div className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-2 text-center">
                           <p className="text-xs text-brand-cyan">Abiertos</p>
-                          <p className="mt-1 text-xl font-bold text-brand-cyan">{librosGuardia.filter(libro => String(libro.estado).toLowerCase().includes('abierto')).length}</p>
+                          <p className="mt-1 text-xl font-bold text-brand-cyan">{librosGuardiaAbiertos.length}</p>
+                        </div>
+                        <div className="rounded-lg border px-4 py-2 text-center" style={{ borderColor: palette.border, background: palette.bg }}>
+                          <p className="text-xs" style={{ color: palette.muted }}>Cerrados</p>
+                          <p className="mt-1 text-xl font-bold" style={{ color: palette.text }}>{librosGuardiaCerrados.length}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-                    {librosGuardia.map((libro) => {
+
+                    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setActiveLibrosGuardiaTab('abiertos')}
+                          className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${activeLibrosGuardiaTab === 'abiertos' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'border-transparent bg-transparent text-text-muted hover:text-text-main'}`}
+                        >
+                          <span className="h-2 w-2 rounded-full bg-brand-cyan"></span>
+                          Abiertos <span className="ml-1 rounded-full bg-brand-cyan/10 px-2 py-0.5 text-xs font-bold text-brand-cyan">{filteredLibrosGuardiaAbiertos.length}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveLibrosGuardiaTab('cerrados')}
+                          className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${activeLibrosGuardiaTab === 'cerrados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'border-transparent bg-transparent text-text-muted hover:text-text-main'}`}
+                        >
+                          <span className="h-2 w-2 rounded-full bg-slate-500"></span>
+                          Cerrados <span className="ml-1 rounded-full border border-dark-border bg-dark-bg3 px-2 py-0.5 text-xs font-bold text-text-muted">{filteredLibrosGuardiaCerrados.length}</span>
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold" style={{ color: palette.muted }}>Mes</span>
+                          <select
+                            value={librosGuardiaMonthFilter}
+                            onChange={(event) => setLibrosGuardiaMonthFilter(event.target.value)}
+                            className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand-cyan"
+                            style={{ borderColor: palette.border, background: palette.bg3, color: palette.text }}
+                          >
+                            <option value="">Todos</option>
+                            {librosGuardiaMonths.map(month => (
+                              <option key={month.value} value={month.value}>{month.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold" style={{ color: palette.muted }}>Año</span>
+                          <select
+                            value={librosGuardiaYearFilter}
+                            onChange={(event) => setLibrosGuardiaYearFilter(event.target.value)}
+                            className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand-cyan"
+                            style={{ borderColor: palette.border, background: palette.bg3, color: palette.text }}
+                          >
+                            <option value="">Todos</option>
+                            {librosGuardiaYearOptions.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+
+                    {currentLibrosGuardia.length > 0 ? (
+                      <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                      {currentLibrosGuardia.map((libro) => {
                       const isActive = String(libro.estado).toLowerCase().includes('abierto');
                       return (
                         <article
@@ -4078,8 +4186,27 @@ function Dashboard({ setView }) {
                           </div>
                         </article>
                       );
-                    })}
-                    </div>
+                      })}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.bg }}>
+                        <p className="text-sm font-semibold" style={{ color: palette.text }}>
+                          No hay libros {activeLibrosGuardiaTab === 'abiertos' ? 'abiertos' : 'cerrados'} con ese filtro.
+                        </p>
+                        {(librosGuardiaMonthFilter || librosGuardiaYearFilter) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLibrosGuardiaMonthFilter('');
+                              setLibrosGuardiaYearFilter('');
+                            }}
+                            className="mt-4 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15"
+                          >
+                            Limpiar filtros
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </section>
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
@@ -4130,20 +4257,25 @@ function Dashboard({ setView }) {
                         {personalActionError}
                       </p>
                     )}
-                    <section>
-                      <div className="mb-3 flex items-center justify-between">
-                        <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Bomberos activos</h4>
-                        <span className="rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-semibold text-brand-green">{bomberosActivos.length}</span>
-                      </div>
-                      {renderPersonalTable(bomberosActivos, true)}
-                    </section>
-                    <section>
-                      <div className="mb-3 flex items-center justify-between">
-                        <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Bomberos inactivos</h4>
-                        <span className="rounded-full border border-dark-border bg-dark-bg3 px-3 py-1 text-xs font-semibold text-text-muted">{bomberosInactivos.length}</span>
-                      </div>
-                      {renderPersonalTable(bomberosInactivos, false)}
-                    </section>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActivePersonalTab('activos')}
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${activePersonalTab === 'activos' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'border-transparent bg-transparent text-text-muted hover:text-text-main'}`}
+                      >
+                        <Icons.User className="h-4 w-4 text-brand-cyan" />
+                        Activos <span className="ml-1 rounded-full bg-brand-cyan/10 px-2 py-0.5 text-xs font-bold text-brand-cyan">{bomberosActivos.length}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivePersonalTab('inactivos')}
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${activePersonalTab === 'inactivos' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'border-transparent bg-transparent text-text-muted hover:text-text-main'}`}
+                      >
+                        <Icons.User className="h-4 w-4 text-text-muted" />
+                        Inactivos <span className="ml-1 rounded-full border border-dark-border bg-dark-bg3 px-2 py-0.5 text-xs font-bold text-text-muted">{bomberosInactivos.length}</span>
+                      </button>
+                    </div>
+                    {renderPersonalTable(currentPersonalData, activePersonalTab === 'activos')}
                   </div>
                 )}
               </div>
@@ -5284,6 +5416,9 @@ function Dashboard({ setView }) {
                     disabled={savingMaterial}
                     onChange={(e) => setNewMaterialData({...newMaterialData, nombre: e.target.value})}
                   />
+                  <p className="mt-2 text-xs leading-relaxed text-text-muted">
+                    Formato recomendado: nombre base del material + medida o subtipo si aplica + marca al final. Ej: Manguera 1 1/2 pulgadas Key Fire.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-2">Tipo de producto</label>
