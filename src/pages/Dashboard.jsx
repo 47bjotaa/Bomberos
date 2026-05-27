@@ -2918,6 +2918,7 @@ function Dashboard({ setView }) {
                     {!currentUbicacion && (
                       <button
                         onClick={selectGeneralInventario}
+                        className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
                           minHeight: '150px',
                           borderRadius: '14px',
@@ -2937,6 +2938,7 @@ function Dashboard({ setView }) {
                     {currentUbicacion && subUbicaciones.length > 0 && (
                       <button
                         onClick={selectGeneralUbicacion}
+                        className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
                           minHeight: '150px',
                           borderRadius: '14px',
@@ -2955,6 +2957,7 @@ function Dashboard({ setView }) {
                       <button
                         key={ubi.id}
                         onClick={() => openUbicacion(ubi)}
+                        className="transition-all duration-200 hover:border-brand-cyan/60! hover:bg-brand-cyan/10! hover:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:border-brand-cyan/60! focus-visible:bg-brand-cyan/10! focus-visible:shadow-[0_0_22px_rgba(56,189,248,0.18)] focus-visible:outline-none"
                         style={{
                           minHeight: '150px',
                           borderRadius: '14px',
