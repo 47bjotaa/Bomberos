@@ -3351,7 +3351,7 @@ function Dashboard({ setView }) {
                     ) : catalogRows.length > 0 ? (
                       catalogRows.map(item => (
                           <tr key={item.id} className="hover:bg-dark-bg3 transition-colors">
-                            <td className="px-6 py-4 font-medium text-white">{item.nombre}</td>
+                            <td className="px-6 py-4 font-medium text-text-main">{item.nombre}</td>
                             <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
                             <td className="px-6 py-4 text-text-muted">
                               {item.valor}
@@ -3559,14 +3559,14 @@ function Dashboard({ setView }) {
                 <button
                   type="button"
                   onClick={() => selectDonacionesView('campanas')}
-                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'campanas' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-cyan/50 hover:text-white'}`}
+                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'campanas' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
                 >
                   Campanas
                 </button>
                 <button
                   type="button"
                   onClick={() => selectDonacionesView('configuracion')}
-                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-cyan/50 hover:text-white'}`}
+                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
                 >
                   Configuracion de pago
                 </button>
@@ -3809,7 +3809,7 @@ function Dashboard({ setView }) {
                         type="button"
                         onClick={() => generateAndCopyDonationLink(campaign)}
                         disabled={generatingDonationLinkId === campaign.id}
-                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-200 transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
                       </button>

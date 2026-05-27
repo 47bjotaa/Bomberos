@@ -42,7 +42,7 @@ function AuthView({ initialMode = 'register' }) {
   const [turnstileKey, setTurnstileKey] = useState(0);
 
   const formatRut = (value) => {
-    const digits = value.replace(/\D/g, '').slice(0, 9);
+    const digits = value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
 
     if (digits.length <= 1) {
       return digits;
@@ -75,7 +75,7 @@ function AuthView({ initialMode = 'register' }) {
 
   const validate = () => {
     const newErrors = {};
-    const rutRegex = /^[0-9]+-[0-9]{1}$/;
+    const rutRegex = /^[0-9]+-[0-9K]{1}$/i;
 
     if (mode === 'register') {
       if (step === 1) {
@@ -264,7 +264,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-6 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
@@ -373,7 +373,7 @@ function AuthView({ initialMode = 'register' }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>
-              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" placeholder="Ej. 12.345.678-9" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
+              <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" placeholder="Ej. 12.345.678-9" className="w-full px-4 py-2 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted focus:ring-2 focus:ring-brand-cyan focus:border-brand-cyan outline-none transition-colors" />
               {errors.rut && <p className="text-brand-red text-xs mt-1">{errors.rut}</p>}
             </div>
             <div>
@@ -536,7 +536,7 @@ function AuthView({ initialMode = 'register' }) {
                   <div className="grid grid-cols-2 gap-5">
                     <div>
                       <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">RUT</label>
-                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="numeric" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                       {errors.rut && <p className="text-brand-red text-sm mt-1">{errors.rut}</p>}
                     </div>
                     <div>
