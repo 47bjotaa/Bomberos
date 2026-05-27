@@ -19,7 +19,7 @@ function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, on
   return (
     <div
       onClick={!isEditing ? onClick : undefined}
-      className={`relative flex flex-col items-center justify-center p-6 pt-10 pb-8 bg-dark-surface border rounded-2xl cursor-pointer transition-all hover:shadow-lg hover:shadow-brand-cyan/10 ${active ? 'border-brand-cyan ring-1 ring-brand-cyan bg-brand-cyan/5' : 'border-dark-border hover:border-brand-cyan/30'}`}
+      className={`group relative flex flex-col items-center justify-center rounded-2xl border bg-dark-surface p-6 pb-8 pt-10 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-cyan/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.13)] ${active ? 'border-brand-cyan ring-1 ring-brand-cyan bg-brand-cyan/5' : 'border-dark-border hover:border-brand-cyan/40'}`}
     >
       <div className="absolute top-3 right-3 flex items-center gap-2">
         {!isEditing && onNameChange && (
@@ -37,7 +37,7 @@ function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, on
           {items}
         </div>
       </div>
-      <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 transition-colors ${active ? 'bg-brand-cyan text-white shadow-[0_0_15px_rgba(56,189,248,0.4)]' : 'bg-dark-bg text-text-muted border border-dark-border'}`}>
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 transition-all ${active ? 'bg-brand-cyan text-white shadow-[0_0_15px_rgba(56,189,248,0.4)]' : 'bg-dark-bg text-text-muted border border-dark-border group-hover:border-brand-cyan/30 group-hover:text-brand-cyan group-hover:shadow-[0_0_12px_rgba(56,189,248,0.14)]'}`}>
         <div className="w-6 h-6 flex items-center justify-center">
           <ComputedIcon />
         </div>
@@ -49,7 +49,7 @@ function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, on
           <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="text-brand-red hover:opacity-80"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
         </div>
       ) : (
-        <h3 className={`text-base font-semibold text-center rajdhani px-4 ${active ? 'text-brand-cyan' : 'text-text-main'}`}>{displayName}</h3>
+        <h3 className={`text-base font-semibold text-center rajdhani px-4 transition-colors ${active ? 'text-brand-cyan' : 'text-text-main group-hover:text-brand-cyan'}`}>{displayName}</h3>
       )}
     </div>
   );
