@@ -44,6 +44,24 @@ const getMaintenanceId = (payload) => (
   payload?.idMantencion || payload?.id || payload?.data?.idMantencion || payload?.data?.id || null
 );
 
+const fetchVehiclePreviewImage = async (vehicleId) => {
+  if (!vehicleId) return '';
+
+  const imageBasePath = `/api/vehiculos/${vehicleId}/imagenes`;
+  const imageListPayload = await apiFetch(imageBasePath);
+  const firstImage = getArrayPayload(imageListPayload, ['imagenes', 'archivos', 'files'])[0];
+  if (!firstImage) return '';
+
+  const directUrl = getTemporaryImageUrl(firstImage);
+  if (directUrl) return directUrl;
+
+  const idArchivo = getImageFileId(firstImage);
+  if (!idArchivo) return '';
+
+  const urlPayload = await apiFetch(`${imageBasePath}/${idArchivo}/url`);
+  return getTemporaryImageUrl(urlPayload);
+};
+
 const isImageFile = (fileItem) => {
   const contentType = fileItem?.contentType || fileItem?.file?.type || '';
   const name = fileItem?.nombre || fileItem?.nombreOriginal || fileItem?.file?.name || '';
@@ -108,6 +126,7 @@ function VehiculosView({
   const [isEditingPatente, setIsEditingPatente] = useState(false);
   const [tempPatente, setTempPatente] = useState('');
   const [vehicleImages, setVehicleImages] = useState([]);
+  const [vehiclePreviewImages, setVehiclePreviewImages] = useState({});
   const [loadingVehicleDetail, setLoadingVehicleDetail] = useState(false);
   const [vehicleDetailError, setVehicleDetailError] = useState('');
   const [loadingVehicleImages, setLoadingVehicleImages] = useState(false);
@@ -116,6 +135,7 @@ function VehiculosView({
   const [deletingVehicleImageId, setDeletingVehicleImageId] = useState(null);
   const [imageUploadError, setImageUploadError] = useState('');
   const imageRequestRef = useRef(0);
+  const vehiclePreviewRequestRef = useRef(0);
 
   const [showAddObs, setShowAddObs] = useState(false);
   const [newObs, setNewObs] = useState({ observacion: '' });
@@ -146,7 +166,24 @@ function VehiculosView({
     setLoading(true);
     try {
       const data = await apiFetch('/api/vehiculos');
-      setVehiculos(getArrayPayload(data, ['vehiculos']).map(mapVehiculo));
+      const mappedVehicles = getArrayPayload(data, ['vehiculos']).map(mapVehiculo);
+      setVehiculos(mappedVehicles);
+      setVehiclePreviewImages({});
+
+      const requestId = vehiclePreviewRequestRef.current + 1;
+      vehiclePreviewRequestRef.current = requestId;
+      Promise.all(mappedVehicles.map(async (vehiculo) => {
+        try {
+          const url = await fetchVehiclePreviewImage(vehiculo.idVehiculo || vehiculo.id);
+          return url ? [vehiculo.id, url] : null;
+        } catch {
+          return null;
+        }
+      })).then((previews) => {
+        if (vehiclePreviewRequestRef.current === requestId) {
+          setVehiclePreviewImages(Object.fromEntries(previews.filter(Boolean)));
+        }
+      });
     } catch (error) {
       console.error('Error al cargar vehiculos:', error);
     } finally {
@@ -225,7 +262,12 @@ function VehiculosView({
       }));
 
       if (imageRequestRef.current === requestId) {
-        setVehicleImages(imagesWithUrls.filter((image) => image?.url));
+        const validImages = imagesWithUrls.filter((image) => image?.url);
+        setVehicleImages(validImages);
+        setVehiclePreviewImages(current => ({
+          ...current,
+          [selectedId]: validImages[0]?.url || '',
+        }));
       }
     } catch (err) {
       if (imageRequestRef.current === requestId) {
@@ -810,10 +852,16 @@ function VehiculosView({
                 <div
                   key={v.id}
                   onClick={() => openDetail(v)}
-                  className="group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dark-border bg-dark-bg pt-8 pb-4 transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
+                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-dark-border bg-dark-bg transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
                 >
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center text-text-muted transition-transform group-hover:scale-110">
-                    <Icons.Truck />
+                  <div className="flex h-48 w-full items-center justify-center overflow-hidden text-text-muted">
+                    {vehiclePreviewImages[v.id] ? (
+                      <img src={vehiclePreviewImages[v.id]} alt={v.nombre} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center transition-transform group-hover:scale-110">
+                        <Icons.Truck />
+                      </div>
+                    )}
                   </div>
                   <div className="w-full border-t border-dark-border bg-dark-bg2/60 px-4 py-3 text-center">
                     <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
