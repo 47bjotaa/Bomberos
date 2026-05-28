@@ -247,10 +247,12 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
     const params = new URLSearchParams({
       idCampaniaDonacion: donationFilters.idCampaniaDonacion,
-      estadoPago: donationFilters.estadoPago,
-      periodo: donationFilters.periodo,
     });
-    if (donationFilters.periodo !== 'TODO') params.set('anio', donationFilters.anio);
+    if (donationFilters.estadoPago !== 'TODOS') params.set('estadoPago', donationFilters.estadoPago);
+    if (donationFilters.periodo !== 'TODO') {
+      params.set('periodo', donationFilters.periodo);
+      params.set('anio', donationFilters.anio);
+    }
     if (donationFilters.periodo === 'MES') params.set('mes', donationFilters.mes);
 
     setDonationDownloading(true);
