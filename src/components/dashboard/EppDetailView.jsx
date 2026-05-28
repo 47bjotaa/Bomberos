@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
 
+const EPP_STATES = ['Buen estado', 'Desgastado', 'Mal estado'];
+
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
   const date = new Date(value);
@@ -30,18 +32,18 @@ const getChileDateTime = () => {
 };
 
 const normalizeEstado = (estadoRaw) => {
-  if (!estadoRaw) return 'Operativo';
+  if (!estadoRaw) return 'Buen estado';
   const lower = estadoRaw.toLowerCase().trim();
-  if (lower.includes('operativo') && !lower.includes('no')) {
-    return 'Operativo';
+  if (lower.includes('buen') || (lower.includes('operativo') && !lower.includes('no'))) {
+    return 'Buen estado';
   }
-  if (lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
-    return 'De baja';
+  if (lower.includes('mal') || lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
+    return 'Mal estado';
   }
-  if (lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
-    return 'Mantenimiento';
+  if (lower.includes('desgast') || lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
+    return 'Desgastado';
   }
-  return 'Operativo';
+  return 'Buen estado';
 };
 
 const getDateInputValue = (value) => {
@@ -207,7 +209,7 @@ function EppDetailView({
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ talla: '', estadoEpp: 'Operativo', fechaVencimiento: '' });
+  const [editForm, setEditForm] = useState({ talla: '', estadoEpp: 'Buen estado', fechaVencimiento: '' });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -232,7 +234,7 @@ function EppDetailView({
 
     setEditForm({
       talla: detail?.talla || '',
-      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Operativo'),
+      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Buen estado'),
       fechaVencimiento: getDateInputValue(detail?.fechaVencimiento),
     });
     setEditError('');
@@ -928,12 +930,12 @@ function EppDetailView({
                     <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripción registrada.'}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Operativo' ? 'bg-brand-green border-brand-green/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'De baja' ? 'bg-brand-red border-brand-red/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mantenimiento' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Buen estado' ? 'bg-brand-green border-brand-green/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mal estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                         'bg-dark-bg3 border-dark-border text-text-muted'
                       }`}>
-                        {detail.estadoEpp || detail.estadoInventario || 'Sin estado'}
+                        {normalizeEstado(detail.estadoEpp || detail.estadoInventario)}
                       </span>
                       {detail.nombreTipoProducto && (
                         <span className="inline-flex rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1 text-xs font-bold text-brand-cyan">
@@ -1101,9 +1103,9 @@ function EppDetailView({
                 className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan"
                 disabled={editSaving}
               >
-                <option value="Operativo">Operativo</option>
-                <option value="De baja">De baja</option>
-                <option value="Mantenimiento">Mantenimiento</option>
+                {EPP_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
               </select>
             </label>
             <label className="block">
