@@ -433,7 +433,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <Icons.Report className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Stock por cantidad</h4>
+                <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Stock por cantidad valorizado</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
               </div>
             </div>
