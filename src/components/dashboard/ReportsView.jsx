@@ -15,14 +15,18 @@ const PERIODOS = [
 ];
 
 const DONATION_PERIODOS = [
+  { value: 'TODO', label: 'Todo el historial' },
   { value: 'MES', label: 'Por mes' },
   { value: 'ANIO', label: 'Por año' },
 ];
 
 const ESTADOS_PAGO_DONACION = [
-  { value: 'Pagada', label: 'Pagada' },
+  { value: 'TODOS', label: 'Todos' },
   { value: 'Pendiente', label: 'Pendiente' },
-  { value: 'Fallida', label: 'Fallida' },
+  { value: 'Pagada', label: 'Pagada' },
+  { value: 'Rechazada', label: 'Rechazada' },
+  { value: 'Anulada', label: 'Anulada' },
+  { value: 'Error', label: 'Error' },
 ];
 
 const getArrayPayload = (payload) => {
@@ -76,8 +80,8 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   const [stockError, setStockError] = useState('');
   const [donationFilters, setDonationFilters] = useState({
     idCampaniaDonacion: '',
-    estadoPago: 'Pagada',
-    periodo: 'MES',
+    estadoPago: 'TODOS',
+    periodo: 'TODO',
     anio: String(today.getFullYear()),
     mes: String(today.getMonth() + 1),
   });
@@ -160,6 +164,16 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     setDonationError('');
   };
 
+  const handleDonationMonthChange = (event) => {
+    const [anio, mes] = event.target.value.split('-');
+    setDonationFilters(current => ({
+      ...current,
+      anio: anio || current.anio,
+      mes: mes ? String(Number(mes)) : current.mes,
+    }));
+    setDonationError('');
+  };
+
   const downloadBajasReport = async () => {
     if (filters.periodo !== 'TODO' && !filters.anio) {
       setError('Selecciona un año para generar el reporte.');
@@ -216,7 +230,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       return;
     }
 
-    if (!donationFilters.anio) {
+    if (donationFilters.periodo !== 'TODO' && !donationFilters.anio) {
       setDonationError('Selecciona un año para generar el reporte.');
       return;
     }
@@ -235,8 +249,8 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       idCampaniaDonacion: donationFilters.idCampaniaDonacion,
       estadoPago: donationFilters.estadoPago,
       periodo: donationFilters.periodo,
-      anio: donationFilters.anio,
     });
+    if (donationFilters.periodo !== 'TODO') params.set('anio', donationFilters.anio);
     if (donationFilters.periodo === 'MES') params.set('mes', donationFilters.mes);
 
     setDonationDownloading(true);
@@ -248,7 +262,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       });
       const periodSuffix = donationFilters.periodo === 'MES'
         ? `${donationFilters.anio}-${donationFilters.mes.padStart(2, '0')}`
-        : donationFilters.anio;
+        : donationFilters.periodo === 'ANIO'
+          ? donationFilters.anio
+          : 'historial';
       triggerPdfDownload(
         pdf,
         `reporte-donaciones-campania-${donationFilters.idCampaniaDonacion}-${donationFilters.estadoPago.toLowerCase()}-${periodSuffix}.pdf`
@@ -267,9 +283,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Reportes</h3>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
         {canViewFullReports && (
-        <section className="rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 text-brand-red">
@@ -329,7 +345,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </section>
         )}
         {canViewFullReports && (
-        <section className="rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-green/30 bg-brand-green/10 text-brand-green">
@@ -375,18 +391,21 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 {DONATION_PERIODOS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Año</span>
-              <input name="anio" type="number" min="2000" max="2100" value={donationFilters.anio} onChange={handleDonationFilterChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
-            </label>
+            {donationFilters.periodo === 'ANIO' && (
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Año</span>
+                <input name="anio" type="number" min="2000" max="2100" value={donationFilters.anio} onChange={handleDonationFilterChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
+              </label>
+            )}
             {donationFilters.periodo === 'MES' && (
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Mes</span>
-                <select name="mes" value={donationFilters.mes} onChange={handleDonationFilterChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan">
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map(month => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
+                <input
+                  type="month"
+                  value={`${donationFilters.anio}-${donationFilters.mes.padStart(2, '0')}`}
+                  onChange={handleDonationMonthChange}
+                  className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan"
+                />
               </label>
             )}
           </div>
@@ -404,7 +423,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </section>
         )}
         {canViewBasicReports && (
-        <section className="rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan">
