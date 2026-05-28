@@ -83,10 +83,15 @@ const getInitialInventoryView = (pathname) => (
   pathname.startsWith('/dashboard/stockminimos/') ? 'stocks' : 'ubicaciones'
 );
 
+const getInitialPersonalView = (pathname) => (
+  pathname.startsWith('/dashboard/personal/importar') ? 'importar' : 'listado'
+);
+
 function Dashboard({ setView }) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState(() => getInitialDashboardTab(window.location.pathname));
   const [inventoryView, setInventoryView] = useState(() => getInitialInventoryView(window.location.pathname));
+  const [personalView, setPersonalView] = useState(() => getInitialPersonalView(window.location.pathname));
   const [materialDetailRoute, setMaterialDetailRoute] = useState(() => getMaterialDetailRoute(window.location.pathname));
   const [stockMinimoDetailId, setStockMinimoDetailId] = useState(() => getStockMinimoDetailId(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -111,6 +116,12 @@ function Dashboard({ setView }) {
   const [bomberoPendingInactivation, setBomberoPendingInactivation] = useState(null);
   const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
   const [activePersonalTab, setActivePersonalTab] = useState('activos');
+  const [personalImportFile, setPersonalImportFile] = useState(null);
+  const [downloadingPersonalTemplate, setDownloadingPersonalTemplate] = useState(false);
+  const [uploadingPersonalImport, setUploadingPersonalImport] = useState(false);
+  const [personalImportError, setPersonalImportError] = useState('');
+  const [personalImportSuccess, setPersonalImportSuccess] = useState('');
+  const [personalImportInputKey, setPersonalImportInputKey] = useState(0);
 
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -295,8 +306,10 @@ function Dashboard({ setView }) {
       setStockMinimoDetail(null);
       setStockMinimoDetailError('');
       if (!nextMaterialDetailRoute) {
-        setActiveTab(getInitialDashboardTab(window.location.pathname));
+        const nextTab = getInitialDashboardTab(window.location.pathname);
+        setActiveTab(nextTab);
         setInventoryView(getInitialInventoryView(window.location.pathname));
+        setPersonalView(nextTab === 'personal' ? getInitialPersonalView(window.location.pathname) : 'listado');
       }
     };
 
@@ -1108,20 +1121,25 @@ function Dashboard({ setView }) {
     if (tab !== 'libro-guardia') {
       closeRegistrosLibroGuardia();
     }
+    setPersonalView('listado');
 
     const nextPath = tab === 'mis-datos'
       ? '/dashboard/mis-datos'
       : tab === 'reportes'
         ? '/dashboard/reportes'
-        : '/dashboard';
+        : tab === 'personal'
+          ? '/dashboard/personal'
+          : '/dashboard';
     if (
       window.location.pathname.startsWith('/dashboard/materiales/')
       || window.location.pathname.startsWith('/dashboard/epp/items/')
       || window.location.pathname.startsWith('/dashboard/stockminimos/')
       || window.location.pathname.startsWith('/dashboard/mis-datos')
       || window.location.pathname.startsWith('/dashboard/reportes')
+      || window.location.pathname.startsWith('/dashboard/personal')
       || tab === 'mis-datos'
       || tab === 'reportes'
+      || tab === 'personal'
     ) {
       window.history.pushState({}, '', nextPath);
     }
@@ -1276,6 +1294,101 @@ function Dashboard({ setView }) {
       setBomberosPersonal([]);
     } finally {
       setLoadingBomberosPersonal(false);
+    }
+  };
+
+  const resetPersonalImportFeedback = () => {
+    setPersonalImportError('');
+    setPersonalImportSuccess('');
+  };
+
+  const openPersonalImportView = () => {
+    if (!canManageUsers) return;
+
+    resetPersonalImportFeedback();
+    setPersonalImportFile(null);
+    setPersonalImportInputKey(current => current + 1);
+    setPersonalView('importar');
+    window.history.pushState({}, '', '/dashboard/personal/importar');
+  };
+
+  const closePersonalImportView = () => {
+    if (uploadingPersonalImport || downloadingPersonalTemplate) return;
+
+    resetPersonalImportFeedback();
+    setPersonalImportFile(null);
+    setPersonalImportInputKey(current => current + 1);
+    setPersonalView('listado');
+    if (window.location.pathname.startsWith('/dashboard/personal/importar')) {
+      window.history.pushState({}, '', '/dashboard/personal');
+    }
+  };
+
+  const handleDownloadPersonalTemplate = async () => {
+    if (!canManageUsers) return;
+
+    setDownloadingPersonalTemplate(true);
+    resetPersonalImportFeedback();
+
+    try {
+      const templateBlob = await apiFetch('/api/bomberos/importar/plantilla', {
+        responseType: 'blob',
+      });
+      const downloadUrl = window.URL.createObjectURL(templateBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = 'plantilla-importacion-bomberos.xlsx';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setPersonalImportSuccess('Plantilla descargada. Completala y luego cargala en el paso 2.');
+    } catch (error) {
+      setPersonalImportError(error.message || 'No se pudo descargar la plantilla.');
+    } finally {
+      setDownloadingPersonalTemplate(false);
+    }
+  };
+
+  const handlePersonalImportFileChange = (event) => {
+    setPersonalImportFile(event.target.files?.[0] || null);
+    resetPersonalImportFeedback();
+  };
+
+  const handlePersonalImport = async (event) => {
+    event.preventDefault();
+    if (!canManageUsers) return;
+
+    resetPersonalImportFeedback();
+
+    if (!personalImportFile) {
+      setPersonalImportError('Selecciona una plantilla Excel completada antes de importar.');
+      return;
+    }
+
+    const fileName = personalImportFile.name.toLowerCase();
+    if (!fileName.endsWith('.xlsx')) {
+      setPersonalImportError('El archivo debe estar en formato .xlsx.');
+      return;
+    }
+
+    const body = new FormData();
+    body.append('archivo', personalImportFile);
+    setUploadingPersonalImport(true);
+
+    try {
+      await apiFetch('/api/bomberos/importar', {
+        method: 'POST',
+        body,
+      });
+      setPersonalImportFile(null);
+      setPersonalImportInputKey(current => current + 1);
+      setPersonalImportSuccess('Importacion finalizada correctamente. El personal ya fue actualizado.');
+      await fetchBomberosPersonal();
+    } catch (error) {
+      setPersonalImportError(error.message || 'No se pudo importar el personal.');
+    } finally {
+      setUploadingPersonalImport(false);
     }
   };
 
@@ -2985,7 +3098,7 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? (personalView === 'importar' ? 'Importar personal' : 'Personal del Cuartel') : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
@@ -3036,12 +3149,14 @@ function Dashboard({ setView }) {
                   Crear campaña
                 </button>
               )}
-              {activeTab === 'personal' && (
+              {activeTab === 'personal' && personalView === 'listado' && (
                 <>
-                  <button type="button" className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Exportar
-                  </button>
+                  {canManageUsers && (
+                    <button type="button" onClick={openPersonalImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                      Importar personal
+                    </button>
+                  )}
                   {canManageUsers && (
                     <button type="button" onClick={() => setShowAddBomberoModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
                       <span className="text-base leading-none">+</span>
@@ -4576,7 +4691,102 @@ function Dashboard({ setView }) {
             </div>
           )}
 
-          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && (
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && personalView === 'importar' && (
+            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Personal del cuartel</p>
+                  <h3 className="rajdhani mt-2 text-3xl font-bold" style={{ color: palette.text }}>Importar personal</h3>
+                  <p className="mt-2 max-w-2xl text-sm" style={{ color: palette.muted }}>
+                    Descarga la plantilla oficial, completa los datos y carga el archivo Excel para registrar bomberos masivamente.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closePersonalImportView}
+                  disabled={uploadingPersonalImport || downloadingPersonalTemplate}
+                  className="rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Volver al personal
+                </button>
+              </div>
+
+              <div className="grid max-w-6xl gap-5 lg:grid-cols-2">
+                <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-cyan/30 bg-brand-cyan/10 font-bold text-brand-cyan">1</span>
+                    <div>
+                      <h4 className="rajdhani text-xl font-bold text-text-main">Descarga la plantilla</h4>
+                      <p className="text-sm text-text-muted">Archivo Excel con las columnas requeridas.</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <p className="font-semibold text-text-main">plantilla-importacion-bomberos.xlsx</p>
+                    <div className="mt-3 grid gap-2 text-sm text-text-muted sm:grid-cols-2">
+                      <span className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2">Nombre</span>
+                      <span className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2">Rut</span>
+                      <span className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2">Email</span>
+                      <span className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2">Cargo</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPersonalTemplate}
+                    disabled={downloadingPersonalTemplate || uploadingPersonalImport}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-3 text-sm font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    {downloadingPersonalTemplate ? 'Descargando...' : 'Descargar plantilla'}
+                  </button>
+                </section>
+
+                <form onSubmit={handlePersonalImport} className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-red/30 bg-brand-red/10 font-bold text-brand-red">2</span>
+                    <div>
+                      <h4 className="rajdhani text-xl font-bold text-text-main">Importa el archivo</h4>
+                      <p className="text-sm text-text-muted">Carga la plantilla completada.</p>
+                    </div>
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Archivo Excel</span>
+                    <span className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/50">
+                      <svg className="mb-2 h-7 w-7 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5.002 5.002 0 0115.9 6H16a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                      <span className="text-sm font-semibold text-text-main">
+                        {personalImportFile?.name || 'Seleccionar plantilla completada'}
+                      </span>
+                      <span className="mt-1 text-xs text-text-muted">Formato permitido: .xlsx</span>
+                      <input
+                        key={personalImportInputKey}
+                        type="file"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        onChange={handlePersonalImportFileChange}
+                        disabled={uploadingPersonalImport}
+                        className="sr-only"
+                      />
+                    </span>
+                  </label>
+
+                  {(personalImportError || personalImportSuccess) && (
+                    <p className={`mt-5 rounded-lg border px-4 py-3 text-sm ${personalImportError ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-brand-green/30 bg-brand-green/10 text-brand-green'}`}>
+                      {personalImportError || personalImportSuccess}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={!personalImportFile || uploadingPersonalImport || downloadingPersonalTemplate}
+                    className="mt-5 w-full rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {uploadingPersonalImport ? 'Importando...' : 'Importar personal'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && personalView === 'listado' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mx-auto max-w-6xl">
                 <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
