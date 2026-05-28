@@ -569,16 +569,29 @@ function Dashboard({ setView }) {
   };
 
   const fetchBomberoProfile = async () => {
-    const idBombero = getCurrentBomberoIdFromSession();
-    if (!idBombero) {
-      setBomberoProfileError('No se pudo obtener el id del bombero desde la sesión.');
-      return null;
-    }
-
     setLoadingBomberoProfile(true);
     setBomberoProfileError('');
 
     try {
+      if (canManageOwnUser) {
+        const data = await apiFetch('/api/Usuarios/perfil');
+        setBomberoProfile(data);
+        localStorage.setItem('user', JSON.stringify({
+          ...getSessionUser(),
+          idBombero: data.idBombero,
+          idUsuario: data.idUsuario,
+          email: data.email,
+          cargo: data.cargo,
+        }));
+        return data;
+      }
+
+      const idBombero = getCurrentBomberoIdFromSession();
+      if (!idBombero) {
+        setBomberoProfileError('No se pudo obtener el id del bombero desde la sesión.');
+        return null;
+      }
+
       const data = await apiFetch(`/api/bomberos/${idBombero}`);
       setBomberoProfile(data);
       localStorage.setItem('user', JSON.stringify({
