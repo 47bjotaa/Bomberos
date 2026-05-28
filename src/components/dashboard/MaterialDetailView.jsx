@@ -35,7 +35,7 @@ const normalizeDetail = (data, fallback = {}) => {
     idMaterial: data.idMaterial || fallback.idMaterial,
     idUbicacion: data.idUbicacion || data.idUbicacionActual || fallback.idUbicacion,
     nombre: data.nombreMaterial || data.nombre || fallback.nombre || 'Material',
-    descripcion: data.descripcionMaterial || data.descripcion || 'Sin descripcion registrada.',
+    descripcion: data.descripcionMaterial || data.descripcion || 'Sin descripción registrada.',
     tipo: data.nombreTipoProducto || fallback.categoria || 'Sin tipo',
     esSerializacion: isSerialized,
     requiereMantencion: Boolean(data.requiereMantencion),
@@ -588,7 +588,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
     const fetchMaintenanceFiles = async () => {
       if (!idMantencion) {
         setMaintenanceDetailFiles([]);
-        setMaintenanceFilesError('Esta mantencion no tiene id para consultar archivos.');
+        setMaintenanceFilesError('Esta mantención no tiene id para consultar archivos.');
         return;
       }
 
@@ -873,10 +873,10 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
       setMaintenanceFiles([]);
 
       if (fileUploadError) {
-        setMaintenanceNotice(`La mantencion fue creada, pero los archivos no pudieron subirse: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
+        setMaintenanceNotice(`La mantención fue creada, pero los archivos no pudieron subirse: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
       }
     } catch (err) {
-      setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
+      setMaintenanceError(err.message || 'No se pudo crear la mantención.');
     } finally {
       setMaintenanceSaving(false);
     }
@@ -887,7 +887,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
     const idMantencion = getMaintenanceId(maintenance);
     if (!idMantencion) {
-      setMaintenanceNotice('No se pudo marcar como realizada: la mantencion no tiene id.');
+      setMaintenanceNotice('No se pudo marcar como realizada: la mantención no tiene id.');
       return;
     }
 
@@ -917,7 +917,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         };
       });
     } catch (err) {
-      setMaintenanceNotice(err.message || 'No se pudo marcar la mantencion como realizada.');
+      setMaintenanceNotice(err.message || 'No se pudo marcar la mantención como realizada.');
     } finally {
       setMarkingMaintenanceId(null);
     }
@@ -928,7 +928,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
     const idMantencion = getMaintenanceId(selectedMaintenance);
     if (!idMantencion) {
-      setMaintenanceFilesError('No se pudo eliminar: la mantencion no tiene id.');
+      setMaintenanceFilesError('No se pudo eliminar: la mantención no tiene id.');
       return;
     }
 
@@ -959,7 +959,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
       });
       setSelectedMaintenance(null);
     } catch (err) {
-      setMaintenanceFilesError(err.message || 'No se pudo eliminar la mantencion.');
+      setMaintenanceFilesError(err.message || 'No se pudo eliminar la mantención.');
     } finally {
       setDeletingMaintenance(false);
     }
@@ -1091,7 +1091,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                         <span className="text-sm">&#9906;</span>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs" style={{ color: palette.muted }}>Ubicacion actual</p>
+                        <p className="text-xs" style={{ color: palette.muted }}>Ubicación actual</p>
                         <p className="truncate text-sm font-semibold" style={{ color: palette.text }}>{material.ubicacion}</p>
                       </div>
                     </div>
@@ -1115,8 +1115,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                   <div className={`mt-auto grid gap-3 pt-8 ${material.esSerializacion ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
                     {material.esSerializacion && (
                       <div className="rounded-lg border px-4 py-3" style={{ borderColor: palette.border, background: palette.cardSoft }}>
-                        <p className="text-xs" style={{ color: palette.muted }}>Codigo Unico (SKU)</p>
-                        <p className="mt-1 font-mono text-sm font-bold" style={{ color: palette.text }}>{material.codigoUnico || 'Sin codigo'}</p>
+                        <p className="text-xs" style={{ color: palette.muted }}>Código único (SKU)</p>
+                        <p className="mt-1 font-mono text-sm font-bold" style={{ color: palette.text }}>{material.codigoUnico || 'Sin código'}</p>
                       </div>
                     )}
                     <div className="rounded-lg border px-4 py-3" style={{ borderColor: palette.border, background: palette.cardSoft }}>
@@ -1237,7 +1237,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                             <span className="rounded-full bg-brand-cyan/10 px-2 py-0.5 text-xs font-semibold text-brand-cyan">{mant.estadoMantencion}</span>
                           )}
                         </div>
-                        <p className="mt-3 text-sm font-semibold" style={{ color: palette.text }}>{mant.tipo || 'Mantencion'}</p>
+                        <p className="mt-3 text-sm font-semibold" style={{ color: palette.text }}>{mant.tipo || 'Mantención'}</p>
                         <p className="mt-1 text-sm leading-relaxed" style={{ color: palette.muted }}>{mant.descripcion || 'Sin detalle'}</p>
                         {isMaintenancePending(mant) && (
                           <div className="mt-3 flex justify-end">
@@ -1582,7 +1582,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
             <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
               <div>
                 <h3 className="text-lg font-bold" style={{ color: palette.text }}>
-                  {maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}
+                  {maintenanceModalMode === 'programada' ? 'Programar mantención' : 'Agregar mantención'}
                 </h3>
                 <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
               </div>
@@ -1632,12 +1632,12 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
               <div>
                 <label className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>
-                  Descripcion
+                  Descripción
                 </label>
                 <textarea
                   value={maintenanceForm.descripcion}
                   onChange={(event) => setMaintenanceForm((current) => ({ ...current, descripcion: event.target.value }))}
-                  placeholder="Describe la mantencion..."
+                  placeholder="Describe la mantención..."
                   className="min-h-[120px] w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
                   style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
                   disabled={maintenanceSaving}
@@ -1718,7 +1718,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                 }
                 className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}
+                {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantención'}
               </button>
             </div>
           </form>
@@ -1754,7 +1754,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
             <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
               <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripcion</p>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripción</p>
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: palette.text }}>
                   {selectedObservation.observacion || 'Sin detalle'}
                 </p>
@@ -1814,7 +1814,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
             <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
               <div className="min-w-0">
                 <p className="text-xs" style={{ color: palette.muted }}>{formatDate(selectedMaintenance.fecha)}</p>
-                <h3 className="mt-1 text-lg font-bold" style={{ color: palette.text }}>Detalle de mantencion</h3>
+                <h3 className="mt-1 text-lg font-bold" style={{ color: palette.text }}>Detalle de mantención</h3>
                 <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -1842,7 +1842,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
                   <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Tipo</p>
-                  <p className="mt-2 text-sm font-bold" style={{ color: palette.text }}>{selectedMaintenance.tipo || 'Mantencion'}</p>
+                  <p className="mt-2 text-sm font-bold" style={{ color: palette.text }}>{selectedMaintenance.tipo || 'Mantención'}</p>
                 </div>
                 <div className="rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
                   <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Estado</p>
@@ -1851,7 +1851,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
               </div>
 
               <div className="mt-3 rounded-lg border p-4" style={{ borderColor: palette.border, background: palette.card }}>
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripcion</p>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.muted }}>Descripción</p>
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: palette.text }}>
                   {selectedMaintenance.descripcion || 'Sin detalle'}
                 </p>
@@ -1895,7 +1895,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState palette={palette}>Esta mantencion no tiene archivos.</EmptyState>
+                  <EmptyState palette={palette}>Esta mantención no tiene archivos.</EmptyState>
                 )}
               </div>
             </div>

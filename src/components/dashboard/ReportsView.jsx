@@ -61,7 +61,7 @@ function ReportsView({ palette }) {
           .filter(location => location.id);
         setRootLocations(locations);
       } catch (locationsError) {
-        setStockError(locationsError.message || 'No se pudieron cargar las ubicaciones raíz.');
+        setStockError(locationsError.message || 'No se pudieron cargar las ubicaciones raiz.');
       } finally {
         setLoadingRootLocations(false);
       }

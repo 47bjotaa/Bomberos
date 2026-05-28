@@ -94,7 +94,7 @@ const refreshAccessToken = async () => {
   if (!refreshToken) {
     clearSession();
     redirectToLogin();
-    throw new Error('La sesion expiro. Inicia sesion nuevamente.');
+    throw new Error('La sesión expiró. Inicia sesión nuevamente.');
   }
 
   refreshRequest = (async () => {

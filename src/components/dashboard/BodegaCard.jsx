@@ -3,7 +3,7 @@ import { Icons } from '../../components/ui/Icons';
 
 function BodegaCard({ name, items, icon: Icon, active, onClick, onNameChange, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
-  const displayName = name || 'Ubicacion';
+  const displayName = name || 'Ubicación';
   const [tempName, setTempName] = useState(displayName);
 
   let ComputedIcon = Icon;

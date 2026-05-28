@@ -52,7 +52,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
         const data = await apiFetch('/api/materiales/creados');
         setCatalogo(getArrayPayload(data).map(mapMaterial).filter(material => material.id));
       } catch (err) {
-        setError(err.message || 'No se pudo cargar el catalogo de materiales.');
+        setError(err.message || 'No se pudo cargar el catálogo de materiales.');
       } finally {
         setLoading(false);
       }
@@ -205,7 +205,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
 
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
               {loading ? (
-                <div className="flex h-full items-center justify-center text-sm text-text-muted">Cargando catalogo...</div>
+                <div className="flex h-full items-center justify-center text-sm text-text-muted">Cargando catálogo...</div>
               ) : filteredCatalogo.length > 0 ? (
                 <div className="space-y-2">
                   {filteredCatalogo.map(material => (
@@ -232,7 +232,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-dark-border py-12 text-center text-sm text-text-muted">No hay materiales en el catalogo.</div>
+                <div className="rounded-xl border border-dashed border-dark-border py-12 text-center text-sm text-text-muted">No hay materiales en el catálogo.</div>
               )}
             </div>
           </section>
@@ -245,7 +245,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
 
                 {usesItemEndpoint && (
                   <div className="mb-6 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 p-4 text-sm text-brand-cyan">
-                    Este material requiere control individualizado. La cantidad se fija en 1 y debes ingresar su codigo unico.
+                    Este material requiere control individualizado. La cantidad se fija en 1 y debes ingresar su código único.
                   </div>
                 )}
 
@@ -263,7 +263,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                   </label>
 
                   <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Codigo Unico {usesItemEndpoint && <span className="text-brand-red">*</span>}</span>
+                    <span className="mb-2 block text-sm font-medium text-text-main">Código único {usesItemEndpoint && <span className="text-brand-red">*</span>}</span>
                     <input
                       type="text"
                       value={formData.codigoUnico}
@@ -327,7 +327,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
             ) : (
               <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border text-center">
                 <p className="rajdhani text-lg font-semibold text-white">Selecciona un material</p>
-                <p className="mt-2 max-w-sm text-sm text-text-muted">El formulario se habilitara segun si el material del catalogo es serializado o generico.</p>
+                <p className="mt-2 max-w-sm text-sm text-text-muted">El formulario se habilitará según si el material del catálogo es serializado o genérico.</p>
               </div>
             )}
 

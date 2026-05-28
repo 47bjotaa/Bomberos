@@ -29,7 +29,7 @@ function RetornoDonacion() {
 
     const fetchCampana = async () => {
       if (!slug) {
-        setError('No se encontro la campana asociada a esta donacion.');
+        setError('No se encontró la campaña asociada a esta donación.');
         setLoading(false);
         return;
       }
@@ -48,7 +48,7 @@ function RetornoDonacion() {
       } catch (fetchError) {
         console.error('Error al cargar campana de retorno:', fetchError);
         if (!ignore) {
-          setError(fetchError.message || 'No se pudo cargar la campana.');
+          setError(fetchError.message || 'No se pudo cargar la campaña.');
         }
       } finally {
         if (!ignore) {
@@ -72,7 +72,7 @@ function RetornoDonacion() {
             <LogoCuartelAmigo size={44} />
           </a>
           <span className="rounded-full border border-brand-green/30 bg-brand-green/10 px-3 py-1 text-xs font-semibold text-brand-green">
-            Donacion recibida
+            Donación recibida
           </span>
         </div>
       </header>
@@ -80,7 +80,7 @@ function RetornoDonacion() {
       <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-4xl items-center px-6 py-12">
         {loading ? (
           <div className="w-full rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
-            Cargando confirmacion...
+            Cargando confirmación...
           </div>
         ) : error ? (
           <div className="w-full rounded-xl border border-brand-red/30 bg-brand-red/10 px-6 py-12 text-center">
@@ -94,16 +94,16 @@ function RetornoDonacion() {
               </div>
               <h1 className="rajdhani text-4xl font-bold text-white">Gracias por donar</h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-muted">
-                Tu aporte a la campana <span className="font-semibold text-white">{campana.nombre}</span> fue registrado.
+                Tu aporte a la campaña <span className="font-semibold text-white">{campana.nombre}</span> fue registrado.
               </p>
               <div className="mx-auto mt-8 max-w-md rounded-lg border border-dark-border bg-dark-bg px-5 py-4 text-left">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Campana</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Campaña</p>
                 <p className="mt-1 text-lg font-bold text-white">{campana.nombre}</p>
                 <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-text-muted">Fecha</p>
                 <p className="mt-1 text-sm text-white">{formatDateChile()}</p>
               </div>
               <a href={`/donar/${campana.slug}`} className="mt-8 inline-flex rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50">
-                Volver a la campana
+                Volver a la campaña
               </a>
             </div>
           </section>

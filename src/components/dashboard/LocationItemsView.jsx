@@ -112,7 +112,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
           <div>
             <h3 className="rajdhani text-lg font-bold tracking-wide" style={{ color: palette.text }}>Materiales</h3>
             <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>
-              {hasSelection ? `Contenido de ${locationName}` : 'Selecciona una ubicacion para cargar su inventario'}
+              {hasSelection ? `Contenido de ${locationName}` : 'Selecciona una ubicación para cargar su inventario'}
             </p>
           </div>
         </div>
@@ -130,8 +130,8 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
             >
               {getIcon('package')}
             </div>
-            <p className="rajdhani text-lg font-semibold" style={{ color: palette.text }}>Sin ubicacion seleccionada</p>
-            <p className="mt-2 max-w-sm text-sm" style={{ color: palette.muted }}>El inventario aparecera aqui cuando abras una ubicacion del panel derecho.</p>
+            <p className="rajdhani text-lg font-semibold" style={{ color: palette.text }}>Sin ubicación seleccionada</p>
+            <p className="mt-2 max-w-sm text-sm" style={{ color: palette.muted }}>El inventario aparecerá aquí cuando abras una ubicación del panel derecho.</p>
           </div>
         ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-60">

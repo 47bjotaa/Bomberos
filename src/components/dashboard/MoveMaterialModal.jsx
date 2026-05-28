@@ -32,7 +32,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
 
   const mapUbicacion = (ubicacion) => ({
     id: ubicacion.idUbicacion || ubicacion.id,
-    name: ubicacion.nombre || ubicacion.name || ubicacion.nombreUbicacion || 'Ubicacion',
+    name: ubicacion.nombre || ubicacion.name || ubicacion.nombreUbicacion || 'Ubicación',
     nombreTipo: ubicacion.nombreTipo || ubicacion.tipo || ubicacion.tipoUbicacion || '',
     idPadre: ubicacion.idPadre,
     nombrePadre: ubicacion.nombrePadre
@@ -193,7 +193,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
                         </svg>
                       </div>
                       <p className="font-semibold text-white">{ubicacion.name}</p>
-                      <p className="mt-1 text-xs text-text-muted">{ubicacion.nombreTipo || 'Ubicacion'}</p>
+                      <p className="mt-1 text-xs text-text-muted">{ubicacion.nombreTipo || 'Ubicación'}</p>
                     </button>
                   ))}
                 </div>
@@ -205,7 +205,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Ubicacion general</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Ubicación general</p>
                   <h4 className="mt-1 text-lg font-bold text-white">{selectedGeneral.name}</h4>
                 </div>
                 <button onClick={goBack} className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg3 hover:text-white">
@@ -214,17 +214,17 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
               </div>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-text-main">Ubicacion objetivo</span>
+                <span className="mb-2 block text-sm font-medium text-text-main">Ubicación objetivo</span>
                 <select
                   value={selectedTargetId}
                   disabled={loadingHijas || targetOptions.length === 0}
                   onChange={(event) => setSelectedTargetId(event.target.value)}
                   className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all disabled:cursor-not-allowed disabled:opacity-50 focus:border-brand-cyan"
                 >
-                  <option value="">{loadingHijas ? 'Cargando...' : 'Seleccionar ubicacion...'}</option>
+                  <option value="">{loadingHijas ? 'Cargando...' : 'Seleccionar ubicación...'}</option>
                   {targetOptions.map(ubicacion => (
                     <option key={ubicacion.id} value={ubicacion.id} disabled={originId && String(ubicacion.id) === String(originId)}>
-                      {ubicacion.name}{ubicacion.isGeneralTarget ? ' (ubicacion general)' : ''}{originId && String(ubicacion.id) === String(originId) ? ' (ubicacion actual)' : ''}
+                      {ubicacion.name}{ubicacion.isGeneralTarget ? ' (ubicación general)' : ''}{originId && String(ubicacion.id) === String(originId) ? ' (ubicación actual)' : ''}
                     </option>
                   ))}
                 </select>
@@ -232,20 +232,20 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
 
               {isSameDestination && (
                 <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">
-                  La ubicacion destino no puede ser la misma que la ubicacion origen.
+                  La ubicación destino no puede ser la misma que la ubicación origen.
                 </div>
               )}
 
               {targetOptions.length === 0 && !loadingHijas && (
                 <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-3 text-sm text-brand-red">
-                  Esta ubicacion no tiene destinos disponibles para mover el material.
+                  Esta ubicación no tiene destinos disponibles para mover el material.
                 </div>
               )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-dark-border bg-dark-bg/50 p-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Origen</p>
-                  <p className="mt-2 font-semibold text-white">{material?.ubicacion || origen?.name || 'Ubicacion actual'}</p>
+                  <p className="mt-2 font-semibold text-white">{material?.ubicacion || origen?.name || 'Ubicación actual'}</p>
                 </div>
                 <div className="rounded-xl border border-brand-cyan/25 bg-brand-cyan/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Objetivo</p>
@@ -259,7 +259,7 @@ function MoveMaterialModal({ material, origen, onClose, onMoved }) {
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
                   className="min-h-[86px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-white outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan"
-                  placeholder="Ej: Reubicacion de inventario"
+                  placeholder="Ej: Reubicación de inventario"
                 />
               </label>
             </div>

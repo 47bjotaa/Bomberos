@@ -38,7 +38,7 @@ function PaginaDonacion() {
 
     const fetchCampana = async () => {
       if (!slug) {
-        setError('No se encontro la campana solicitada.');
+        setError('No se encontró la campaña solicitada.');
         setLoading(false);
         return;
       }
@@ -57,7 +57,7 @@ function PaginaDonacion() {
       } catch (fetchError) {
         console.error('Error al cargar campana publica:', fetchError);
         if (!ignore) {
-          setError(fetchError.message || 'No se pudo cargar la campana.');
+          setError(fetchError.message || 'No se pudo cargar la campaña.');
         }
       } finally {
         if (!ignore) {
@@ -99,7 +99,7 @@ function PaginaDonacion() {
     }
 
     if (amount < 1000) {
-      setPaymentError('El monto minimo de donacion es $1.000.');
+      setPaymentError('El monto mínimo de donación es $1.000.');
       return;
     }
 
@@ -152,7 +152,7 @@ function PaginaDonacion() {
       <main className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[1.1fr_.9fr]">
         {loading ? (
           <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-20 text-center text-text-muted lg:col-span-2">
-            Cargando campana...
+            Cargando campaña...
           </div>
         ) : error ? (
           <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 px-6 py-12 text-center lg:col-span-2">
@@ -226,7 +226,7 @@ function PaginaDonacion() {
                     value={customAmount}
                     onChange={handleCustomAmountChange}
                     className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white placeholder-text-muted outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-                    placeholder="Monto personalizado minimo $1.000"
+                    placeholder="Monto personalizado mínimo $1.000"
                   />
                 </div>
 

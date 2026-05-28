@@ -166,7 +166,7 @@ function AssignEppModal({ onClose, onAssign }) {
       onClose();
     } catch (assignError) {
       console.error('Error al asignar EPP:', assignError);
-      setError(assignError.message || 'No se pudo completar la asignacion.');
+      setError(assignError.message || 'No se pudo completar la asignación.');
     } finally {
       setSaving(false);
     }
@@ -178,7 +178,7 @@ function AssignEppModal({ onClose, onAssign }) {
         <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <svg className="w-5 h-5 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-            <h3 className="text-lg font-bold text-text-main rajdhani tracking-wide">Asignar Equipo de Proteccion Personal</h3>
+            <h3 className="text-lg font-bold text-text-main rajdhani tracking-wide">Asignar Equipo de Protección Personal</h3>
           </div>
           <button onClick={onClose} disabled={saving} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -223,7 +223,7 @@ function AssignEppModal({ onClose, onAssign }) {
               <svg className="w-4 h-4 absolute left-3 top-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               <input
                 type="text"
-                placeholder="Buscar por equipo, talla, codigo..."
+                placeholder="Buscar por equipo, talla, código..."
                 className="w-full pl-9 pr-4 py-2 bg-dark-bg border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all text-sm placeholder-text-muted disabled:opacity-50"
                 value={searchEpp}
                 onChange={(e) => setSearchEpp(e.target.value)}

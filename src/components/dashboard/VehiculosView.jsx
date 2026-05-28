@@ -76,7 +76,7 @@ const mapVehiculo = (v) => ({
   patente: v.patente || 'S/N',
   tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
   modelo: v.modelo || v.descripcion || v.descripcionUbicacion || 'Sin especificar',
-  descripcion: v.descripcion || v.descripcionUbicacion || v.modelo || 'Sin descripcion registrada.',
+  descripcion: v.descripcion || v.descripcionUbicacion || v.modelo || 'Sin descripción registrada.',
   estado: v.estadoVehiculo || v.estado || 'Operativo',
   estadoUbicacion: v.estadoUbicacion || '',
   observaciones: Array.isArray(v.observaciones) ? v.observaciones : [],
@@ -309,7 +309,7 @@ function VehiculosView() {
     const fetchMaintenanceFiles = async () => {
       if (!idMantencion) {
         setMaintenanceDetailFiles([]);
-        setMaintenanceFilesError('Esta mantencion no tiene id para consultar archivos.');
+        setMaintenanceFilesError('Esta mantención no tiene id para consultar archivos.');
         return;
       }
 
@@ -724,11 +724,11 @@ function VehiculosView() {
       setMaintenanceModalMode(null);
 
       if (fileUploadError) {
-        setMaintenanceNotice(`La mantencion fue creada, pero no se pudieron subir los archivos: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
+        setMaintenanceNotice(`La mantención fue creada, pero no se pudieron subir los archivos: ${fileUploadError.message || 'revisa el endpoint de archivos.'}`);
       }
       await fetchVehicleDetail();
     } catch (err) {
-      setMaintenanceError(err.message || 'No se pudo crear la mantencion.');
+      setMaintenanceError(err.message || 'No se pudo crear la mantención.');
     } finally {
       setMaintenanceSaving(false);
     }
@@ -739,7 +739,7 @@ function VehiculosView() {
 
     const idMantencion = getMaintenanceId(maintenance);
     if (!idMantencion || !selectedId) {
-      setMaintenanceNotice('No se pudo marcar como realizada: la mantencion no tiene id.');
+      setMaintenanceNotice('No se pudo marcar como realizada: la mantención no tiene id.');
       return;
     }
 
@@ -761,7 +761,7 @@ function VehiculosView() {
         )),
       });
     } catch (err) {
-      setMaintenanceNotice(err.message || 'No se pudo marcar la mantencion como realizada.');
+      setMaintenanceNotice(err.message || 'No se pudo marcar la mantención como realizada.');
     } finally {
       setMarkingMaintenanceId(null);
     }
@@ -854,13 +854,13 @@ function VehiculosView() {
                     <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
                     <select value={formData.estadoVehiculo} onChange={(e) => setFormData({ ...formData, estadoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan">
                       <option value="Operativo" className="bg-dark-surface text-text-main">Operativo</option>
-                      <option value="En Mantencion" className="bg-dark-surface text-text-main">En Mantencion</option>
+                      <option value="En Mantencion" className="bg-dark-surface text-text-main">En Mantención</option>
                       <option value="Fuera de Servicio" className="bg-dark-surface text-text-main">Fuera de Servicio</option>
                     </select>
                   </label>
 
                   <label className="block md:col-span-2">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Descripcion</span>
+                    <span className="mb-2 block text-sm font-medium text-text-main">Descripción</span>
                     <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="min-h-[110px] w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all placeholder:text-text-muted focus:border-brand-cyan" placeholder="Marca, modelo, capacidad, observaciones generales..." />
                   </label>
                 </div>
@@ -1110,9 +1110,9 @@ function VehiculosView() {
                 >
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <span className="text-xs font-semibold text-brand-cyan">{formatDate(mant.fecha)}</span>
-                    <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[11px] font-bold text-brand-cyan">{mant.estadoMantencion || mant.tipo || 'Mantencion'}</span>
+                    <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 text-[11px] font-bold text-brand-cyan">{mant.estadoMantencion || mant.tipo || 'Mantención'}</span>
                   </div>
-                  <h5 className="mb-1 text-sm font-semibold text-text-main">{mant.tipo || 'Mantencion'}</h5>
+                  <h5 className="mb-1 text-sm font-semibold text-text-main">{mant.tipo || 'Mantención'}</h5>
                   <p className="text-sm leading-relaxed text-text-muted">{mant.descripcion || mant.desc || 'Sin detalle'}</p>
                   {isMaintenancePending(mant) && (
                     <div className="mt-3 flex justify-end">
@@ -1165,7 +1165,7 @@ function VehiculosView() {
                 </div>
 
                 <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripción</p>
                   <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-text-main">
                     {selectedObservation.observacion || selectedObservation.descripcion || selectedObservation.desc || 'Sin detalle'}
                   </p>
@@ -1218,7 +1218,7 @@ function VehiculosView() {
               <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div className="min-w-0">
                   <p className="text-xs text-text-muted">{formatDate(selectedMaintenance.fecha)}</p>
-                  <h3 className="mt-1 text-lg font-bold text-text-main">Detalle de mantencion</h3>
+                  <h3 className="mt-1 text-lg font-bold text-text-main">Detalle de mantención</h3>
                   <p className="mt-0.5 truncate text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={() => setSelectedMaintenance(null)} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
@@ -1234,7 +1234,7 @@ function VehiculosView() {
                   </div>
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tipo</p>
-                    <p className="mt-2 text-sm font-bold text-text-main">{selectedMaintenance.tipo || 'Mantencion'}</p>
+                    <p className="mt-2 text-sm font-bold text-text-main">{selectedMaintenance.tipo || 'Mantención'}</p>
                   </div>
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</p>
@@ -1243,14 +1243,14 @@ function VehiculosView() {
                 </div>
 
                 <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripción</p>
                   <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-text-main">
                     {selectedMaintenance.descripcion || selectedMaintenance.desc || 'Sin detalle'}
                   </p>
                 </div>
 
                 <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID mantencion</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">ID mantención</p>
                   <p className="mt-2 text-sm font-bold text-text-main">{getMaintenanceId(selectedMaintenance) || 'Sin id'}</p>
                 </div>
 
@@ -1292,7 +1292,7 @@ function VehiculosView() {
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
-                      Esta mantencion no tiene archivos.
+                      Esta mantención no tiene archivos.
                     </div>
                   )}
                 </div>
@@ -1356,7 +1356,7 @@ function VehiculosView() {
             <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-bold text-text-main">{maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}</h3>
+                  <h3 className="text-lg font-bold text-text-main">{maintenanceModalMode === 'programada' ? 'Programar mantención' : 'Agregar mantención'}</h3>
                   <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
                 </div>
                 <button type="button" onClick={closeMaintenanceModal} disabled={maintenanceSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
@@ -1374,7 +1374,7 @@ function VehiculosView() {
                     <option value="Correctiva">Correctiva</option>
                   </select>
                 </div>
-                <textarea placeholder="Detalle de la mantencion" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} disabled={maintenanceSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                <textarea placeholder="Detalle de la mantención" value={newMant.descripcion} onChange={(e) => setNewMant({ ...newMant, descripcion: e.target.value })} disabled={maintenanceSaving} className="min-h-[130px] w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
                   <span className="text-sm font-semibold text-text-main">Seleccionar archivos</span>
                   <span className="mt-1 text-xs text-text-muted">Puedes adjuntar imagenes, PDF u otros documentos.</span>
@@ -1407,7 +1407,7 @@ function VehiculosView() {
                   Cancelar
                 </button>
                 <button type="submit" disabled={!newMant.descripcion.trim() || !newMant.tipo.trim() || maintenanceSaving || (maintenanceModalMode === 'programada' && !newMant.fecha)} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                  {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}
+                  {maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantención'}
                 </button>
               </div>
             </form>

@@ -680,10 +680,10 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
       resetMaintenanceDraft();
 
       if (fileUploadError) {
-        setMaintenanceNotice(`La mantencion fue creada, pero no se pudieron subir sus archivos: ${fileUploadError.message}`);
+        setMaintenanceNotice(`La mantención fue creada, pero no se pudieron subir sus archivos: ${fileUploadError.message}`);
       }
     } catch (saveError) {
-      setMaintenanceError(saveError.message || 'No se pudo crear la mantencion.');
+      setMaintenanceError(saveError.message || 'No se pudo crear la mantención.');
     } finally {
       setMaintenanceSaving(false);
     }
@@ -712,7 +712,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         )),
       }));
     } catch (saveError) {
-      setMaintenanceNotice(saveError.message || 'No se pudo marcar la mantencion como realizada.');
+      setMaintenanceNotice(saveError.message || 'No se pudo marcar la mantención como realizada.');
     } finally {
       setMarkingMaintenanceId(null);
     }
@@ -884,9 +884,9 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <Icons.Shield />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan">Equipo de Proteccion Personal</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan">Equipo de Protección Personal</p>
                     <h2 className="rajdhani mt-1 text-3xl font-bold text-white">{detail.nombreMaterial || 'EPP sin nombre'}</h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripcion registrada.'}</p>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripción registrada.'}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
                         normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Operativo' ? 'bg-brand-green border-brand-green/20 text-white' :
@@ -907,7 +907,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-xl border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan/80">Codigo</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-cyan/80">Código</p>
                     <p className="mt-1 text-lg font-bold text-brand-cyan">{detail.codigoUnico || '-'}</p>
                   </div>
                   <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
@@ -1003,7 +1003,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                           <span className="rounded-full bg-brand-cyan/10 px-2 py-0.5 text-xs font-semibold text-brand-cyan">{mant.estadoMantencion}</span>
                         )}
                       </div>
-                      <p className="mt-2 text-sm font-bold text-white">{mant.tipo || 'Mantencion'}</p>
+                      <p className="mt-2 text-sm font-bold text-white">{mant.tipo || 'Mantención'}</p>
                       <p className="mt-1 line-clamp-2 text-sm text-text-muted">{mant.descripcion || 'Sin detalle'}</p>
                       {isMaintenancePending(mant) && (
                         <div className="mt-3 flex justify-end">
@@ -1187,7 +1187,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
       {maintenanceModalMode && (
         <Modal
-          title={maintenanceModalMode === 'programada' ? 'Programar mantencion' : 'Agregar mantencion'}
+          title={maintenanceModalMode === 'programada' ? 'Programar mantención' : 'Agregar mantención'}
           subtitle={detail?.nombreMaterial}
           onClose={() => {
             if (!maintenanceSaving) resetMaintenanceDraft();
@@ -1195,7 +1195,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
           footer={(
             <>
               <button type="button" onClick={resetMaintenanceDraft} disabled={maintenanceSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-brand-cyan disabled:opacity-50">Cancelar</button>
-              <button type="submit" form="epp-maintenance-form" disabled={maintenanceSaving || !maintenanceForm.tipo.trim() || !maintenanceForm.descripcion.trim() || (maintenanceModalMode === 'programada' && !maintenanceForm.fecha)} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantencion'}</button>
+              <button type="submit" form="epp-maintenance-form" disabled={maintenanceSaving || !maintenanceForm.tipo.trim() || !maintenanceForm.descripcion.trim() || (maintenanceModalMode === 'programada' && !maintenanceForm.fecha)} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{maintenanceSaving ? 'Guardando...' : maintenanceModalMode === 'programada' ? 'Programar' : 'Guardar mantención'}</button>
             </>
           )}
         >
@@ -1214,8 +1214,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-white">Descripcion</span>
-              <textarea value={maintenanceForm.descripcion} onChange={(event) => setMaintenanceForm((current) => ({ ...current, descripcion: event.target.value }))} rows={5} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan" placeholder="Describe la mantencion..." disabled={maintenanceSaving} />
+              <span className="mb-2 block text-sm font-semibold text-white">Descripción</span>
+              <textarea value={maintenanceForm.descripcion} onChange={(event) => setMaintenanceForm((current) => ({ ...current, descripcion: event.target.value }))} rows={5} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan" placeholder="Describe la mantención..." disabled={maintenanceSaving} />
             </label>
             <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-5 text-center transition-colors hover:border-brand-cyan/60">
               <span className="text-sm font-semibold text-white">Seleccionar archivos</span>
@@ -1245,7 +1245,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
       {selectedObservation && (
         <Modal title="Detalle de observacion" subtitle={formatDate(selectedObservation.fecha)} onClose={() => setSelectedObservation(null)}>
           <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripción</p>
             <p className="mt-2 text-sm leading-relaxed text-white">{selectedObservation.observacion || 'Sin detalle'}</p>
           </div>
           <div className="mt-5">
@@ -1274,11 +1274,11 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
       )}
 
       {selectedMaintenance && (
-        <Modal title="Detalle de mantencion" subtitle={formatDate(selectedMaintenance.fecha)} onClose={() => setSelectedMaintenance(null)}>
+        <Modal title="Detalle de mantención" subtitle={formatDate(selectedMaintenance.fecha)} onClose={() => setSelectedMaintenance(null)}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tipo</p>
-              <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.tipo || 'Mantencion'}</p>
+              <p className="mt-2 text-sm font-bold text-white">{selectedMaintenance.tipo || 'Mantención'}</p>
             </div>
             <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</p>
@@ -1286,7 +1286,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
             </div>
           </div>
           <div className="mt-3 rounded-lg border border-dark-border bg-dark-bg p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripcion</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Descripción</p>
             <p className="mt-2 text-sm leading-relaxed text-white">{selectedMaintenance.descripcion || 'Sin detalle'}</p>
           </div>
           <div className="mt-5">
@@ -1312,7 +1312,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                 ))}
               </div>
             ) : (
-              <EmptyState>Esta mantencion no tiene archivos.</EmptyState>
+              <EmptyState>Esta mantención no tiene archivos.</EmptyState>
             )}
           </div>
         </Modal>

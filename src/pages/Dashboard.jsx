@@ -26,6 +26,7 @@ const TIPOS_PRODUCTO = [
   { id: 5, nombre: 'Material especifico' },
 ];
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const DONATION_PAGE_SIZE_OPTIONS = [8, 16, 32, 64];
 
 const DEFAULT_PAYMENT_CONFIG = {
   apiKey: '',
@@ -231,6 +232,8 @@ function Dashboard({ setView }) {
   const [donacionesCampanaError, setDonacionesCampanaError] = useState('');
   const [filtroNombreDonante, setFiltroNombreDonante] = useState('');
   const [filtroNombreBomberoDonacion, setFiltroNombreBomberoDonacion] = useState('');
+  const [donacionesPage, setDonacionesPage] = useState(1);
+  const [donacionesPageSize, setDonacionesPageSize] = useState(8);
   const [donacionesView, setDonacionesView] = useState('campanas');
   const [paymentConfigData, setPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
   const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
@@ -542,7 +545,7 @@ function Dashboard({ setView }) {
   const fetchBomberoProfile = async () => {
     const idBombero = getCurrentBomberoIdFromSession();
     if (!idBombero) {
-      setBomberoProfileError('No se pudo obtener el id del bombero desde la sesion.');
+      setBomberoProfileError('No se pudo obtener el id del bombero desde la sesión.');
       return null;
     }
 
@@ -614,7 +617,7 @@ function Dashboard({ setView }) {
     try {
       const idBombero = await getCurrentBomberoId();
       if (!idBombero) {
-        throw new Error('No se pudo identificar el bombero de la sesion.');
+        throw new Error('No se pudo identificar el bombero de la sesión.');
       }
 
       const linkData = await apiFetch(`/api/campanasdonaciones/${campaign.id}/bomberos/link`, {
@@ -685,7 +688,7 @@ function Dashboard({ setView }) {
       id: campana.idCampanaDonacion || campana.id,
       idCampanaDonacion: campana.idCampanaDonacion || campana.id,
       idCompania: campana.idCompania,
-      nombre: campana.nombre || 'Campana sin nombre',
+      nombre: campana.nombre || 'Campaña sin nombre',
       descripcion: campana.descripcion || '',
       metaMonto: meta,
       montoRecaudado: recaudado,
@@ -804,7 +807,7 @@ function Dashboard({ setView }) {
       id: idUbicacion || u.id || idVehiculo,
       idUbicacion,
       idVehiculo,
-      name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicacion',
+      name: u.nombre || u.name || u.nombreUbicacion || u.descripcion || 'Ubicación',
       items: u.totalItems || u.items || u.totalMateriales || u.cantidadMateriales || 0,
       idTipo: u.idTipo || u.idTipoUbicacion,
       nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
@@ -1287,7 +1290,7 @@ function Dashboard({ setView }) {
   const fetchDonacionesCampana = async (campana) => {
     if (!campana?.idCompania || !campana?.idCampanaDonacion) {
       setDonacionesCampana([]);
-      setDonacionesCampanaError('No se pudo identificar la compania o la campana.');
+      setDonacionesCampanaError('No se pudo identificar la compañía o la campaña.');
       return;
     }
 
@@ -1542,7 +1545,7 @@ function Dashboard({ setView }) {
     };
 
     if (!payload.nombre || !payload.descripcion || !payload.metaMonto || !payload.fechaInicio || !payload.fechaFin) {
-      setCreateCampanaError('Completa nombre, descripcion, meta y fechas para crear la campana.');
+      setCreateCampanaError('Completa nombre, descripción, meta y fechas para crear la campaña.');
       return;
     }
 
@@ -1557,7 +1560,7 @@ function Dashboard({ setView }) {
       resetNewCampanaData();
       await fetchCampanasDonaciones();
     } catch (error) {
-      setCreateCampanaError(error.message || 'No se pudo crear la campana.');
+      setCreateCampanaError(error.message || 'No se pudo crear la campaña.');
     } finally {
       setSavingCampana(false);
     }
@@ -1650,7 +1653,7 @@ function Dashboard({ setView }) {
     };
 
     if (!payload.idTipoProducto || !payload.nombre || !payload.descripcion) {
-      setAddMaterialError('Completa tipo, nombre y descripcion para crear el material.');
+      setAddMaterialError('Completa tipo, nombre y descripción para crear el material.');
       return;
     }
 
@@ -1736,10 +1739,10 @@ function Dashboard({ setView }) {
       });
       setCatalogImportFile(null);
       setCatalogImportInputKey(current => current + 1);
-      setCatalogImportSuccess('Importacion finalizada correctamente. El catalogo ya fue actualizado.');
+      setCatalogImportSuccess('Importación finalizada correctamente. El catálogo ya fue actualizado.');
       await fetchCatalogo();
     } catch (error) {
-      setCatalogImportError(error.message || 'No se pudo importar el catalogo.');
+      setCatalogImportError(error.message || 'No se pudo importar el catálogo.');
     } finally {
       setUploadingCatalogImport(false);
     }
@@ -1765,12 +1768,12 @@ function Dashboard({ setView }) {
   const visibleUbicaciones = currentUbicacion ? subUbicaciones : ubicaciones;
   const selectedUbicacion = [...locationPath, ...subUbicaciones, ...ubicaciones].find(u => u.id === activeUbicacion);
   const isGeneralInventario = activeUbicacion === GENERAL_INVENTORY_ID;
-  const selectedUbicacionName = isGeneralInventario ? 'General' : selectedUbicacion?.name || currentUbicacion?.name || 'Ubicacion';
+  const selectedUbicacionName = isGeneralInventario ? 'General' : selectedUbicacion?.name || currentUbicacion?.name || 'Ubicación';
   const selectedUbicacionTipo = selectedUbicacion?.nombreTipo || currentUbicacion?.nombreTipo || '';
   const isGeneralVehiculo = currentUbicacion?.id === activeUbicacion && selectedUbicacionTipo.toLowerCase() === 'vehiculo';
   const addMaterialDisabledReason = isGeneralInventario
-    ? 'Selecciona una ubicacion especifica para añadir materiales.'
-    : isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicacion tipo Vehiculo. Selecciona una gaveta o sububicacion.' : '';
+    ? 'Selecciona una ubicación específica para añadir materiales.'
+    : isGeneralVehiculo ? 'No se pueden añadir materiales en General de una ubicación tipo Vehículo. Selecciona una gaveta o sububicación.' : '';
   const selectedOrigen = selectedUbicacion ? { ...selectedUbicacion, name: selectedUbicacionName } : { id: activeUbicacion, name: selectedUbicacionName };
   const palette = getThemePalette(theme);
   const bomberosActivos = bomberosPersonal.filter(isBomberoActivo);
@@ -1841,10 +1844,10 @@ function Dashboard({ setView }) {
     </div>
   );
   const inventoryViews = [
-    { id: 'ubicaciones', label: 'Ubicaciones Principales' },
-    { id: 'arbol', label: 'Arbol de Ubicaciones' },
-    { id: 'stocks', label: 'Stocks Minimos' },
-    { id: 'catalogo', label: 'Catalogo' },
+    { id: 'ubicaciones', label: 'Ubicaciones principales' },
+    { id: 'arbol', label: 'Árbol de ubicaciones' },
+    { id: 'stocks', label: 'Stocks mínimos' },
+    { id: 'catalogo', label: 'Catálogo' },
   ];
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
@@ -1859,7 +1862,7 @@ function Dashboard({ setView }) {
 
   const mapTipoUbicacion = (tipo) => ({
     id: tipo.idTipo || tipo.idTipoUbicacion || tipo.id,
-    nombre: tipo.nombre || tipo.name || tipo.nombreTipo || 'Tipo de ubicacion',
+    nombre: tipo.nombre || tipo.name || tipo.nombreTipo || 'Tipo de ubicación',
     idCompania: tipo.idCompania,
     esTipoRaiz: toBoolean(tipo.esTipoRaiz),
   });
@@ -1870,7 +1873,7 @@ function Dashboard({ setView }) {
     idTipoUbicacionPadre: relation.idTipoUbicacionPadre,
     nombreTipoPadre: relation.nombreTipoPadre,
     idTipoUbicacionHijo: relation.idTipoUbicacionHijo,
-    nombreTipoHijo: relation.nombreTipoHijo || 'Tipo de ubicacion',
+    nombreTipoHijo: relation.nombreTipoHijo || 'Tipo de ubicación',
     esTipoRaizHijo: toBoolean(relation.esTipoRaizHijo),
   });
 
@@ -1886,7 +1889,7 @@ function Dashboard({ setView }) {
       setTiposArbolUbicacion(tipos);
       return tipos;
     } catch (error) {
-      setTiposArbolError(error.message || 'No se pudieron cargar los tipos de ubicacion.');
+      setTiposArbolError(error.message || 'No se pudieron cargar los tipos de ubicación.');
       setTiposArbolUbicacion([]);
       return [];
     } finally {
@@ -2015,7 +2018,7 @@ function Dashboard({ setView }) {
       await fetchTiposArbolUbicacion();
       setTipoUbicacionPendingDelete(null);
     } catch (error) {
-      setDeleteTipoUbicacionError(error.message || 'No se pudo eliminar el tipo de ubicacion.');
+      setDeleteTipoUbicacionError(error.message || 'No se pudo eliminar el tipo de ubicación.');
     } finally {
       setDeletingTipoUbicacionId(null);
     }
@@ -2099,7 +2102,7 @@ function Dashboard({ setView }) {
       setShowAddTipoUbicacionModal(false);
       setShowTipoRelationsModal(true);
     } catch (error) {
-      setAddTipoUbicacionError(error.message || 'No se pudo crear el tipo de ubicacion.');
+      setAddTipoUbicacionError(error.message || 'No se pudo crear el tipo de ubicación.');
     } finally {
       setSavingTipoUbicacion(false);
     }
@@ -2145,7 +2148,7 @@ function Dashboard({ setView }) {
       setCreatedTipoUbicacion(null);
       setSelectedTipoPadreIds([]);
     } catch (error) {
-      setTipoRelationsError(error.message || 'No se pudieron crear las relaciones del tipo de ubicacion.');
+      setTipoRelationsError(error.message || 'No se pudieron crear las relaciones del tipo de ubicación.');
     } finally {
       setSavingTipoRelations(false);
     }
@@ -2154,15 +2157,15 @@ function Dashboard({ setView }) {
   const mapStockMinimo = (stock) => ({
     id: stock.idStockMinimo || stock.id,
     idUbicacion: stock.idUbicacion,
-    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicacion',
-    nombre: stock.nombre || stock.name || 'Stock minimo',
+    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicación',
+    nombre: stock.nombre || stock.name || 'Stock mínimo',
   });
 
   const mapStockMinimoDetail = (stock) => ({
     id: stock.idStockMinimo || stock.id,
     idUbicacion: stock.idUbicacion,
-    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicacion',
-    nombre: stock.nombre || stock.name || 'Stock minimo',
+    nombreUbicacion: stock.nombreUbicacion || stock.ubicacion || 'Ubicación',
+    nombre: stock.nombre || stock.name || 'Stock mínimo',
     materiales: getArrayPayload(stock, ['materiales']).map(material => ({
       id: material.idStockMaterial || material.id || material.idMaterial,
       idStockMaterial: material.idStockMaterial || material.id,
@@ -2183,7 +2186,7 @@ function Dashboard({ setView }) {
         .filter(stock => stock.id);
       setStockMinimos(stocks);
     } catch (error) {
-      setStockMinimosError(error.message || 'No se pudieron cargar los stocks minimos.');
+      setStockMinimosError(error.message || 'No se pudieron cargar los stocks mínimos.');
       setStockMinimos([]);
     } finally {
       setLoadingStockMinimos(false);
@@ -2208,7 +2211,7 @@ function Dashboard({ setView }) {
         fetchStockMinimoInventory(detail.idUbicacion);
       }
     } catch (error) {
-      setStockMinimoDetailError(error.message || 'No se pudo cargar el detalle del stock minimo.');
+      setStockMinimoDetailError(error.message || 'No se pudo cargar el detalle del stock mínimo.');
       setStockMinimoDetail(null);
     } finally {
       setLoadingStockMinimoDetail(false);
@@ -2387,7 +2390,7 @@ function Dashboard({ setView }) {
         await fetchStockMinimoDetail(editedId);
       }
     } catch (error) {
-      setAddStockMinimoError(error.message || (editingStockMinimoId ? 'No se pudo editar el stock minimo.' : 'No se pudo crear el stock minimo.'));
+      setAddStockMinimoError(error.message || (editingStockMinimoId ? 'No se pudo editar el stock mínimo.' : 'No se pudo crear el stock mínimo.'));
     } finally {
       setSavingStockMinimo(false);
     }
@@ -2422,7 +2425,7 @@ function Dashboard({ setView }) {
       setStockMinimos(current => current.filter(item => String(item.id) !== String(stock.id)));
       setStockMinimoPendingDelete(null);
     } catch (error) {
-      setDeleteStockMinimoError(error.message || 'No se pudo eliminar el stock minimo.');
+      setDeleteStockMinimoError(error.message || 'No se pudo eliminar el stock mínimo.');
     } finally {
       setDeletingStockMinimoId(null);
     }
@@ -2449,7 +2452,7 @@ function Dashboard({ setView }) {
         }
 
         if (!idTipoPadre) {
-          throw new Error('No se pudo identificar el tipo de la ubicacion padre.');
+          throw new Error('No se pudo identificar el tipo de la ubicación padre.');
         }
 
         endpoint = `/api/tipoubicaciones/${idTipoPadre}/hijos`;
@@ -2470,7 +2473,7 @@ function Dashboard({ setView }) {
         idTipoUbicacion: tipos[0]?.id ? String(tipos[0].id) : '',
       }));
     } catch (error) {
-      setAddUbicacionError(error.message || 'No se pudieron cargar los tipos de ubicacion.');
+      setAddUbicacionError(error.message || 'No se pudieron cargar los tipos de ubicación.');
     } finally {
       setLoadingTiposUbicacion(false);
     }
@@ -2577,6 +2580,23 @@ function Dashboard({ setView }) {
     return (!filtroDonanteNormalizado || nombreDonante.includes(filtroDonanteNormalizado))
       && (!filtroBomberoDonacionNormalizado || nombreBombero.includes(filtroBomberoDonacionNormalizado));
   });
+  const donacionesItemCount = donacionesCampanaFiltradas.length;
+  const donacionesPageCount = Math.max(1, Math.ceil(donacionesItemCount / donacionesPageSize));
+  const safeDonacionesPage = Math.min(donacionesPage, donacionesPageCount);
+  const donacionesRows = donacionesCampanaFiltradas.slice(
+    (safeDonacionesPage - 1) * donacionesPageSize,
+    safeDonacionesPage * donacionesPageSize
+  );
+
+  useEffect(() => {
+    setDonacionesPage(1);
+  }, [filtroNombreDonante, filtroNombreBomberoDonacion, donacionesPageSize, selectedCampanaDetalle?.id]);
+
+  useEffect(() => {
+    if (donacionesPage > donacionesPageCount) {
+      setDonacionesPage(donacionesPageCount);
+    }
+  }, [donacionesPage, donacionesPageCount]);
 
   const handleCreateUbicacion = async (event) => {
     event.preventDefault();
@@ -2606,7 +2626,7 @@ function Dashboard({ setView }) {
         await fetchUbicaciones();
       }
     } catch (error) {
-      setAddUbicacionError(error.message || 'No se pudo crear la ubicacion.');
+      setAddUbicacionError(error.message || 'No se pudo crear la ubicación.');
     } finally {
       setSavingUbicacion(false);
     }
@@ -2803,25 +2823,25 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
-                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catalogo de Materiales' : activeTab === 'epp' ? 'Equipos de Proteccion Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
+                    {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? 'Personal del Cuartel' : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
                   </h2>
                 )}
                 {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
-                {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignacion y estado del equipamiento de los voluntarios</span>}
-                {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campanas de recaudacion y enlaces de pago</span>}
+                {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignación y estado del equipamiento de los voluntarios</span>}
+                {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campañas de recaudación y enlaces de pago</span>}
                 {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
-                {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Informacion del bombero asociado a tu sesion</span>}
+                {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Información del bombero asociado a tu sesión</span>}
               </div>
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
-                <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicacion</button>
+                <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicación</button>
               )}
               {activeTab === 'bodegas' && inventoryView === 'catalogo' && (
                 <>
                   <button onClick={openCatalogImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Importar catalogo
+                    Importar catálogo
                   </button>
                   <button onClick={() => {
                     resetNewMaterialData();
@@ -2893,11 +2913,11 @@ function Dashboard({ setView }) {
                     Volver
                   </button>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Stock minimo</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Stock mínimo</p>
                     <h3 className="rajdhani mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-bold" style={{ color: palette.text }}>
                       <span>{stockMinimoDetail?.nombre || 'Detalle de stock'}</span>
                       <span className="rounded border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-1 text-sm font-semibold text-brand-cyan">
-                        {stockMinimoDetail?.nombreUbicacion || 'Cargando ubicacion...'}
+                        {stockMinimoDetail?.nombreUbicacion || 'Cargando ubicación...'}
                       </span>
                     </h3>
                   </div>
@@ -2915,7 +2935,7 @@ function Dashboard({ setView }) {
               {loadingStockMinimoDetail ? (
                 <div className="rounded-xl border p-8 text-center" style={{ borderColor: palette.border, background: palette.card }}>
                   <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-cyan/20 border-t-brand-cyan"></div>
-                  <p className="text-sm" style={{ color: palette.muted }}>Cargando detalle del stock minimo...</p>
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando detalle del stock mínimo...</p>
                 </div>
               ) : stockMinimoDetailError ? (
                 <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-6 text-center">
@@ -2950,7 +2970,7 @@ function Dashboard({ setView }) {
                           <thead style={{ background: palette.bg2, color: palette.muted }}>
                             <tr>
                               <th className="px-4 py-3 font-semibold">Material</th>
-                              <th className="px-4 py-3 text-center font-semibold">Stock minimo</th>
+                              <th className="px-4 py-3 text-center font-semibold">Stock mínimo</th>
                               <th className="px-4 py-3 text-center font-semibold">Inventario actual</th>
                               <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                             </tr>
@@ -2998,7 +3018,7 @@ function Dashboard({ setView }) {
                       </div>
                     ) : (
                       <div className="rounded-lg border border-dashed px-4 py-10 text-center" style={{ borderColor: palette.border }}>
-                        <p className="text-sm" style={{ color: palette.muted }}>Este stock minimo no tiene materiales asociados.</p>
+                        <p className="text-sm" style={{ color: palette.muted }}>Este stock mínimo no tiene materiales asociados.</p>
                       </div>
                     )}
                   </div>
@@ -3011,11 +3031,11 @@ function Dashboard({ setView }) {
                         <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.id || stockMinimoDetailId}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span style={{ color: palette.muted }}>Ubicacion</span>
+                        <span style={{ color: palette.muted }}>Ubicación</span>
                         <span className="text-right font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.nombreUbicacion || '-'}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span style={{ color: palette.muted }}>ID ubicacion</span>
+                        <span style={{ color: palette.muted }}>ID ubicación</span>
                         <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoDetail?.idUbicacion || '-'}</span>
                       </div>
                     </div>
@@ -3084,10 +3104,10 @@ function Dashboard({ setView }) {
                       ))}
                     </div>
                     <h3 style={{ color: palette.text, fontSize: '21px', fontWeight: 700, margin: 0 }}>
-                      {currentUbicacion ? currentUbicacion.name : 'Ubicaciones Principales'}
+                      {currentUbicacion ? currentUbicacion.name : 'Ubicaciones principales'}
                     </h3>
                     <p style={{ color: palette.muted, fontSize: '13px', margin: '6px 0 0' }}>
-                      {currentUbicacion ? 'Selecciona General para ver la ubicacion actual o abre una sububicacion.' : 'Selecciona una ubicacion principal para cargar sus materiales y sububicaciones.'}
+                      {currentUbicacion ? 'Selecciona General para ver la ubicación actual o abre una sububicación.' : 'Selecciona una ubicación principal para cargar sus materiales y sububicaciones.'}
                     </p>
                   </div>
                   {currentUbicacion && (
@@ -3169,7 +3189,7 @@ function Dashboard({ setView }) {
                       </button>
                     )) : (
                       <div style={{ gridColumn: '1 / -1', border: `1px dashed ${palette.borderStrong}`, borderRadius: '14px', padding: '56px 24px', textAlign: 'center', color: palette.muted }}>
-                        {currentUbicacion ? 'Esta ubicacion no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
+                        {currentUbicacion ? 'Esta ubicación no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
                       </div>
                     )}
                   </div>
@@ -3181,7 +3201,7 @@ function Dashboard({ setView }) {
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Arbol de Ubicaciones</h3>
+                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Árbol de ubicaciones</h3>
                   <p className="mt-2 text-sm" style={{ color: palette.muted }}>Tipos disponibles para construir ubicaciones principales y sububicaciones.</p>
                 </div>
                 <button
@@ -3189,13 +3209,13 @@ function Dashboard({ setView }) {
                   onClick={openAddTipoUbicacionModal}
                   className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
                 >
-                  Agregar tipo de ubicacion
+                  Agregar tipo de ubicación
                 </button>
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
                 {loadingTiposArbol ? (
-                  <p className="text-sm" style={{ color: palette.muted }}>Cargando tipos de ubicacion...</p>
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando tipos de ubicación...</p>
                 ) : tiposArbolError ? (
                   <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
                     <p className="font-semibold text-brand-red">{tiposArbolError}</p>
@@ -3226,7 +3246,7 @@ function Dashboard({ setView }) {
                             setTiposArbolSearch(event.target.value);
                             setTiposArbolPage(1);
                           }}
-                          placeholder="Buscar tipo de ubicacion..."
+                          placeholder="Buscar tipo de ubicación..."
                           className="w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                           style={{ background: palette.bg3, borderColor: palette.border, color: palette.text }}
                         />
@@ -3250,7 +3270,7 @@ function Dashboard({ setView }) {
                               <span
                                 className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tipo.esTipoRaiz ? 'border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}
                               >
-                                {tipo.esTipoRaiz ? 'Ubicacion principal' : 'Sububicacion'}
+                                {tipo.esTipoRaiz ? 'Ubicación principal' : 'Sububicación'}
                               </span>
                             </div>
                             <div className="mt-5 flex flex-wrap gap-2">
@@ -3259,7 +3279,7 @@ function Dashboard({ setView }) {
                                 onClick={() => openEditTipoRelationsModal(tipo)}
                                 className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:text-brand-cyan"
                                 style={{ borderColor: palette.borderStrong, color: palette.muted }}
-                                title="Editar tipo de ubicacion"
+                                title="Editar tipo de ubicación"
                               >
                                 Editar
                               </button>
@@ -3268,7 +3288,7 @@ function Dashboard({ setView }) {
                                 onClick={() => openDeleteTipoUbicacionModal(tipo)}
                                 disabled={isDeletingTipo || Boolean(deletingTipoUbicacionId)}
                                 className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
-                                title="Eliminar tipo de ubicacion"
+                                title="Eliminar tipo de ubicación"
                               >
                                 {isDeletingTipo ? 'Eliminando...' : 'Eliminar'}
                               </button>
@@ -3296,10 +3316,10 @@ function Dashboard({ setView }) {
                         >
                           {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
                         </select>
-                        <span>por pagina</span>
+                        <span>por página</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span>{tiposArbolItemCount} registros - Pagina {safeTiposArbolPage} de {tiposArbolPageCount}</span>
+                        <span>{tiposArbolItemCount} registros - Página {safeTiposArbolPage} de {tiposArbolPageCount}</span>
                         <button
                           type="button"
                           onClick={() => setTiposArbolPage(current => Math.max(1, current - 1))}
@@ -3323,7 +3343,7 @@ function Dashboard({ setView }) {
                   </>
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-14 text-center" style={{ borderColor: palette.borderStrong }}>
-                    <p className="font-semibold" style={{ color: palette.text }}>No hay tipos de ubicacion registrados.</p>
+                    <p className="font-semibold" style={{ color: palette.text }}>No hay tipos de ubicación registrados.</p>
                     <p className="mt-2 text-sm" style={{ color: palette.muted }}>Crea el primer tipo para usarlo al agregar ubicaciones.</p>
                   </div>
                 )}
@@ -3334,21 +3354,21 @@ function Dashboard({ setView }) {
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks Minimos</h3>
-                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposicion segun su stock minimo.</p>
+                  <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks mínimos</h3>
+                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposición según su stock mínimo.</p>
                 </div>
                 <button
                   type="button"
                   onClick={openAddStockMinimoModal}
                   className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
                 >
-                  Agregar stock minimo
+                  Agregar stock mínimo
                 </button>
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
                 {loadingStockMinimos ? (
-                  <p className="text-sm" style={{ color: palette.muted }}>Cargando stocks minimos...</p>
+                  <p className="text-sm" style={{ color: palette.muted }}>Cargando stocks mínimos...</p>
                 ) : stockMinimosError ? (
                   <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-center">
                     <p className="font-semibold text-brand-red">{stockMinimosError}</p>
@@ -3388,7 +3408,7 @@ function Dashboard({ setView }) {
                             onKeyDown={(event) => event.stopPropagation()}
                             disabled={Boolean(deletingStockMinimoId)}
                             className="flex-shrink-0 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            title="Eliminar stock minimo"
+                            title="Eliminar stock mínimo"
                           >
                             {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
                           </button>
@@ -3398,8 +3418,8 @@ function Dashboard({ setView }) {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.borderStrong }}>
-                    <p className="font-semibold" style={{ color: palette.text }}>No hay stocks minimos registrados</p>
-                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>Cuando se creen configuraciones de stock minimo, apareceran aqui.</p>
+                    <p className="font-semibold" style={{ color: palette.text }}>No hay stocks mínimos registrados</p>
+                    <p className="mt-2 text-sm" style={{ color: palette.muted }}>Cuando se creen configuraciones de stock mínimo, aparecerán aquí.</p>
                   </div>
                 )}
               </div>
@@ -3408,7 +3428,7 @@ function Dashboard({ setView }) {
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'catalogo' && (
             <div className="flex h-full min-h-0 flex-col p-8">
               <div className="mb-6 flex-shrink-0">
-                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Catalogo de Materiales</h3>
+                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Catálogo de Materiales</h3>
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Administra los materiales base disponibles para el inventario.</p>
               </div>
               <div className="mb-6 flex flex-shrink-0 gap-4">
@@ -3444,7 +3464,7 @@ function Dashboard({ setView }) {
               </div>
 
               <div
-                className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
+                className="custom-scrollbar min-h-[31rem] flex-1 overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
                 style={{ scrollbarGutter: 'stable' }}
               >
                 <table className="w-full text-left text-sm">
@@ -3472,21 +3492,21 @@ function Dashboard({ setView }) {
                     ) : catalogRows.length > 0 ? (
                       catalogRows.map(item => (
                           <tr key={item.id} className="cursor-pointer transition-all hover:bg-brand-cyan/10 hover:shadow-[inset_3px_0_0_rgba(56,189,248,0.75),0_0_18px_rgba(56,189,248,0.08)]">
-                            <td className="px-6 py-4 font-medium text-text-main">{item.nombre}</td>
-                            <td className="px-6 py-4"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
-                            <td className="px-6 py-4 text-text-muted">
+                            <td className="px-6 py-3 font-medium text-text-main">{item.nombre}</td>
+                            <td className="px-6 py-3"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
+                            <td className="px-6 py-3 text-text-muted">
                               {item.valor}
                             </td>
-                            <td className="px-6 py-4 text-center">
+                            <td className="px-6 py-3 text-center">
                               {item.desechable ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
-                            <td className="px-6 py-4 text-center">
+                            <td className="px-6 py-3 text-center">
                               {item.serializado ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
-                            <td className="px-6 py-4 text-center">
+                            <td className="px-6 py-3 text-center">
                               {item.mantencion ? <span className="text-brand-green">✓</span> : <span className="text-text-muted">—</span>}
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-6 py-3 text-right">
                               <div className="flex justify-end gap-2">
                                 <button 
                                   onClick={() => openValueUpdateModal(item)}
@@ -3536,10 +3556,10 @@ function Dashboard({ setView }) {
                     >
                       {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
                     </select>
-                    <span>por pagina</span>
+                    <span>por página</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span>{catalogItemCount} registros - Pagina {catalogPage} de {catalogPageCount}</span>
+                    <span>{catalogItemCount} registros - Página {catalogPage} de {catalogPageCount}</span>
                     <button
                       type="button"
                       onClick={() => setCatalogPage(current => Math.max(1, current - 1))}
@@ -3566,8 +3586,8 @@ function Dashboard({ setView }) {
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Catalogo de materiales</p>
-                  <h3 className="rajdhani mt-2 text-3xl font-bold" style={{ color: palette.text }}>Importar catalogo</h3>
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Catálogo de materiales</p>
+                  <h3 className="rajdhani mt-2 text-3xl font-bold" style={{ color: palette.text }}>Importar catálogo</h3>
                   <p className="mt-2 max-w-2xl text-sm" style={{ color: palette.muted }}>
                     Descarga la plantilla, completala respetando sus validaciones y carga el archivo para crear o actualizar materiales masivamente.
                   </p>
@@ -3578,7 +3598,7 @@ function Dashboard({ setView }) {
                   disabled={uploadingCatalogImport || downloadingCatalogTemplate}
                   className="rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Volver al catalogo
+                  Volver al catálogo
                 </button>
               </div>
 
@@ -3594,7 +3614,7 @@ function Dashboard({ setView }) {
                   <div className="rounded-lg border border-dark-border bg-dark-bg p-4">
                     <p className="font-semibold text-text-main">plantilla-importacion-materiales.xlsx</p>
                     <ul className="mt-3 space-y-2 text-sm text-text-muted">
-                      <li>Hoja Catalogo con tabla, filtros y encabezado fijo.</li>
+                      <li>Hoja Catálogo con tabla, filtros y encabezado fijo.</li>
                       <li>200 filas disponibles para completar.</li>
                       <li>Desplegables para TipoMaterial y opciones Si / No.</li>
                       <li>Validacion numerica para ValorUnitario y hoja Opciones.</li>
@@ -3667,7 +3687,7 @@ function Dashboard({ setView }) {
                     disabled={!catalogImportFile || uploadingCatalogImport || downloadingCatalogTemplate}
                     className="mt-5 w-full rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {uploadingCatalogImport ? 'Importando...' : 'Importar catalogo'}
+                    {uploadingCatalogImport ? 'Importando...' : 'Importar catálogo'}
                   </button>
                 </form>
               </div>
@@ -3701,7 +3721,7 @@ function Dashboard({ setView }) {
                     className="mb-6 inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 hover:text-white"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Volver a campanas
+                    Volver a campañas
                   </button>
 
                   <div className="mb-8 rounded-xl border border-dark-border bg-dark-surface p-6">
@@ -3725,7 +3745,7 @@ function Dashboard({ setView }) {
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h4 className="rajdhani text-2xl font-bold text-white">Donaciones</h4>
-                        <p className="mt-1 text-sm text-text-muted">Donaciones pagadas asociadas a esta campana.</p>
+                        <p className="mt-1 text-sm text-text-muted">Donaciones pagadas asociadas a esta campaña.</p>
                       </div>
                     </div>
 
@@ -3758,9 +3778,12 @@ function Dashboard({ setView }) {
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+                    <div
+                      className="custom-scrollbar max-h-[34rem] overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
+                      style={{ scrollbarGutter: 'stable' }}
+                    >
                       <table className="w-full text-left text-sm">
-                        <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
+                        <thead className="sticky top-0 z-10 bg-dark-bg2 border-b border-dark-border text-text-muted rajdhani text-xs uppercase tracking-wider">
                           <tr>
                             <th className="px-5 py-4 font-semibold">Telefono</th>
                             <th className="px-5 py-4 font-semibold">Donante</th>
@@ -3785,30 +3808,71 @@ function Dashboard({ setView }) {
                                 </button>
                               </td>
                             </tr>
-                          ) : donacionesCampanaFiltradas.length > 0 ? donacionesCampanaFiltradas.map(donacion => (
-                            <tr key={donacion.idDonacion} className="hover:bg-dark-bg3 transition-colors">
-                              <td className="px-5 py-4 text-text-muted">{donacion.telefonoDonante || donacion.telefono || '-'}</td>
-                              <td className="px-5 py-4 font-semibold text-white">{donacion.nombreDonante}</td>
-                              <td className="px-5 py-4 text-text-muted">{donacion.emailDonante}</td>
-                              <td className="px-5 py-4 font-bold text-white">{formatCurrency(donacion.monto)}</td>
-                              <td className="px-5 py-4 text-brand-cyan">{donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '-'}</td>
-                              <td className="px-5 py-4">
+                          ) : donacionesRows.length > 0 ? donacionesRows.map(donacion => (
+                            <tr key={donacion.idDonacion || `${donacion.emailDonante}-${donacion.fechaPago || donacion.fechaCreacion}`} className="hover:bg-dark-bg3 transition-colors">
+                              <td className="px-5 py-3 text-text-muted">{donacion.telefonoDonante || donacion.telefono || '-'}</td>
+                              <td className="px-5 py-3 font-semibold text-white">{donacion.nombreDonante}</td>
+                              <td className="px-5 py-3 text-text-muted">{donacion.emailDonante}</td>
+                              <td className="px-5 py-3 font-bold text-white">{formatCurrency(donacion.monto)}</td>
+                              <td className="px-5 py-3 text-brand-cyan">{donacion.nombreBombero || donacion.nombreUsuarioCreador || donacion.nombreUsuario || '-'}</td>
+                              <td className="px-5 py-3">
                                 <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${donacion.estadoPago === 'Pagada' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-300'}`}>
                                   {donacion.estadoPago}
                                 </span>
                               </td>
-                              <td className="px-5 py-4 text-text-muted">{formatDateChile(donacion.fechaPago || donacion.fechaCreacion)}</td>
+                              <td className="px-5 py-3 text-text-muted">{formatDateChile(donacion.fechaPago || donacion.fechaCreacion)}</td>
                             </tr>
                           )) : (
                             <tr>
                               <td colSpan="7" className="px-5 py-16 text-center text-text-muted">
-                                {donacionesCampana.length > 0 ? 'No hay donaciones que coincidan con los filtros.' : 'No hay donaciones pagadas para esta campana.'}
+                                {donacionesCampana.length > 0 ? 'No hay donaciones que coincidan con los filtros.' : 'No hay donaciones pagadas para esta campaña.'}
                               </td>
                             </tr>
                           )}
                         </tbody>
                       </table>
                     </div>
+                    {!loadingDonacionesCampana && !donacionesCampanaError && donacionesItemCount > 0 && (
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm text-text-muted">
+                        <div className="flex items-center gap-2">
+                          <span>Mostrar</span>
+                          <select
+                            value={donacionesPageSize}
+                            onChange={(event) => {
+                              setDonacionesPageSize(Number(event.target.value));
+                              setDonacionesPage(1);
+                            }}
+                            className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2 text-text-main outline-none focus:border-brand-cyan"
+                          >
+                            {DONATION_PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+                          </select>
+                          <span>por página</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-text-main">
+                            {donacionesItemCount} registros - Página {safeDonacionesPage} de {donacionesPageCount}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDonacionesPage(page => Math.max(1, page - 1))}
+                              disabled={safeDonacionesPage <= 1}
+                              className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:opacity-50"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDonacionesPage(page => Math.min(donacionesPageCount, page + 1))}
+                              disabled={safeDonacionesPage >= donacionesPageCount}
+                              className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:opacity-50"
+                            >
+                              Siguiente
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </section>
                 </div>
               ) : donacionesView === 'configuracion' ? (
@@ -3870,12 +3934,12 @@ function Dashboard({ setView }) {
                 <>
               <div className="mb-8">
                 <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campanas</h3>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campanas de recaudacion de fondos y genera enlaces de pago.</p>
+                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campañas de recaudación de fondos y genera enlaces de pago.</p>
               </div>
 
               {loadingCampanas ? (
                 <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
-                  Cargando campanas de donaciones...
+                  Cargando campañas de donaciones...
                 </div>
               ) : campanasError ? (
                 <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-6 text-center">
@@ -3938,7 +4002,7 @@ function Dashboard({ setView }) {
                   </article>
                 )) : (
                   <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
-                    No hay campanas activas.
+                    No hay campañas activas.
                   </div>
                 )}
               </div>
@@ -3973,7 +4037,7 @@ function Dashboard({ setView }) {
                 </article>
                 )) : (
                   <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
-                    No hay campanas finalizadas.
+                    No hay campañas finalizadas.
                   </div>
                 )}
               </div>
@@ -4078,10 +4142,10 @@ function Dashboard({ setView }) {
                             >
                               {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
                             </select>
-                            <span>por pagina</span>
+                            <span>por página</span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span>{registrosItemCount} registros - Pagina {registrosPage} de {registrosPageCount}</span>
+                            <span>{registrosItemCount} registros - Página {registrosPage} de {registrosPageCount}</span>
                             <button
                               type="button"
                               onClick={() => setRegistrosPage(current => Math.max(1, current - 1))}
@@ -4105,7 +4169,7 @@ function Dashboard({ setView }) {
                       </>
                     ) : (
                       <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
-                        <p className="text-sm font-semibold" style={{ color: palette.text }}>Este libro aun no tiene registros.</p>
+                        <p className="text-sm font-semibold" style={{ color: palette.text }}>Este libro aún no tiene registros.</p>
                         <button type="button" onClick={openCreateRegistroModal} className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg">
                           Agregar primer registro
                         </button>
@@ -4434,7 +4498,7 @@ function Dashboard({ setView }) {
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
                   <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de contacto</h3>
-                  <p className="mt-1 text-xs text-text-muted">Actualiza tu informacion personal visible.</p>
+                  <p className="mt-1 text-xs text-text-muted">Actualiza tu información personal visible.</p>
                 </div>
                 <button type="button" onClick={closeEditContactModal} disabled={savingContactProfile} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -4501,7 +4565,7 @@ function Dashboard({ setView }) {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateCampana} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-text-main rajdhani">Crear campana de donaciones</h3>
+                <h3 className="text-lg font-semibold text-text-main rajdhani">Crear campaña de donaciones</h3>
                 <button type="button" onClick={closeCreateCampanaModal} disabled={savingCampana} className="text-text-muted hover:text-text-main transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -4540,14 +4604,14 @@ function Dashboard({ setView }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripción</label>
                   <textarea
                     rows="3"
                     value={newCampanaData.descripcion}
                     onChange={(e) => setNewCampanaData({ ...newCampanaData, descripcion: e.target.value })}
                     disabled={savingCampana}
                     className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="Describe el objetivo de la campana..."
+                    placeholder="Describe el objetivo de la campaña..."
                   />
                 </div>
 
@@ -4597,7 +4661,7 @@ function Dashboard({ setView }) {
                   Cancelar
                 </button>
                 <button type="submit" disabled={savingCampana} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
-                  {savingCampana ? 'Creando...' : 'Crear campana'}
+                  {savingCampana ? 'Creando...' : 'Crear campaña'}
                 </button>
               </div>
             </form>
@@ -4615,7 +4679,7 @@ function Dashboard({ setView }) {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Tipo de ubicacion</label>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Tipo de ubicación</label>
                   <select
                     autoFocus
                     value={newUbicacionData.idTipoUbicacion}
@@ -4631,7 +4695,7 @@ function Dashboard({ setView }) {
                 </div>
                 {currentUbicacion && (
                   <p className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs text-text-muted">
-                    Se creara dentro de {currentUbicacion.name} (id ubicacion {currentUbicacion.idUbicacion || 'no disponible'}).
+                    Se creará dentro de {currentUbicacion.name} (id ubicación {currentUbicacion.idUbicacion || 'no disponible'}).
                   </p>
                 )}
                 {currentUbicacion && !currentUbicacion.idUbicacion && (
@@ -4649,11 +4713,11 @@ function Dashboard({ setView }) {
                   disabled={savingUbicacion}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripción</label>
                   <textarea
                     rows={4}
                     className="w-full resize-none px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="Detalle breve de la ubicacion"
+                    placeholder="Detalle breve de la ubicación"
                     value={newUbicacionData.descripcion}
                     onChange={(e) => setNewUbicacionData({ ...newUbicacionData, descripcion: e.target.value })}
                     disabled={savingUbicacion}
@@ -4697,7 +4761,7 @@ function Dashboard({ setView }) {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateTipoUbicacion} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white rajdhani">Agregar Tipo de Ubicacion</h3>
+                <h3 className="text-lg font-semibold text-white rajdhani">Agregar Tipo de Ubicación</h3>
                 <button type="button" onClick={closeAddTipoUbicacionModal} disabled={savingTipoUbicacion} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -4718,7 +4782,7 @@ function Dashboard({ setView }) {
                 <label className="flex items-center justify-between gap-4 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
                   <span>
                     <span className="block text-sm font-semibold text-text-main">Tipo raiz</span>
-                    <span className="block text-xs text-text-muted">Aparecera como opcion para crear ubicaciones principales.</span>
+                    <span className="block text-xs text-text-muted">Aparecerá como opción para crear ubicaciones principales.</span>
                   </span>
                   <input
                     type="checkbox"
@@ -4769,8 +4833,8 @@ function Dashboard({ setView }) {
             >
               <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
                 <div>
-                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar tipo de ubicacion</h3>
-                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Arbol de ubicaciones</p>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar tipo de ubicación</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Árbol de ubicaciones</p>
                 </div>
                 <button
                   type="button"
@@ -4786,7 +4850,7 @@ function Dashboard({ setView }) {
 
               <div className="space-y-4 p-6">
                 <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
-                  Estas a punto de eliminar el tipo <span className="font-semibold" style={{ color: palette.text }}>{tipoUbicacionPendingDelete.nombre}</span>. Esta accion no se puede deshacer.
+                  Estás a punto de eliminar el tipo <span className="font-semibold" style={{ color: palette.text }}>{tipoUbicacionPendingDelete.nombre}</span>. Esta acción no se puede deshacer.
                 </p>
                 {deleteTipoUbicacionError && (
                   <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
@@ -4823,7 +4887,7 @@ function Dashboard({ setView }) {
             <form onSubmit={handleCreateTipoRelations} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-semibold text-white rajdhani">Relacionar Tipo de Ubicacion</h3>
+                  <h3 className="text-lg font-semibold text-white rajdhani">Relacionar Tipo de Ubicación</h3>
                   <p className="mt-1 text-xs text-text-muted">Tipo creado: {createdTipoUbicacion.nombre}</p>
                 </div>
                 <button type="button" onClick={closeTipoRelationsModal} disabled={savingTipoRelations} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
@@ -4849,7 +4913,7 @@ function Dashboard({ setView }) {
                       >
                         <span>
                           <span className="block text-sm font-semibold text-text-main">{tipo.nombre}</span>
-                          <span className="block text-xs text-text-muted">{tipo.esTipoRaiz ? 'Tipo raiz' : 'Sububicacion'}{tipo.idCompania ? ` - Compania ${tipo.idCompania}` : ''}</span>
+                          <span className="block text-xs text-text-muted">{tipo.esTipoRaiz ? 'Tipo raíz' : 'Sububicación'}{tipo.idCompania ? ` - Compañía ${tipo.idCompania}` : ''}</span>
                         </span>
                         <span className={`flex h-5 w-5 items-center justify-center rounded border ${isSelected ? 'border-brand-cyan bg-brand-cyan text-dark-bg' : 'border-dark-border bg-dark-bg3'}`}>
                           {isSelected && <span className="text-xs font-bold">+</span>}
@@ -4897,7 +4961,7 @@ function Dashboard({ setView }) {
             <form onSubmit={handleAddTipoChildRelation} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-semibold text-white rajdhani">Editar Tipo de Ubicacion</h3>
+                  <h3 className="text-lg font-semibold text-white rajdhani">Editar Tipo de Ubicación</h3>
                   <p className="mt-1 text-xs text-text-muted">Tipos admitidos dentro de {editingTipoRelations.nombre}</p>
                 </div>
                 <button
@@ -4927,7 +4991,7 @@ function Dashboard({ setView }) {
                           <div key={relationId} className="flex items-center justify-between gap-3 rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
                             <span>
                               <span className="block text-sm font-semibold text-white">{relation.nombreTipoHijo}</span>
-                              <span className="block text-xs text-text-muted">ID tipo {relation.idTipoUbicacionHijo}{relation.esTipoRaizHijo ? ' - Tipo raiz' : ' - Sububicacion'}</span>
+                              <span className="block text-xs text-text-muted">ID tipo {relation.idTipoUbicacionHijo}{relation.esTipoRaizHijo ? ' - Tipo raíz' : ' - Sububicación'}</span>
                             </span>
                             <button
                               type="button"
@@ -4943,7 +5007,7 @@ function Dashboard({ setView }) {
                     </div>
                   ) : (
                     <p className="rounded-lg border border-dark-border bg-dark-bg px-4 py-4 text-sm text-text-muted">
-                      Este tipo aun no admite otros tipos de ubicacion.
+                      Este tipo aún no admite otros tipos de ubicación.
                     </p>
                   )}
                 </div>
@@ -4957,14 +5021,14 @@ function Dashboard({ setView }) {
                       disabled={loadingTipoChildrenRelations || savingTipoChildRelation || Boolean(deletingTipoChildRelationId)}
                       className="min-w-0 flex-1 px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     >
-                      <option value="">Seleccionar tipo de ubicacion</option>
+                      <option value="">Seleccionar tipo de ubicación</option>
                       {tiposArbolUbicacion
                         .filter(tipo => String(tipo.id) !== String(editingTipoRelations.id))
                         .filter(tipo => !tipo.esTipoRaiz)
                         .filter(tipo => !tipoChildrenRelations.some(relation => String(relation.idTipoUbicacionHijo) === String(tipo.id)))
                         .map(tipo => (
                           <option key={tipo.id} value={tipo.id}>
-                            {tipo.nombre}{tipo.esTipoRaiz ? ' - Raiz' : ' - Sububicacion'}
+                            {tipo.nombre}{tipo.esTipoRaiz ? ' - Raíz' : ' - Sububicación'}
                           </option>
                         ))}
                     </select>
@@ -5162,7 +5226,7 @@ function Dashboard({ setView }) {
             <form onSubmit={handleSaveStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white rajdhani">
-                  {editingStockMinimoId ? 'Editar Stock Minimo' : 'Agregar Stock Minimo'}
+                  {editingStockMinimoId ? 'Editar Stock Mínimo' : 'Agregar Stock Mínimo'}
                 </h3>
                 <button type="button" onClick={closeAddStockMinimoModal} disabled={savingStockMinimo} className="text-text-muted hover:text-white transition-colors disabled:opacity-50">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -5183,14 +5247,14 @@ function Dashboard({ setView }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text-muted mb-2">Ubicacion</label>
+                    <label className="block text-sm font-medium text-text-muted mb-2">Ubicación</label>
                     <select
                       value={newStockMinimoData.idUbicacion}
                       onChange={(e) => setNewStockMinimoData({ ...newStockMinimoData, idUbicacion: e.target.value })}
                       disabled={savingStockMinimo || ubicaciones.length === 0}
                       className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
                     >
-                      <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicacion' : 'No hay ubicaciones disponibles'}</option>
+                      <option value="">{ubicaciones.length > 0 ? 'Selecciona una ubicación' : 'No hay ubicaciones disponibles'}</option>
                       {ubicaciones.map(ubicacion => (
                         <option key={ubicacion.id} value={ubicacion.id}>{ubicacion.name}</option>
                       ))}
@@ -5367,8 +5431,8 @@ function Dashboard({ setView }) {
             >
               <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
                 <div>
-                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar stock minimo</h3>
-                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Configuracion de reposicion</p>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Eliminar stock mínimo</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>Configuración de reposición</p>
                 </div>
                 <button
                   type="button"
@@ -5384,7 +5448,7 @@ function Dashboard({ setView }) {
 
               <div className="space-y-4 p-6">
                 <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
-                  Estas a punto de eliminar <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoPendingDelete.nombre}</span>. Esta accion no se puede deshacer.
+                  Estás a punto de eliminar <span className="font-semibold" style={{ color: palette.text }}>{stockMinimoPendingDelete.nombre}</span>. Esta acción no se puede deshacer.
                 </p>
                 {deleteStockMinimoError && (
                   <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
@@ -5495,7 +5559,7 @@ function Dashboard({ setView }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Descripcion</label>
+                  <label className="block text-sm font-medium text-text-muted mb-2">Descripción</label>
                   <textarea
                     rows="3"
                     className="w-full resize-none px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
@@ -5528,7 +5592,7 @@ function Dashboard({ setView }) {
                   {[
                     { key: 'esConsumible', label: 'Consumible' },
                     { key: 'esSerializacion', label: 'Serializado' },
-                    { key: 'requiereMantencion', label: 'Mantencion' },
+                    { key: 'requiereMantencion', label: 'Mantención' },
                   ].map(option => (
                     <label key={option.key} className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main">
                       <input
@@ -5621,7 +5685,7 @@ function Dashboard({ setView }) {
 
               <div className="space-y-4 p-6">
                 <p className="text-sm leading-relaxed" style={{ color: palette.muted }}>
-                  Estas a punto de dar de baja a <span className="font-semibold" style={{ color: palette.text }}>{bomberoPendingInactivation.nombre}</span>. El usuario quedara inactivo y ya no aparecera en la lista de bomberos activos.
+                  Estás a punto de dar de baja a <span className="font-semibold" style={{ color: palette.text }}>{bomberoPendingInactivation.nombre}</span>. El usuario quedara inactivo y ya no aparecera en la lista de bomberos activos.
                 </p>
                 {personalActionError && (
                   <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">

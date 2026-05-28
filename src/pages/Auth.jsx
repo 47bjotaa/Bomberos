@@ -424,7 +424,7 @@ function AuthView({ initialMode = 'register' }) {
               {errors.turnstile && <p className="text-brand-red text-xs mt-1">{errors.turnstile}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-all mt-4 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-              {isSubmitting ? 'Ingresando...' : 'Iniciar Sesion'}
+              {isSubmitting ? 'Ingresando...' : 'Iniciar Sesión'}
             </button>
           </form>
           <div className="mt-5 text-center text-sm text-text-muted">
