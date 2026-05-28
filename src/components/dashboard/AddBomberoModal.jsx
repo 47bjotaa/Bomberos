@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemePalette } from '../../utils/themePalette';
@@ -35,10 +35,33 @@ function AddBomberoModal({ onClose, onAdded }) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const [roles, setRoles] = useState([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+  const [rolesError, setRolesError] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const canSubmit = Object.values(formData).every(value => value.trim());
+
+  const fetchRoles = useCallback(async () => {
+    setLoadingRoles(true);
+    setRolesError('');
+
+    try {
+      const data = await apiFetch('/api/Usuarios/roles');
+      const nextRoles = Array.isArray(data) ? data : [];
+      setRoles(nextRoles.filter(role => role?.idRol && role?.nombre));
+    } catch (err) {
+      setRoles([]);
+      setRolesError(err.message || 'No se pudieron cargar los cargos.');
+    } finally {
+      setLoadingRoles(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -161,17 +184,30 @@ function AddBomberoModal({ onClose, onAdded }) {
                 name="cargo"
                 value={formData.cargo}
                 onChange={handleChange}
+                disabled={loadingRoles || Boolean(rolesError) || saving}
                 className="w-full rounded-lg border px-4 py-2.5 outline-none transition-all focus:border-brand-cyan"
                 style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
               >
-                <option value="" disabled>Seleccionar cargo</option>
-                <option value="Administrador">Administrador</option>
-                <option value="Bombero">Bombero</option>
-                <option value="Voluntario">Voluntario</option>
-                <option value="Capitan">Capitan</option>
-                <option value="Teniente">Teniente</option>
-                <option value="Ayudante">Ayudante</option>
+                <option value="" disabled>{loadingRoles ? 'Cargando cargos...' : 'Seleccionar cargo'}</option>
+                {roles.map(role => (
+                  <option key={role.idRol} value={role.nombre}>
+                    {role.nombre}
+                  </option>
+                ))}
               </select>
+              {rolesError && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-brand-red">{rolesError}</p>
+                  <button
+                    type="button"
+                    onClick={fetchRoles}
+                    disabled={loadingRoles}
+                    className="text-xs font-semibold text-brand-cyan transition-colors hover:text-white disabled:opacity-50"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              )}
             </label>
           </div>
 
@@ -207,7 +243,7 @@ function AddBomberoModal({ onClose, onAdded }) {
             </button>
             <button
               type="submit"
-              disabled={!canSubmit || saving}
+              disabled={!canSubmit || saving || loadingRoles || Boolean(rolesError)}
               className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? 'Guardando...' : 'Agregar bombero'}
