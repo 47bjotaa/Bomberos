@@ -7,6 +7,7 @@ const VEHICLE_TYPES = [
   'Ambulancia',
   'Rescate',
 ];
+const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
 
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -111,6 +112,8 @@ function VehiculosView({
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vehiclePage, setVehiclePage] = useState(1);
+  const [vehiclePageSize, setVehiclePageSize] = useState(8);
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingVehiculo, setSavingVehiculo] = useState(false);
   const [addError, setAddError] = useState('');
@@ -195,6 +198,16 @@ function VehiculosView({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchVehiculos();
   }, []);
+
+  const vehiclePageCount = Math.max(1, Math.ceil(vehiculos.length / vehiclePageSize));
+  const vehicleRows = vehiculos.slice((vehiclePage - 1) * vehiclePageSize, vehiclePage * vehiclePageSize);
+
+  useEffect(() => {
+    if (vehiclePage > vehiclePageCount) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVehiclePage(vehiclePageCount);
+    }
+  }, [vehiclePage, vehiclePageCount]);
 
   const selectedId = selectedVehiculo?.idVehiculo || selectedVehiculo?.id;
   const imageBasePath = selectedId ? `/api/vehiculos/${selectedId}/imagenes` : '';
@@ -827,7 +840,7 @@ function VehiculosView({
 
   if (view === 'list') {
     return (
-      <div className="p-8 pb-20">
+      <div className="custom-scrollbar h-full overflow-y-auto p-8 pb-20">
         <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg lg:p-8">
           <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-dark-border pb-6">
             <div>
@@ -848,7 +861,7 @@ function VehiculosView({
                 <p className="rajdhani text-lg text-text-muted">Cargando vehiculos...</p>
               </div>
             ) : vehiculos.length > 0 ? (
-              vehiculos.map((v) => (
+              vehicleRows.map((v) => (
                 <div
                   key={v.id}
                   onClick={() => openDetail(v)}
@@ -879,6 +892,44 @@ function VehiculosView({
               </div>
             )}
           </div>
+
+          {!loading && vehiculos.length > 0 && (
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-dark-border pt-5 text-sm text-text-muted">
+              <div className="flex items-center gap-2">
+                <span>Mostrar</span>
+                <select
+                  value={vehiclePageSize}
+                  onChange={(event) => {
+                    setVehiclePageSize(Number(event.target.value));
+                    setVehiclePage(1);
+                  }}
+                  className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-text-main outline-none focus:border-brand-cyan"
+                >
+                  {VEHICLE_PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+                </select>
+                <span>por pagina</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span>{vehiculos.length} vehiculos - Pagina {vehiclePage} de {vehiclePageCount}</span>
+                <button
+                  type="button"
+                  onClick={() => setVehiclePage(current => Math.max(1, current - 1))}
+                  disabled={vehiclePage <= 1}
+                  className="rounded-lg border border-dark-border px-3 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVehiclePage(current => Math.min(vehiclePageCount, current + 1))}
+                  disabled={vehiclePage >= vehiclePageCount}
+                  className="rounded-lg border border-dark-border px-3 py-2 text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {showAddModal && canManageVehicles && (
