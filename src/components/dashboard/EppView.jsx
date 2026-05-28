@@ -4,7 +4,7 @@ import { apiFetch } from '../../services/api';
 import EppDetailView from './EppDetailView';
 
 const EPP_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
-const EPP_STATES = ['Buen estado', 'Desgastado', 'Mal estado'];
+const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
 
 const getArrayPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -30,18 +30,18 @@ const formatDate = (value) => {
 };
 
 const normalizeEstado = (estadoRaw) => {
-  if (!estadoRaw) return 'Buen estado';
+  if (!estadoRaw) return 'Buen Estado';
   const lower = estadoRaw.toLowerCase().trim();
   if (lower.includes('buen') || (lower.includes('operativo') && !lower.includes('no'))) {
-    return 'Buen estado';
+    return 'Buen Estado';
   }
   if (lower.includes('mal') || lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
-    return 'Mal estado';
+    return 'Mal Estado';
   }
   if (lower.includes('desgast') || lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
-    return 'Desgastado';
+    return 'Desgastada';
   }
-  return 'Buen estado';
+  return 'Buen Estado';
 };
 
 const getInitial = (name) => (name?.trim()?.charAt(0) || '-').toUpperCase();
@@ -124,7 +124,7 @@ function EppView({
   const [eppPageSize, setEppPageSize] = useState(5);
   const [ownEppData, setOwnEppData] = useState([]);
   const [stateChangeItem, setStateChangeItem] = useState(null);
-  const [stateChangeValue, setStateChangeValue] = useState('Buen estado');
+  const [stateChangeValue, setStateChangeValue] = useState('Buen Estado');
   const [stateChangeSaving, setStateChangeSaving] = useState(false);
   const [stateChangeError, setStateChangeError] = useState('');
 
@@ -354,7 +354,7 @@ function EppView({
     if (!canChangeState) return;
 
     setStateChangeItem(item);
-    setStateChangeValue(item.estado || 'Buen estado');
+    setStateChangeValue(item.estado || 'Buen Estado');
     setStateChangeError('');
   };
 
@@ -468,9 +468,9 @@ function EppView({
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
             className={`w-full px-4 py-2 bg-dark-surface border text-text-main rounded-lg outline-none focus:ring-1 appearance-none text-sm pl-10 transition-all ${
-              filtroEstado === 'Buen estado' ? 'border-brand-green/60 focus:border-brand-green focus:ring-brand-green' :
-              filtroEstado === 'Desgastado' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
-              filtroEstado === 'Mal estado' ? 'border-brand-red/60 focus:border-brand-red focus:ring-brand-red' :
+              filtroEstado === 'Buen Estado' ? 'border-brand-green/60 focus:border-brand-green focus:ring-brand-green' :
+              filtroEstado === 'Desgastada' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
+              filtroEstado === 'Mal Estado' ? 'border-brand-red/60 focus:border-brand-red focus:ring-brand-red' :
               'border-dark-border focus:border-brand-cyan focus:ring-brand-cyan'
             }`}
           >
@@ -560,9 +560,9 @@ function EppView({
                         </select>
                       ) : (
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                          item.estado === 'Buen estado' ? 'bg-brand-green border-brand-green/20 text-white' :
-                          item.estado === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
-                          item.estado === 'Mal estado' ? 'bg-brand-red border-brand-red/20 text-white' :
+                          item.estado === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
+                          item.estado === 'Desgastada' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                          item.estado === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                           'bg-dark-bg3 border-dark-border text-text-muted'
                         }`}>
                           {item.estado}

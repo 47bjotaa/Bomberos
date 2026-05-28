@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
 
-const EPP_STATES = ['Buen estado', 'Desgastado', 'Mal estado'];
+const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
@@ -32,18 +32,18 @@ const getChileDateTime = () => {
 };
 
 const normalizeEstado = (estadoRaw) => {
-  if (!estadoRaw) return 'Buen estado';
+  if (!estadoRaw) return 'Buen Estado';
   const lower = estadoRaw.toLowerCase().trim();
   if (lower.includes('buen') || (lower.includes('operativo') && !lower.includes('no'))) {
-    return 'Buen estado';
+    return 'Buen Estado';
   }
   if (lower.includes('mal') || lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
-    return 'Mal estado';
+    return 'Mal Estado';
   }
   if (lower.includes('desgast') || lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
-    return 'Desgastado';
+    return 'Desgastada';
   }
-  return 'Buen estado';
+  return 'Buen Estado';
 };
 
 const getDateInputValue = (value) => {
@@ -209,7 +209,7 @@ function EppDetailView({
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ talla: '', estadoEpp: 'Buen estado', fechaVencimiento: '' });
+  const [editForm, setEditForm] = useState({ talla: '', estadoEpp: 'Buen Estado', fechaVencimiento: '' });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -234,7 +234,7 @@ function EppDetailView({
 
     setEditForm({
       talla: detail?.talla || '',
-      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Buen estado'),
+      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Buen Estado'),
       fechaVencimiento: getDateInputValue(detail?.fechaVencimiento),
     });
     setEditError('');
@@ -930,9 +930,9 @@ function EppDetailView({
                     <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripción registrada.'}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Buen estado' ? 'bg-brand-green border-brand-green/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mal estado' ? 'bg-brand-red border-brand-red/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastada' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                         'bg-dark-bg3 border-dark-border text-text-muted'
                       }`}>
                         {normalizeEstado(detail.estadoEpp || detail.estadoInventario)}
