@@ -64,6 +64,7 @@ const mapDonationCampaign = (campaign) => ({
 });
 
 function ReportsView({ palette, canViewFullReports = true, canViewBasicReports = true }) {
+  const canViewAdvancedReports = canViewFullReports;
   const today = new Date();
   const [filters, setFilters] = useState({
     motivo: 'TODOS',
@@ -115,7 +116,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   }, []);
 
   useEffect(() => {
-    if (!canViewFullReports) return undefined;
+    if (!canViewAdvancedReports) return undefined;
 
     const fetchDonationCampaigns = async () => {
       setLoadingDonationCampaigns(true);
@@ -150,7 +151,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
     fetchDonationCampaigns();
     return undefined;
-  }, [canViewFullReports]);
+  }, [canViewAdvancedReports]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -286,7 +287,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </div>
 
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
-        {canViewFullReports && (
+        {canViewAdvancedReports && (
         <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -346,7 +347,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         </section>
         )}
-        {canViewFullReports && (
+        {canViewAdvancedReports && (
         <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
