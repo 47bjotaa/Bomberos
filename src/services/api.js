@@ -189,6 +189,7 @@ export const authService = {
       const userInfo = {
         idUsuario: data.idUsuario,
         idCompania: data.idCompania,
+        idRol: data.idRol || data.rolId,
         cargo: data.cargo,
         permisos: data.permisos || [],
         email: data.email

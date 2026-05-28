@@ -83,7 +83,12 @@ const mapVehiculo = (v) => ({
   mantenciones: Array.isArray(v.mantenciones) ? v.mantenciones : [],
 });
 
-function VehiculosView() {
+function VehiculosView({
+  canManageVehicles = true,
+  canManageImages = true,
+  canManageObservations = true,
+  canManageMaintenances = true,
+}) {
   const [view, setView] = useState('list');
   const [selectedVehiculo, setSelectedVehiculo] = useState(null);
   const [vehiculos, setVehiculos] = useState([]);
@@ -418,7 +423,7 @@ function VehiculosView() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (savingVehiculo) return;
+    if (!canManageVehicles || savingVehiculo) return;
 
     setSavingVehiculo(true);
     setAddError('');
@@ -448,6 +453,8 @@ function VehiculosView() {
   };
 
   const handleVehicleImageChange = async (event) => {
+    if (!canManageImages) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     event.target.value = '';
     if (selectedFiles.length === 0 || !imageBasePath || uploadingVehicleImage || vehicleImageSlotsAvailable === 0) return;
@@ -479,7 +486,7 @@ function VehiculosView() {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!image?.idArchivo || !imageBasePath || deletingVehicleImageId) return;
+    if (!canManageImages || !image?.idArchivo || !imageBasePath || deletingVehicleImageId) return;
 
     setDeletingVehicleImageId(image.idArchivo);
     setImageUploadError('');
@@ -498,6 +505,8 @@ function VehiculosView() {
   };
 
   const handleObservationImageChange = (event) => {
+    if (!canManageObservations) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -530,6 +539,8 @@ function VehiculosView() {
   };
 
   const handleMaintenanceFileChange = (event) => {
+    if (!canManageMaintenances) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -564,6 +575,8 @@ function VehiculosView() {
   };
 
   const openMaintenanceModal = (mode) => {
+    if (!canManageMaintenances) return;
+
     setMaintenanceModalMode(mode);
     setNewMant({
       fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
@@ -588,6 +601,7 @@ function VehiculosView() {
 
   const handleCreateObservation = async (event) => {
     event.preventDefault();
+    if (!canManageObservations) return;
 
     const observacion = newObs.observacion.trim();
     if (!observacion || !selectedId || observationSaving) return;
@@ -660,6 +674,7 @@ function VehiculosView() {
 
   const handleCreateMaintenance = async (event) => {
     event.preventDefault();
+    if (!canManageMaintenances) return;
 
     const descripcion = newMant.descripcion.trim();
     const tipo = newMant.tipo.trim();
@@ -736,6 +751,7 @@ function VehiculosView() {
 
   const handleMarkMaintenanceAsDone = async (event, maintenance) => {
     event.stopPropagation();
+    if (!canManageMaintenances) return;
 
     const idMantencion = getMaintenanceId(maintenance);
     if (!idMantencion || !selectedId) {
@@ -776,9 +792,11 @@ function VehiculosView() {
               <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehiculos</h3>
               <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
             </div>
-            <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
-              Agregar vehiculo
-            </button>
+            {canManageVehicles && (
+              <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
+                Agregar vehiculo
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -807,13 +825,15 @@ function VehiculosView() {
               <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border bg-dark-bg py-20">
                 <Icons.Truck size={48} className="mb-4 text-text-muted opacity-20" />
                 <p className="rajdhani text-lg text-text-muted">No hay vehiculos registrados.</p>
-                <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehiculo</button>
+                {canManageVehicles && (
+                  <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehiculo</button>
+                )}
               </div>
             )}
           </div>
         </section>
 
-        {showAddModal && (
+        {showAddModal && canManageVehicles && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
             <div className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border px-6 py-4">
@@ -900,10 +920,12 @@ function VehiculosView() {
             </button>
             <h3 className="rajdhani text-xl font-bold text-text-main">Detalle del Vehiculo</h3>
           </div>
-          <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-            Editar
-          </button>
+          {canManageVehicles && (
+            <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              Editar
+            </button>
+          )}
         </div>
 
         <div className="mb-8 grid gap-8 rounded-xl border border-dark-border bg-dark-surface p-6 xl:grid-cols-[minmax(320px,480px)_1fr]">
@@ -914,26 +936,30 @@ function VehiculosView() {
               ) : primaryVehicleImage ? (
                 <>
                   <img src={primaryVehicleImage.url} alt={v.nombre} className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={(event) => handleDeleteVehicleImage(event, primaryVehicleImage)}
-                    disabled={deletingVehicleImageId === primaryVehicleImage.idArchivo}
-                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover:opacity-100"
-                    title="Eliminar imagen"
-                  >
-                    x
-                  </button>
+                  {canManageImages && (
+                    <button
+                      type="button"
+                      onClick={(event) => handleDeleteVehicleImage(event, primaryVehicleImage)}
+                      disabled={deletingVehicleImageId === primaryVehicleImage.idArchivo}
+                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover:opacity-100"
+                      title="Eliminar imagen"
+                    >
+                      x
+                    </button>
+                  )}
                 </>
               ) : (
                 <div className="mb-4 scale-150 opacity-30">
                   <Icons.Truck />
                 </div>
               )}
-              <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-medium transition-colors hover:text-white ${vehicleImageSlotsAvailable === 0 ? 'cursor-not-allowed opacity-60' : ''} ${primaryVehicleImage ? 'absolute bottom-4 opacity-0 group-hover:opacity-100' : 'relative'}`}>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                {uploadingVehicleImage ? 'Subiendo...' : vehicleImageSlotsAvailable === 0 ? 'Limite 3/3' : primaryVehicleImage ? 'Agregar imagen' : 'Anadir imagen'}
-                <input type="file" hidden multiple accept="image/*" onChange={handleVehicleImageChange} disabled={uploadingVehicleImage || vehicleImageSlotsAvailable === 0} />
-              </label>
+              {canManageImages && (
+                <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-medium transition-colors hover:text-white ${vehicleImageSlotsAvailable === 0 ? 'cursor-not-allowed opacity-60' : ''} ${primaryVehicleImage ? 'absolute bottom-4 opacity-0 group-hover:opacity-100' : 'relative'}`}>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {uploadingVehicleImage ? 'Subiendo...' : vehicleImageSlotsAvailable === 0 ? 'Limite 3/3' : primaryVehicleImage ? 'Agregar imagen' : 'Anadir imagen'}
+                  <input type="file" hidden multiple accept="image/*" onChange={handleVehicleImageChange} disabled={uploadingVehicleImage || vehicleImageSlotsAvailable === 0} />
+                </label>
+              )}
             </div>
             <p className="mt-2 text-xs text-text-muted">
               {vehicleImages.length}/3 imagenes del vehiculo
@@ -948,15 +974,17 @@ function VehiculosView() {
                 {vehicleImages.slice(1, 3).map((image) => (
                   <a key={image.idArchivo} href={image.url} target="_blank" rel="noreferrer" className="group/thumb relative block overflow-hidden rounded border border-dark-border">
                     <img src={image.url} alt={image.nombre} className="h-20 w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={(event) => handleDeleteVehicleImage(event, image)}
-                      disabled={deletingVehicleImageId === image.idArchivo}
-                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover/thumb:opacity-100"
-                      title="Eliminar imagen"
-                    >
-                      x
-                    </button>
+                    {canManageImages && (
+                      <button
+                        type="button"
+                        onClick={(event) => handleDeleteVehicleImage(event, image)}
+                        disabled={deletingVehicleImageId === image.idArchivo}
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition-opacity hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-50 group-hover/thumb:opacity-100"
+                        title="Eliminar imagen"
+                      >
+                        x
+                      </button>
+                    )}
                   </a>
                 ))}
               </div>
@@ -985,13 +1013,13 @@ function VehiculosView() {
               <div className="flex flex-col justify-center rounded-lg border border-dark-border bg-dark-bg px-5 py-3">
                 <div className="mb-1 flex items-center justify-between text-xs text-text-muted">
                   Patente
-                  {!isEditingPatente && (
+                  {!isEditingPatente && canManageVehicles && (
                     <button onClick={() => { setIsEditingPatente(true); setTempPatente(v.patente); }} className="transition-colors hover:text-brand-cyan">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
                   )}
                 </div>
-                {isEditingPatente ? (
+                {isEditingPatente && canManageVehicles ? (
                   <div className="mt-1 flex items-center gap-2">
                     <input autoFocus type="text" value={tempPatente} onChange={(e) => setTempPatente(e.target.value)} className="w-full rounded border border-brand-cyan bg-dark-bg2 px-2 py-1 text-sm text-text-main focus:outline-none" />
                     <button onClick={() => { updateVehiculo({ ...v, patente: tempPatente }); setIsEditingPatente(false); }} className="text-brand-green hover:opacity-80"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
@@ -1021,9 +1049,11 @@ function VehiculosView() {
                 </h4>
                 <p className="mt-0.5 text-xs text-text-muted">{(v.observaciones || []).length} registradas</p>
               </div>
-              <button onClick={() => setShowAddObs(true)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
-                + Agregar
-              </button>
+              {canManageObservations && (
+                <button onClick={() => setShowAddObs(true)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                  + Agregar
+                </button>
+              )}
             </div>
 
             <div className="custom-scrollbar max-h-[330px] space-y-3 overflow-y-auto pr-1">
@@ -1071,14 +1101,16 @@ function VehiculosView() {
                 </h4>
                 <p className="mt-0.5 text-xs text-text-muted">{(v.mantenciones || []).length} registradas</p>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => openMaintenanceModal('programada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
-                  Programar
-                </button>
-                <button onClick={() => openMaintenanceModal('realizada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
-                  + Agregar
-                </button>
-              </div>
+              {canManageMaintenances && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => openMaintenanceModal('programada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                    Programar
+                  </button>
+                  <button onClick={() => openMaintenanceModal('realizada')} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-brand-cyan">
+                    + Agregar
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="custom-scrollbar max-h-[330px] space-y-3 overflow-y-auto pr-1">
@@ -1114,7 +1146,7 @@ function VehiculosView() {
                   </div>
                   <h5 className="mb-1 text-sm font-semibold text-text-main">{mant.tipo || 'Mantención'}</h5>
                   <p className="text-sm leading-relaxed text-text-muted">{mant.descripcion || mant.desc || 'Sin detalle'}</p>
-                  {isMaintenancePending(mant) && (
+                  {isMaintenancePending(mant) && canManageMaintenances && (
                     <div className="mt-3 flex justify-end">
                       <button
                         type="button"
@@ -1301,7 +1333,7 @@ function VehiculosView() {
           </div>
         )}
 
-        {showAddObs && (
+        {showAddObs && canManageObservations && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeObservationModal}>
             <form onSubmit={handleCreateObservation} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
@@ -1351,7 +1383,7 @@ function VehiculosView() {
           </div>
         )}
 
-        {maintenanceModalMode && (
+        {maintenanceModalMode && canManageMaintenances && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeMaintenanceModal}>
             <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">

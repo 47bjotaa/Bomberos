@@ -191,7 +191,16 @@ function EmptyState({ children, palette }) {
   );
 }
 
-function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
+function MaterialDetailView({
+  route,
+  onBack,
+  onRemoved,
+  embedded = false,
+  canDeactivate: canDeactivatePermission = true,
+  canManageImages = true,
+  canManageObservations = true,
+  canManageMaintenances = true,
+}) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
   const [detail, setDetail] = useState(null);
@@ -245,6 +254,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   };
 
   const handleObservationImageChange = (event) => {
+    if (!canManageObservations) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -318,6 +329,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   };
 
   const handleMaterialImageChange = (event) => {
+    if (!canManageImages) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -344,6 +357,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   };
 
   const openDeactivateModal = () => {
+    if (!canDeactivatePermission) return;
+
     setDeactivationForm({
       cantidad: '1',
       motivo: '',
@@ -455,6 +470,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   const deactivationQuantity = Number(deactivationForm.cantidad);
   const canDeactivate = deactivationForm.motivo.trim()
     && (material.esSerializacion || (deactivationQuantity > 0 && deactivationQuantity <= availableQuantity));
+  const canSubmitDeactivate = canDeactivatePermission && canDeactivate;
 
   const fetchMaterialImages = useCallback(async () => {
     if (!materialImageBasePath || loading || error) return;
@@ -504,6 +520,8 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   }, [fetchMaterialImages]);
 
   const openMaintenanceModal = (mode) => {
+    if (!canManageMaintenances) return;
+
     setMaintenanceModalMode(mode);
     setMaintenanceError('');
     setMaintenanceNotice('');
@@ -639,6 +657,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
   const handleCreateObservation = async (event) => {
     event.preventDefault();
+    if (!canManageObservations) return;
 
     const trimmedObservation = observationText.trim();
     if (!trimmedObservation) return;
@@ -714,6 +733,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
   const handleUploadMaterialImages = async (event) => {
     event.preventDefault();
+    if (!canManageImages) return;
 
     if (materialImageUploads.length === 0 || !materialImageBasePath) return;
 
@@ -744,7 +764,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
   const handleDeactivateMaterial = async (event) => {
     event.preventDefault();
-    if (!canDeactivate || deactivationSaving) return;
+    if (!canSubmitDeactivate || deactivationSaving) return;
 
     const motivo = deactivationForm.motivo.trim();
     const fecha = new Date().toISOString();
@@ -786,7 +806,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!image?.idArchivo || !materialImageBasePath) return;
+    if (!canManageImages || !image?.idArchivo || !materialImageBasePath) return;
 
     setDeletingMaterialImageId(image.idArchivo);
     setMaterialImagesError('');
@@ -805,6 +825,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
   const handleCreateMaintenance = async (event) => {
     event.preventDefault();
+    if (!canManageMaintenances) return;
 
     const descripcion = maintenanceForm.descripcion.trim();
     const tipo = maintenanceForm.tipo.trim();
@@ -884,6 +905,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
 
   const handleMarkMaintenanceAsDone = async (event, maintenance) => {
     event.stopPropagation();
+    if (!canManageMaintenances) return;
 
     const idMantencion = getMaintenanceId(maintenance);
     if (!idMantencion) {
@@ -924,7 +946,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
   };
 
   const handleDeleteMaintenance = async () => {
-    if (!selectedMaintenance || deletingMaintenance) return;
+    if (!canManageMaintenances || !selectedMaintenance || deletingMaintenance) return;
 
     const idMantencion = getMaintenanceId(selectedMaintenance);
     if (!idMantencion) {
@@ -981,19 +1003,21 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
               </button>
               <h2 className="truncate text-lg font-bold" style={{ color: palette.text }}>Detalle del Item</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={openDeactivateModal}
-                disabled={loading || Boolean(error)}
-                className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                type="button"
-              >
-                <span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">
-                  <Icons.AlertTriangle />
-                </span>
-                Dar de baja
-              </button>
-            </div>
+            {canDeactivatePermission && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openDeactivateModal}
+                  disabled={loading || Boolean(error)}
+                  className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  type="button"
+                >
+                  <span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">
+                    <Icons.AlertTriangle />
+                  </span>
+                  Dar de baja
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1031,30 +1055,34 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                     ) : primaryMaterialImage ? (
                       <div className="relative h-full w-full">
                         <img src={primaryMaterialImage.url} alt={primaryMaterialImage.nombre} className="h-full w-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={(event) => handleDeleteMaterialImage(event, primaryMaterialImage)}
-                          disabled={String(deletingMaterialImageId) === String(primaryMaterialImage.idArchivo)}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                          title="Eliminar foto"
-                        >
-                          x
-                        </button>
+                        {canManageImages && (
+                          <button
+                            type="button"
+                            onClick={(event) => handleDeleteMaterialImage(event, primaryMaterialImage)}
+                            disabled={String(deletingMaterialImageId) === String(primaryMaterialImage.idArchivo)}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Eliminar foto"
+                          >
+                            x
+                          </button>
+                        )}
                       </div>
                     ) : null}
                   </div>
-                  <button
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/50"
-                    style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.text }}
-                    type="button"
-                    onClick={() => {
-                      setShowMaterialImageModal(true);
-                      setMaterialImageUploadError('');
-                    }}
-                  >
-                    <span className="text-base leading-none">&#128247;</span>
-                    Anadir foto
-                  </button>
+                  {canManageImages && (
+                    <button
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-sm font-semibold transition-colors hover:border-brand-cyan/50"
+                      style={{ borderColor: palette.border, background: palette.cardSoft, color: palette.text }}
+                      type="button"
+                      onClick={() => {
+                        setShowMaterialImageModal(true);
+                        setMaterialImageUploadError('');
+                      }}
+                    >
+                      <span className="text-base leading-none">&#128247;</span>
+                      Anadir foto
+                    </button>
+                  )}
                   {materialImagesError && (
                     <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
                       {materialImagesError}
@@ -1072,15 +1100,17 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                           style={{ borderColor: palette.border }}
                         >
                           <img src={image.url} alt={image.nombre} className="h-full w-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={(event) => handleDeleteMaterialImage(event, image)}
-                            disabled={String(deletingMaterialImageId) === String(image.idArchivo)}
-                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Eliminar foto"
-                          >
-                            x
-                          </button>
+                          {canManageImages && (
+                            <button
+                              type="button"
+                              onClick={(event) => handleDeleteMaterialImage(event, image)}
+                              disabled={String(deletingMaterialImageId) === String(image.idArchivo)}
+                              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Eliminar foto"
+                            >
+                              x
+                            </button>
+                          )}
                         </a>
                       ))}
                     </div>
@@ -1135,17 +1165,19 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                     <span className="text-text-muted">&#128196;</span>
                     Observaciones
                   </h3>
-                  <button
-                    className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
-                    style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
-                    type="button"
-                    onClick={() => {
-                      setShowObservationForm(true);
-                      setObservationError('');
-                    }}
-                  >
-                    + Agregar
-                  </button>
+                  {canManageObservations && (
+                    <button
+                      className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                      style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                      type="button"
+                      onClick={() => {
+                        setShowObservationForm(true);
+                        setObservationError('');
+                      }}
+                    >
+                      + Agregar
+                    </button>
+                  )}
                 </div>
                 {observationNotice && (
                   <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
@@ -1188,24 +1220,26 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                       <span className="text-text-muted">&#128295;</span>
                       Mantenciones
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
-                        style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
-                        type="button"
-                        onClick={() => openMaintenanceModal('programada')}
-                      >
-                        Programar
-                      </button>
-                      <button
-                        className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
-                        style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
-                        type="button"
-                        onClick={() => openMaintenanceModal('realizada')}
-                      >
-                        + Agregar
-                      </button>
-                    </div>
+                    {canManageMaintenances && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                          style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                          type="button"
+                          onClick={() => openMaintenanceModal('programada')}
+                        >
+                          Programar
+                        </button>
+                        <button
+                          className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-brand-cyan/50"
+                          style={{ borderColor: palette.border, background: palette.card, color: palette.text }}
+                          type="button"
+                          onClick={() => openMaintenanceModal('realizada')}
+                        >
+                          + Agregar
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {maintenanceNotice && (
                     <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
@@ -1239,7 +1273,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                         </div>
                         <p className="mt-3 text-sm font-semibold" style={{ color: palette.text }}>{mant.tipo || 'Mantención'}</p>
                         <p className="mt-1 text-sm leading-relaxed" style={{ color: palette.muted }}>{mant.descripcion || 'Sin detalle'}</p>
-                        {isMaintenancePending(mant) && (
+                        {isMaintenancePending(mant) && canManageMaintenances && (
                           <div className="mt-3 flex justify-end">
                             <button
                               type="button"
@@ -1263,7 +1297,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         )}
       </div>
 
-      {showMaterialImageModal && (
+      {showMaterialImageModal && canManageImages && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           style={{ background: palette.overlay }}
@@ -1358,7 +1392,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         </div>
       )}
 
-      {showDeactivateModal && (
+      {showDeactivateModal && canDeactivatePermission && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           style={{ background: palette.overlay }}
@@ -1442,7 +1476,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
               </button>
               <button
                 type="submit"
-                disabled={!canDeactivate || deactivationSaving}
+                disabled={!canSubmitDeactivate || deactivationSaving}
                 className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deactivationSaving ? 'Procesando...' : 'Confirmar baja'}
@@ -1452,7 +1486,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         </div>
       )}
 
-      {showObservationForm && (
+      {showObservationForm && canManageObservations && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           style={{ background: palette.overlay }}
@@ -1567,7 +1601,7 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
         </div>
       )}
 
-      {maintenanceModalMode && (
+      {maintenanceModalMode && canManageMaintenances && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           style={{ background: palette.overlay }}
@@ -1818,14 +1852,16 @@ function MaterialDetailView({ route, onBack, onRemoved, embedded = false }) {
                 <p className="mt-0.5 truncate text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleDeleteMaintenance}
-                  disabled={deletingMaintenance}
-                  className="rounded-lg bg-brand-red px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {deletingMaintenance ? 'Eliminando...' : 'Eliminar'}
-                </button>
+                {canManageMaintenances && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteMaintenance}
+                    disabled={deletingMaintenance}
+                    className="rounded-lg bg-brand-red px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deletingMaintenance ? 'Eliminando...' : 'Eliminar'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedMaintenance(null)}

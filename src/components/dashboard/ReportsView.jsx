@@ -30,7 +30,7 @@ const triggerPdfDownload = (pdf, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-function ReportsView({ palette }) {
+function ReportsView({ palette, canViewFullReports = true, canViewBasicReports = true }) {
   const today = new Date();
   const [filters, setFilters] = useState({
     motivo: 'TODOS',
@@ -134,6 +134,7 @@ function ReportsView({ palette }) {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
+        {canViewFullReports && (
         <section className="rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -192,6 +193,8 @@ function ReportsView({ palette }) {
             </button>
           </div>
         </section>
+        )}
+        {canViewBasicReports && (
         <section className="rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -239,6 +242,12 @@ function ReportsView({ palette }) {
             </button>
           </div>
         </section>
+        )}
+        {!canViewFullReports && !canViewBasicReports && (
+          <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-12 text-center text-text-muted lg:col-span-2">
+            No tienes permisos para generar reportes.
+          </div>
+        )}
         </div>
       </div>
     </div>

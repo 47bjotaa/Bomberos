@@ -161,7 +161,16 @@ function Modal({ title, subtitle, children, footer, onClose }) {
   );
 }
 
-function EppDetailView({ itemId, onBack, onRemoved }) {
+function EppDetailView({
+  itemId,
+  onBack,
+  onRemoved,
+  canEdit = true,
+  canDeactivate = true,
+  canManageImages = true,
+  canManageObservations = true,
+  canManageMaintenances = true,
+}) {
   const [detail, setDetail] = useState(null);
   const [history, setHistory] = useState({ observaciones: [], mantenciones: [], requiereMantencion: true });
   const [loading, setLoading] = useState(true);
@@ -219,6 +228,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   const primaryImage = materialImages[0] || null;
 
   const openEditModal = () => {
+    if (!canEdit) return;
+
     setEditForm({
       talla: detail?.talla || '',
       estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Operativo'),
@@ -235,6 +246,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   };
 
   const openDeactivateModal = () => {
+    if (!canDeactivate) return;
+
     setDeactivationReason('');
     setDeactivationError('');
     setShowDeactivateModal(true);
@@ -470,6 +483,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   }, [selectedMaintenance, targetQuery]);
 
   const handleImageChange = (event) => {
+    if (!canManageImages) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -482,6 +497,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   };
 
   const handleObservationImageChange = (event) => {
+    if (!canManageObservations) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -501,6 +518,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   };
 
   const handleMaintenanceFileChange = (event) => {
+    if (!canManageMaintenances) return;
+
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
@@ -521,6 +540,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
   const handleUploadImages = async (event) => {
     event.preventDefault();
+    if (!canManageImages) return;
+
     if (imageUploads.length === 0 || !materialImageBasePath) return;
 
     setImageSaving(true);
@@ -544,6 +565,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
   const handleCreateObservation = async (event) => {
     event.preventDefault();
+    if (!canManageObservations) return;
+
     const trimmedObservation = observationText.trim();
     if (!trimmedObservation) return;
 
@@ -607,6 +630,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   };
 
   const openMaintenanceModal = (mode) => {
+    if (!canManageMaintenances) return;
+
     setMaintenanceModalMode(mode);
     setMaintenanceNotice('');
     setMaintenanceError('');
@@ -621,6 +646,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
   const handleCreateMaintenance = async (event) => {
     event.preventDefault();
+    if (!canManageMaintenances) return;
+
     const descripcion = maintenanceForm.descripcion.trim();
     const tipo = maintenanceForm.tipo.trim();
     const isProgramada = maintenanceModalMode === 'programada';
@@ -691,6 +718,8 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
   const handleMarkMaintenanceAsDone = async (event, maintenance) => {
     event.stopPropagation();
+    if (!canManageMaintenances) return;
+
     const idMantencion = getMaintenanceId(maintenance);
     if (!idMantencion) return;
 
@@ -720,7 +749,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
 
   const handleUpdateEppDetail = async (event) => {
     event.preventDefault();
-    if (!itemId || editSaving) return;
+    if (!canEdit || !itemId || editSaving) return;
 
     const payload = {
       talla: editForm.talla.trim(),
@@ -759,7 +788,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
   const handleDeactivateEpp = async (event) => {
     event.preventDefault();
     const motivo = deactivationReason.trim();
-    if (!itemId || !motivo || deactivationSaving) return;
+    if (!canDeactivate || !itemId || !motivo || deactivationSaving) return;
 
     setDeactivationSaving(true);
     setDeactivationError('');
@@ -795,24 +824,28 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
           Volver
         </button>
-        {!loading && !error && (
+        {!loading && !error && (canEdit || canDeactivate) && (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openEditModal}
-              className="inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50"
-            >
-              <svg className="h-4 w-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.5L19 9.5a2.5 2.5 0 00-3.536-3.536L5 16.5V20z"></path></svg>
-              Editar
-            </button>
-            <button
-              type="button"
-              onClick={openDeactivateModal}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-              Dar de baja
-            </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={openEditModal}
+                className="inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-cyan/50"
+              >
+                <svg className="h-4 w-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.5L19 9.5a2.5 2.5 0 00-3.536-3.536L5 16.5V20z"></path></svg>
+                Editar
+              </button>
+            )}
+            {canDeactivate && (
+              <button
+                type="button"
+                onClick={openDeactivateModal}
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                Dar de baja
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -835,13 +868,15 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Fotos del item</p>
                     <p className="mt-1 text-sm font-bold text-white">{materialImages.length} registrada{materialImages.length === 1 ? '' : 's'}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowImageModal(true)}
-                    className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
-                  >
-                    + Agregar
-                  </button>
+                  {canManageImages && (
+                    <button
+                      type="button"
+                      onClick={() => setShowImageModal(true)}
+                      className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
+                    >
+                      + Agregar
+                    </button>
+                  )}
                 </div>
                 {loadingMaterialImages ? (
                   <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-dark-border text-sm text-text-muted">
@@ -866,7 +901,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                       </div>
                     )}
                   </div>
-                ) : (
+                ) : canManageImages ? (
                   <button
                     type="button"
                     onClick={() => setShowImageModal(true)}
@@ -875,6 +910,10 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <span className="font-semibold">Sin fotos</span>
                     <span className="mt-1 text-xs">Agregar primera foto</span>
                   </button>
+                ) : (
+                  <div className="flex h-48 w-full flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-surface/60 text-center text-sm text-text-muted">
+                    <span className="font-semibold">Sin fotos</span>
+                  </div>
                 )}
               </div>
 
@@ -934,16 +973,18 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <h3 className="rajdhani text-xl font-bold text-white">Observaciones</h3>
                     <p className="mt-1 text-sm text-text-muted">Historial y comentarios del item.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowObservationForm(true);
-                      setObservationError('');
-                    }}
-                    className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
-                  >
-                    + Agregar
-                  </button>
+                  {canManageObservations && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowObservationForm(true);
+                        setObservationError('');
+                      }}
+                      className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                    >
+                      + Agregar
+                    </button>
+                  )}
                 </div>
                 {observationNotice && <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{observationNotice}</p>}
                 <div className="custom-scrollbar max-h-[360px] space-y-3 overflow-y-auto pr-1">
@@ -970,22 +1011,24 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                     <h3 className="rajdhani text-xl font-bold text-white">Mantenciones</h3>
                     <p className="mt-1 text-sm text-text-muted">Programadas y realizadas.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openMaintenanceModal('programada')}
-                      className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
-                    >
-                      Programar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openMaintenanceModal('realizada')}
-                      className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
-                    >
-                      + Agregar
-                    </button>
-                  </div>
+                  {canManageMaintenances && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openMaintenanceModal('programada')}
+                        className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                      >
+                        Programar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openMaintenanceModal('realizada')}
+                        className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-bold text-white transition-colors hover:border-brand-cyan/50"
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {maintenanceNotice && <p className="mb-3 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">{maintenanceNotice}</p>}
                 <div className="custom-scrollbar max-h-[360px] space-y-3 overflow-y-auto pr-1">
@@ -1005,7 +1048,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
                       </div>
                       <p className="mt-2 text-sm font-bold text-white">{mant.tipo || 'Mantención'}</p>
                       <p className="mt-1 line-clamp-2 text-sm text-text-muted">{mant.descripcion || 'Sin detalle'}</p>
-                      {isMaintenancePending(mant) && (
+                      {isMaintenancePending(mant) && canManageMaintenances && (
                         <div className="mt-3 flex justify-end">
                           <button
                             type="button"
@@ -1027,7 +1070,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         </div>
       )}
 
-      {showEditModal && (
+      {showEditModal && canEdit && (
         <Modal
           title="Editar EPP"
           subtitle={detail?.nombreMaterial}
@@ -1078,7 +1121,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         </Modal>
       )}
 
-      {showDeactivateModal && (
+      {showDeactivateModal && canDeactivate && (
         <Modal
           title="Dar de baja EPP"
           subtitle={detail?.nombreMaterial}
@@ -1111,7 +1154,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         </Modal>
       )}
 
-      {showImageModal && (
+      {showImageModal && canManageImages && (
         <Modal
           title="Agregar fotos"
           subtitle={detail?.nombreMaterial}
@@ -1146,7 +1189,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         </Modal>
       )}
 
-      {showObservationForm && (
+      {showObservationForm && canManageObservations && (
         <Modal
           title="Agregar observacion"
           subtitle={detail?.nombreMaterial}
@@ -1185,7 +1228,7 @@ function EppDetailView({ itemId, onBack, onRemoved }) {
         </Modal>
       )}
 
-      {maintenanceModalMode && (
+      {maintenanceModalMode && canManageMaintenances && (
         <Modal
           title={maintenanceModalMode === 'programada' ? 'Programar mantención' : 'Agregar mantención'}
           subtitle={detail?.nombreMaterial}

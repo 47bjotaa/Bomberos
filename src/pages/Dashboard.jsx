@@ -14,6 +14,7 @@ import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
 import { getThemePalette } from '../utils/themePalette';
+import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
 import ReportsView from '../components/dashboard/ReportsView';
 
@@ -504,10 +505,22 @@ function Dashboard({ setView }) {
   };
 
   const getSessionUser = () => {
+    const tokenPayload = parseJwtPayload(localStorage.getItem('token'));
     try {
-      return JSON.parse(localStorage.getItem('user') || '{}');
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const mergedPermissions = [
+        ...(Array.isArray(tokenPayload.permisos) ? tokenPayload.permisos : []),
+        ...(Array.isArray(storedUser.permisos) ? storedUser.permisos : []),
+      ];
+
+      return {
+        ...tokenPayload,
+        ...storedUser,
+        idRol: storedUser.idRol || tokenPayload.idRol || tokenPayload.rolId || tokenPayload.roleId || tokenPayload.idRole,
+        permisos: mergedPermissions.length > 0 ? mergedPermissions : (storedUser.permisos || tokenPayload.permisos),
+      };
     } catch {
-      return {};
+      return tokenPayload;
     }
   };
 
@@ -574,6 +587,37 @@ function Dashboard({ setView }) {
   };
 
   const sessionUser = getSessionUser();
+  const permissionSet = getUserPermissionSet(sessionUser);
+  const can = (permission) => hasPermission(permissionSet, permission);
+  const canAny = (permissions) => hasAnyPermission(permissionSet, permissions);
+  const canViewInventory = can(PERMISSIONS.VER_INVENTARIO);
+  const canCreateMaterial = can(PERMISSIONS.CREAR_MATERIAL);
+  const canEditMaterial = can(PERMISSIONS.EDITAR_MATERIAL);
+  const canAddStock = can(PERMISSIONS.AGREGAR_STOCK);
+  const canMoveMaterial = can(PERMISSIONS.MOVER_MATERIAL);
+  const canChangeMaterialState = can(PERMISSIONS.CAMBIAR_ESTADO_MATERIAL);
+  const canRegisterDamageLoss = can(PERMISSIONS.REGISTRAR_DANO_PERDIDA);
+  const canDeactivateMaterial = can(PERMISSIONS.DAR_BAJA_MATERIAL);
+  const canManageLocations = can(PERMISSIONS.GESTIONAR_UBICACIONES);
+  const canManageVehicles = can(PERMISSIONS.GESTIONAR_VEHICULOS);
+  const canViewEpp = can(PERMISSIONS.VER_EPP);
+  const canViewOwnEpp = can(PERMISSIONS.VER_EPP_PROPIO);
+  const canManageEpp = can(PERMISSIONS.GESTIONAR_EPP);
+  const canViewReports = canAny([PERMISSIONS.VER_REPORTES, PERMISSIONS.VER_REPORTES_BASICOS]);
+  const canViewFullReports = can(PERMISSIONS.VER_REPORTES);
+  const canViewBomberos = can(PERMISSIONS.VER_BOMBEROS);
+  const canManageUsers = can(PERMISSIONS.GESTIONAR_USUARIOS);
+  const canManageOwnUser = can(PERMISSIONS.GESTIONAR_USUARIO_PROPIO);
+  const canViewLibroGuardia = can(PERMISSIONS.VER_LIBRO_GUARDIA);
+  const canCreateLibroGuardia = can(PERMISSIONS.CREAR_LIBRO_GUARDIA);
+  const canRegisterLibroGuardia = can(PERMISSIONS.REGISTRAR_LIBRO_GUARDIA);
+  const canViewDonaciones = can(PERMISSIONS.VER_DONACIONES);
+  const canManageDonaciones = can(PERMISSIONS.GESTIONAR_DONACIONES);
+  const canCreateDonationLink = can(PERMISSIONS.CREAR_LINK_DONACION);
+  const canViewPaymentConfig = can(PERMISSIONS.VER_CONFIGURACION_PAGO);
+  const canManagePaymentConfig = can(PERMISSIONS.GESTIONAR_CONFIGURACION_PAGO);
+  const canManageMaintenances = can(PERMISSIONS.GESTIONAR_MANTENCIONES);
+  const canManageObservations = can(PERMISSIONS.GESTIONAR_OBSERVACIONES);
   const headerProfileName = loadingBomberoProfile
     ? 'Cargando...'
     : formatProfileName(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
@@ -609,7 +653,7 @@ function Dashboard({ setView }) {
   };
 
   const generateAndCopyDonationLink = async (campaign) => {
-    if (!campaign?.id || generatingDonationLinkId) return;
+    if (!canCreateDonationLink || !campaign?.id || generatingDonationLinkId) return;
 
     setGeneratingDonationLinkId(campaign.id);
     setDonationLinkError('');
@@ -753,6 +797,8 @@ function Dashboard({ setView }) {
   };
 
   const openCreateLibroGuardiaModal = () => {
+    if (!canCreateLibroGuardia) return;
+
     setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
     setCreateLibroGuardiaError('');
     setShowCreateLibroGuardiaModal(true);
@@ -766,6 +812,7 @@ function Dashboard({ setView }) {
 
   const handleCreateLibroGuardia = async (event) => {
     event.preventDefault();
+    if (!canCreateLibroGuardia) return;
 
     const payload = {
       nombre: newLibroGuardiaData.nombre.trim(),
@@ -999,7 +1046,54 @@ function Dashboard({ setView }) {
     setInventoryView('stocks');
   };
 
+  const canAccessTab = (tab) => {
+    switch (tab) {
+      case 'inicio':
+        return true;
+      case 'bodegas':
+        return canViewInventory;
+      case 'vehiculos':
+        return can(PERMISSIONS.VER_VEHICULOS);
+      case 'epp':
+        return canViewEpp || canViewOwnEpp;
+      case 'libro-guardia':
+        return canViewLibroGuardia;
+      case 'donaciones':
+        return canViewDonaciones;
+      case 'personal':
+        return canViewBomberos;
+      case 'reportes':
+        return canViewReports;
+      case 'mis-datos':
+        return canManageOwnUser;
+      default:
+        return false;
+    }
+  };
+
+  const canAccessInventoryView = (viewId) => {
+    switch (viewId) {
+      case 'ubicaciones':
+      case 'stocks':
+      case 'catalogo':
+        return canViewInventory;
+      case 'arbol':
+        return canManageLocations;
+      case 'importar-catalogo':
+        return canCreateMaterial;
+      default:
+        return false;
+    }
+  };
+
+  const getFirstAllowedTab = () => (
+    ['inicio', 'bodegas', 'vehiculos', 'epp', 'libro-guardia', 'donaciones', 'personal', 'reportes', 'mis-datos']
+      .find(canAccessTab) || 'inicio'
+  );
+
   const selectDashboardTab = (tab) => {
+    if (!canAccessTab(tab)) return;
+
     setActiveTab(tab);
     setMaterialDetailRoute(null);
     setStockMinimoDetailId(null);
@@ -1034,6 +1128,8 @@ function Dashboard({ setView }) {
   };
 
   const selectInventoryView = (viewId) => {
+    if (!canAccessInventoryView(viewId)) return;
+
     setInventoryView(viewId);
     setMaterialDetailRoute(null);
     setStockMinimoDetailId(null);
@@ -1046,6 +1142,37 @@ function Dashboard({ setView }) {
       window.history.pushState({}, '', '/dashboard');
     }
   };
+
+  useEffect(() => {
+    if (materialDetailRoute) {
+      const canSeeDetail = materialDetailRoute.type === 'epp-item'
+        ? (canViewEpp || canViewOwnEpp)
+        : canViewInventory;
+
+      if (!canSeeDetail) {
+        setMaterialDetailRoute(null);
+        setActiveTab(getFirstAllowedTab());
+        return;
+      }
+    }
+
+    if (stockMinimoDetailId && !canViewInventory) {
+      setStockMinimoDetailId(null);
+      setStockMinimoDetail(null);
+      setStockMinimoInventoryItems([]);
+      setActiveTab(getFirstAllowedTab());
+      return;
+    }
+
+    if (!canAccessTab(activeTab)) {
+      setActiveTab(getFirstAllowedTab());
+      return;
+    }
+
+    if (activeTab === 'bodegas' && !canAccessInventoryView(inventoryView)) {
+      setInventoryView(canAccessInventoryView('ubicaciones') ? 'ubicaciones' : 'catalogo');
+    }
+  }, [activeTab, inventoryView, materialDetailRoute, stockMinimoDetailId]);
 
 
   const fetchCatalogo = async (page = catalogPage, pageSize = catalogPageSize) => {
@@ -1155,6 +1282,8 @@ function Dashboard({ setView }) {
   const isBomberoActivo = (bombero) => String(bombero.estado).toLowerCase() === 'activo';
 
   const openInactivateUsuarioModal = (bombero) => {
+    if (!canManageUsers) return;
+
     if (!bombero?.idUsuario || inactivatingUsuarioId) {
       if (!bombero?.idUsuario) setPersonalActionError('No se pudo identificar el usuario que deseas dar de baja.');
       return;
@@ -1172,7 +1301,7 @@ function Dashboard({ setView }) {
 
   const handleInactivateUsuario = async () => {
     const bombero = bomberoPendingInactivation;
-    if (!bombero?.idUsuario || inactivatingUsuarioId) return;
+    if (!canManageUsers || !bombero?.idUsuario || inactivatingUsuarioId) return;
 
     setInactivatingUsuarioId(bombero.idUsuario);
     setPersonalActionError('');
@@ -1195,6 +1324,8 @@ function Dashboard({ setView }) {
   };
 
   const openEditContactModal = () => {
+    if (!canManageOwnUser) return;
+
     setContactProfileData({
       email: bomberoProfile?.email || '',
       telefono: bomberoProfile?.telefono || '',
@@ -1212,6 +1343,7 @@ function Dashboard({ setView }) {
 
   const handleUpdateContactProfile = async (event) => {
     event.preventDefault();
+    if (!canManageOwnUser) return;
 
     const payload = {
       email: contactProfileData.email.trim(),
@@ -1326,6 +1458,8 @@ function Dashboard({ setView }) {
   };
 
   const selectDonacionesView = (view) => {
+    if (view === 'configuracion' && !canViewPaymentConfig && !canManagePaymentConfig) return;
+
     setDonacionesView(view);
     setPaymentConfigError('');
     setPaymentConfigSuccess('');
@@ -1390,6 +1524,8 @@ function Dashboard({ setView }) {
   };
 
   const openCreateRegistroModal = () => {
+    if (!canRegisterLibroGuardia) return;
+
     setNewRegistroData({
       fecha: getChileDateValue(),
       hora: getCurrentTimeValue(),
@@ -1407,7 +1543,7 @@ function Dashboard({ setView }) {
 
   const handleCreateRegistroLibroGuardia = async (event) => {
     event.preventDefault();
-    if (!selectedLibroGuardia?.id) return;
+    if (!canRegisterLibroGuardia || !selectedLibroGuardia?.id) return;
 
     const payload = {
       fecha: newRegistroData.fecha,
@@ -1460,6 +1596,8 @@ function Dashboard({ setView }) {
 
   const handleSavePaymentConfig = async (event) => {
     event.preventDefault();
+    if (!canManagePaymentConfig) return;
+
     setPaymentConfigError('');
     setPaymentConfigSuccess('');
 
@@ -1520,6 +1658,8 @@ function Dashboard({ setView }) {
   };
 
   const openCreateCampanaModal = () => {
+    if (!canManageDonaciones) return;
+
     resetNewCampanaData();
     setShowCreateCampanaModal(true);
   };
@@ -1532,6 +1672,8 @@ function Dashboard({ setView }) {
 
   const handleCreateCampana = async (event) => {
     event.preventDefault();
+    if (!canManageDonaciones) return;
+
     setCreateCampanaError('');
 
     const payload = {
@@ -1586,6 +1728,8 @@ function Dashboard({ setView }) {
   };
 
   const openValueUpdateModal = (material) => {
+    if (!canEditMaterial) return;
+
     setValueUpdateMaterial(material);
     setValueUpdateInput(formatCurrency(material.valorUnitario ?? material.valor ?? 0));
     setValueUpdateError('');
@@ -1611,7 +1755,7 @@ function Dashboard({ setView }) {
 
   const handleUpdateMaterialValue = async (event) => {
     event.preventDefault();
-    if (!valueUpdateMaterial?.id) return;
+    if (!canEditMaterial || !valueUpdateMaterial?.id) return;
 
     const nextValue = parseCurrencyValue(valueUpdateInput);
     setSavingValueUpdate(true);
@@ -1640,6 +1784,8 @@ function Dashboard({ setView }) {
 
   const handleCreateMaterial = async (event) => {
     event.preventDefault();
+    if (!canCreateMaterial) return;
+
     setAddMaterialError('');
 
     const payload = {
@@ -1679,11 +1825,15 @@ function Dashboard({ setView }) {
   };
 
   const openCatalogImportView = () => {
+    if (!canCreateMaterial) return;
+
     resetCatalogImportFeedback();
     setInventoryView('importar-catalogo');
   };
 
   const handleDownloadCatalogTemplate = async () => {
+    if (!canCreateMaterial) return;
+
     setDownloadingCatalogTemplate(true);
     resetCatalogImportFeedback();
 
@@ -1714,6 +1864,8 @@ function Dashboard({ setView }) {
 
   const handleCatalogImport = async (event) => {
     event.preventDefault();
+    if (!canCreateMaterial) return;
+
     resetCatalogImportFeedback();
 
     if (!catalogImportFile) {
@@ -1848,7 +2000,7 @@ function Dashboard({ setView }) {
     { id: 'arbol', label: 'Árbol de ubicaciones' },
     { id: 'stocks', label: 'Stocks mínimos' },
     { id: 'catalogo', label: 'Catálogo' },
-  ];
+  ].filter(view => canAccessInventoryView(view.id));
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -1920,6 +2072,8 @@ function Dashboard({ setView }) {
   };
 
   const openEditTipoRelationsModal = async (tipo) => {
+    if (!canManageLocations) return;
+
     setEditingTipoRelations(tipo);
     setSelectedTipoHijoId('');
     setEditTipoRelationsError('');
@@ -1938,7 +2092,7 @@ function Dashboard({ setView }) {
 
   const handleAddTipoChildRelation = async (event) => {
     event.preventDefault();
-    if (!editingTipoRelations?.id || !selectedTipoHijoId || savingTipoChildRelation) return;
+    if (!canManageLocations || !editingTipoRelations?.id || !selectedTipoHijoId || savingTipoChildRelation) return;
 
     const tipoHijo = tiposArbolUbicacion.find(tipo => String(tipo.id) === String(selectedTipoHijoId));
     setSavingTipoChildRelation(true);
@@ -1964,7 +2118,7 @@ function Dashboard({ setView }) {
   };
 
   const handleDeleteTipoChildRelation = async (relation) => {
-    if (!editingTipoRelations?.id || !relation?.idTipoUbicacionHijo || deletingTipoChildRelationId) return;
+    if (!canManageLocations || !editingTipoRelations?.id || !relation?.idTipoUbicacionHijo || deletingTipoChildRelationId) return;
 
     const relationId = relation.idTipoUbicacionRelacion || relation.id;
     setDeletingTipoChildRelationId(relationId);
@@ -1989,7 +2143,7 @@ function Dashboard({ setView }) {
   };
 
   const openDeleteTipoUbicacionModal = (tipo) => {
-    if (!tipo?.id || deletingTipoUbicacionId) return;
+    if (!canManageLocations || !tipo?.id || deletingTipoUbicacionId) return;
 
     setDeleteTipoUbicacionError('');
     setTipoUbicacionPendingDelete(tipo);
@@ -2003,7 +2157,7 @@ function Dashboard({ setView }) {
 
   const handleDeleteTipoUbicacion = async () => {
     const tipo = tipoUbicacionPendingDelete;
-    if (!tipo?.id || deletingTipoUbicacionId) return;
+    if (!canManageLocations || !tipo?.id || deletingTipoUbicacionId) return;
 
     setDeletingTipoUbicacionId(tipo.id);
     setDeleteTipoUbicacionError('');
@@ -2025,6 +2179,8 @@ function Dashboard({ setView }) {
   };
 
   const openAddTipoUbicacionModal = () => {
+    if (!canManageLocations) return;
+
     setNewTipoUbicacionData({ nombre: '', esTipoRaiz: false });
     setAddTipoUbicacionError('');
     setDeleteTipoUbicacionError('');
@@ -2066,7 +2222,7 @@ function Dashboard({ setView }) {
 
   const handleCreateTipoUbicacion = async (event) => {
     event.preventDefault();
-    if (!canCreateTipoUbicacion || savingTipoUbicacion) return;
+    if (!canManageLocations || !canCreateTipoUbicacion || savingTipoUbicacion) return;
 
     setSavingTipoUbicacion(true);
     setAddTipoUbicacionError('');
@@ -2269,6 +2425,8 @@ function Dashboard({ setView }) {
   };
 
   const openAddStockMinimoModal = async () => {
+    if (!canAddStock) return;
+
     setEditingStockMinimoId(null);
     setNewStockMinimoData({ nombre: '', idUbicacion: '', materiales: [] });
     setStockMaterialSearch('');
@@ -2279,7 +2437,7 @@ function Dashboard({ setView }) {
   };
 
   const openEditStockMinimoModal = async () => {
-    if (!stockMinimoDetail) return;
+    if (!canAddStock || !stockMinimoDetail) return;
 
     const selectedMaterials = (stockMinimoDetail.materiales || [])
       .filter(material => material.idMaterial)
@@ -2362,7 +2520,7 @@ function Dashboard({ setView }) {
 
   const handleSaveStockMinimo = async (event) => {
     event.preventDefault();
-    if (!canCreateStockMinimo || savingStockMinimo) return;
+    if (!canAddStock || !canCreateStockMinimo || savingStockMinimo) return;
 
     setSavingStockMinimo(true);
     setAddStockMinimoError('');
@@ -2398,7 +2556,7 @@ function Dashboard({ setView }) {
 
   const openDeleteStockMinimoModal = (event, stock) => {
     event.stopPropagation();
-    if (!stock?.id || deletingStockMinimoId) return;
+    if (!canAddStock || !stock?.id || deletingStockMinimoId) return;
 
     setDeleteStockMinimoError('');
     setStockMinimoPendingDelete(stock);
@@ -2413,7 +2571,7 @@ function Dashboard({ setView }) {
 
   const handleDeleteStockMinimo = async () => {
     const stock = stockMinimoPendingDelete;
-    if (!stock?.id || deletingStockMinimoId) return;
+    if (!canAddStock || !stock?.id || deletingStockMinimoId) return;
 
     setDeletingStockMinimoId(stock.id);
     setDeleteStockMinimoError('');
@@ -2480,6 +2638,8 @@ function Dashboard({ setView }) {
   };
 
   const openAddUbicacionModal = async () => {
+    if (!canManageLocations) return;
+
     setNewUbicacionData({ nombre: '', descripcion: '', idTipoUbicacion: '' });
     setTiposUbicacion([]);
     setAddUbicacionError('');
@@ -2600,7 +2760,7 @@ function Dashboard({ setView }) {
 
   const handleCreateUbicacion = async (event) => {
     event.preventDefault();
-    if (!canCreateUbicacion || savingUbicacion) return;
+    if (!canManageLocations || !canCreateUbicacion || savingUbicacion) return;
 
     const parentUbicacionId = currentUbicacion?.idUbicacion || null;
     const payload = {
@@ -2646,25 +2806,25 @@ function Dashboard({ setView }) {
           <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
-          <button onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('bodegas') ? undefined : 'none' }} onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Inventory /> <span className="hidden lg:inline">Inventario</span>
           </button>
-          <button onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('vehiculos') ? undefined : 'none' }} onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
           </button>
-          <button onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('epp') ? undefined : 'none' }} onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
           </button>
-          <button onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('libro-guardia') ? undefined : 'none' }} onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Traceability /> <span className="hidden lg:inline">Libro Guardia</span>
           </button>
-          <button onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('donaciones') ? undefined : 'none' }} onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
           </button>
-          <button onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('personal') ? undefined : 'none' }} onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.User /> <span className="hidden lg:inline">Personal</span>
           </button>
-          <button onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+          <button style={{ display: canAccessTab('reportes') ? undefined : 'none' }} onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Report /> <span className="hidden lg:inline">Reportes</span>
           </button>
         </nav>
@@ -2773,13 +2933,15 @@ function Dashboard({ setView }) {
 
           {showProfileMenu && (
             <div className="absolute right-0 top-full mt-2 w-52 bg-dark-surface border border-dark-border rounded-lg shadow-xl overflow-hidden z-50">
-              <button
-                onClick={() => selectDashboardTab('mis-datos')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-text-main hover:bg-dark-bg3 hover:text-white transition-colors text-left"
-              >
-                <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.8 5.803 2.127M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Mis Datos
-              </button>
+              {canManageOwnUser && (
+                <button
+                  onClick={() => selectDashboardTab('mis-datos')}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-text-main hover:bg-dark-bg3 hover:text-white transition-colors text-left"
+                >
+                  <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.8 5.803 2.127M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  Mis Datos
+                </button>
+              )}
               <button
                 onClick={() => {
                   authService.logout();
@@ -2834,10 +2996,10 @@ function Dashboard({ setView }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && (
+              {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && canManageLocations && (
                 <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicación</button>
               )}
-              {activeTab === 'bodegas' && inventoryView === 'catalogo' && (
+              {activeTab === 'bodegas' && inventoryView === 'catalogo' && canCreateMaterial && (
                 <>
                   <button onClick={openCatalogImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
@@ -2851,13 +3013,13 @@ function Dashboard({ setView }) {
                   </button>
                 </>
               )}
-              {activeTab === 'epp' && !showingEppDetail && (
+              {activeTab === 'epp' && !showingEppDetail && canManageEpp && (
                 <button onClick={() => setShowAssignEppModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                   Asignar EPP
                 </button>
               )}
-              {activeTab === 'donaciones' && donacionesView === 'campanas' && selectedCampanaDetalle && (
+              {activeTab === 'donaciones' && donacionesView === 'campanas' && selectedCampanaDetalle && canCreateDonationLink && (
                 <button
                   type="button"
                   onClick={() => generateAndCopyDonationLink(selectedCampanaDetalle)}
@@ -2868,7 +3030,7 @@ function Dashboard({ setView }) {
                   {generatingDonationLinkId === selectedCampanaDetalle.id ? 'Generando...' : copiedDonationSlug === (selectedCampanaDetalle.slug || String(selectedCampanaDetalle.id)) ? 'Link copiado' : 'Generar link'}
                 </button>
               )}
-              {activeTab === 'donaciones' && donacionesView === 'campanas' && !selectedCampanaDetalle && (
+              {activeTab === 'donaciones' && donacionesView === 'campanas' && !selectedCampanaDetalle && canManageDonaciones && (
                 <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <span className="text-base leading-none">+</span>
                   Crear campaña
@@ -2880,10 +3042,12 @@ function Dashboard({ setView }) {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Exportar
                   </button>
-                  <button type="button" onClick={() => setShowAddBomberoModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-                    <span className="text-base leading-none">+</span>
-                    Agregar bombero
-                  </button>
+                  {canManageUsers && (
+                    <button type="button" onClick={() => setShowAddBomberoModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                      <span className="text-base leading-none">+</span>
+                      Agregar bombero
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -2894,9 +3058,31 @@ function Dashboard({ setView }) {
         <div className="min-h-0 flex-1 overflow-hidden">
           {materialDetailRoute && (
             materialDetailRoute.type === 'epp-item' ? (
-              <EppDetailView itemId={materialDetailRoute.id} onBack={closeMaterialDetail} />
+              (canViewEpp || canViewOwnEpp) ? (
+                <EppDetailView
+                  itemId={materialDetailRoute.id}
+                  onBack={closeMaterialDetail}
+                  canEdit={canEditMaterial || canManageEpp}
+                  canDeactivate={canDeactivateMaterial}
+                  canManageImages={canEditMaterial || canManageEpp}
+                  canManageObservations={canManageObservations}
+                  canManageMaintenances={canManageMaintenances}
+                />
+              ) : null
             ) : (
-              <MaterialDetailView route={materialDetailRoute} onBack={closeMaterialDetail} onRemoved={refreshActiveUbicacion} />
+              canViewInventory ? (
+                <MaterialDetailView
+                  route={materialDetailRoute}
+                  onBack={closeMaterialDetail}
+                  onRemoved={refreshActiveUbicacion}
+                  canDeactivate={canDeactivateMaterial}
+                  canManageImages={canEditMaterial}
+                  canManageObservations={canManageObservations}
+                  canManageMaintenances={canManageMaintenances}
+                  canRegisterDamageLoss={canRegisterDamageLoss}
+                  canChangeState={canChangeMaterialState}
+                />
+              ) : null
             )
           )}
 
@@ -2922,14 +3108,16 @@ function Dashboard({ setView }) {
                     </h3>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={openEditStockMinimoModal}
-                  disabled={loadingStockMinimoDetail || Boolean(stockMinimoDetailError) || !stockMinimoDetail}
-                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
-                >
-                  Agregar material
-                </button>
+                {canAddStock && (
+                  <button
+                    type="button"
+                    onClick={openEditStockMinimoModal}
+                    disabled={loadingStockMinimoDetail || Boolean(stockMinimoDetailError) || !stockMinimoDetail}
+                    className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
+                  >
+                    Agregar material
+                  </button>
+                )}
               </div>
 
               {loadingStockMinimoDetail ? (
@@ -3047,7 +3235,14 @@ function Dashboard({ setView }) {
 
           {activeTab === 'inicio' && (
             <div className="h-full p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar">
-              <InicioView onNavigate={selectDashboardTab} />
+              <InicioView
+                onNavigate={selectDashboardTab}
+                canViewBomberos={canViewBomberos}
+                canViewVehiculos={can(PERMISSIONS.VER_VEHICULOS)}
+                canViewEpp={canViewEpp}
+                canViewInventory={canViewInventory}
+                canViewDonaciones={canViewDonaciones}
+              />
             </div>
           )}
 
@@ -3068,9 +3263,11 @@ function Dashboard({ setView }) {
                   items={itemsUbicacion}
                   loading={loadingItems}
                   hasSelection={Boolean(activeUbicacion)}
+                  canAddMaterial={canAddStock}
+                  canMoveMaterial={canMoveMaterial}
                   addMaterialDisabledReason={addMaterialDisabledReason}
                   onSelectMaterial={openMaterialDetail}
-                  onMoveMaterial={(material) => setMovingMaterial(material)}
+                  onMoveMaterial={canMoveMaterial ? (material) => setMovingMaterial(material) : undefined}
                   onAddMaterial={() => {
                     if (!addMaterialDisabledReason) {
                       setShowInventoryMaterialModal(true);
@@ -3204,13 +3401,15 @@ function Dashboard({ setView }) {
                   <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Árbol de ubicaciones</h3>
                   <p className="mt-2 text-sm" style={{ color: palette.muted }}>Tipos disponibles para construir ubicaciones principales y sububicaciones.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={openAddTipoUbicacionModal}
-                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
-                >
-                  Agregar tipo de ubicación
-                </button>
+                {canManageLocations && (
+                  <button
+                    type="button"
+                    onClick={openAddTipoUbicacionModal}
+                    className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
+                  >
+                    Agregar tipo de ubicación
+                  </button>
+                )}
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
@@ -3273,26 +3472,28 @@ function Dashboard({ setView }) {
                                 {tipo.esTipoRaiz ? 'Ubicación principal' : 'Sububicación'}
                               </span>
                             </div>
-                            <div className="mt-5 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openEditTipoRelationsModal(tipo)}
-                                className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:text-brand-cyan"
-                                style={{ borderColor: palette.borderStrong, color: palette.muted }}
-                                title="Editar tipo de ubicación"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openDeleteTipoUbicacionModal(tipo)}
-                                disabled={isDeletingTipo || Boolean(deletingTipoUbicacionId)}
-                                className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
-                                title="Eliminar tipo de ubicación"
-                              >
-                                {isDeletingTipo ? 'Eliminando...' : 'Eliminar'}
-                              </button>
-                            </div>
+                            {canManageLocations && (
+                              <div className="mt-5 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTipoRelationsModal(tipo)}
+                                  className="rounded-lg border px-3 py-2 text-xs font-semibold transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/10 hover:text-brand-cyan"
+                                  style={{ borderColor: palette.borderStrong, color: palette.muted }}
+                                  title="Editar tipo de ubicación"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openDeleteTipoUbicacionModal(tipo)}
+                                  disabled={isDeletingTipo || Boolean(deletingTipoUbicacionId)}
+                                  className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                  title="Eliminar tipo de ubicación"
+                                >
+                                  {isDeletingTipo ? 'Eliminando...' : 'Eliminar'}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                         })}
@@ -3357,13 +3558,15 @@ function Dashboard({ setView }) {
                   <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Stocks mínimos</h3>
                   <p className="mt-2 text-sm" style={{ color: palette.muted }}>Control de materiales que requieren reposición según su stock mínimo.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={openAddStockMinimoModal}
-                  className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
-                >
-                  Agregar stock mínimo
-                </button>
+                {canAddStock && (
+                  <button
+                    type="button"
+                    onClick={openAddStockMinimoModal}
+                    className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90"
+                  >
+                    Agregar stock mínimo
+                  </button>
+                )}
               </div>
 
               <div className="rounded-xl border p-5" style={{ borderColor: palette.border, background: palette.card }}>
@@ -3401,18 +3604,20 @@ function Dashboard({ setView }) {
                             Ver detalle
                           </button>
                         </div>
-                        <div className="mt-5 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={(event) => openDeleteStockMinimoModal(event, stock)}
-                            onKeyDown={(event) => event.stopPropagation()}
-                            disabled={Boolean(deletingStockMinimoId)}
-                            className="flex-shrink-0 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            title="Eliminar stock mínimo"
-                          >
-                            {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
-                          </button>
-                        </div>
+                        {canAddStock && (
+                          <div className="mt-5 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={(event) => openDeleteStockMinimoModal(event, stock)}
+                              onKeyDown={(event) => event.stopPropagation()}
+                              disabled={Boolean(deletingStockMinimoId)}
+                              className="flex-shrink-0 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-60"
+                              title="Eliminar stock mínimo"
+                            >
+                              {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3426,7 +3631,7 @@ function Dashboard({ setView }) {
             </div>
           )}
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'bodegas' && inventoryView === 'catalogo' && (
-            <div className="flex h-full min-h-0 flex-col p-8">
+            <div className="h-full overflow-auto p-8 custom-scrollbar">
               <div className="mb-6 flex-shrink-0">
                 <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Catálogo de Materiales</h3>
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Administra los materiales base disponibles para el inventario.</p>
@@ -3464,7 +3669,7 @@ function Dashboard({ setView }) {
               </div>
 
               <div
-                className="custom-scrollbar min-h-[31rem] flex-1 overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
+                className="custom-scrollbar max-h-[27rem] overflow-auto rounded-xl border border-dark-border bg-dark-surface shadow-lg"
                 style={{ scrollbarGutter: 'stable' }}
               >
                 <table className="w-full text-left text-sm">
@@ -3508,18 +3713,25 @@ function Dashboard({ setView }) {
                             </td>
                             <td className="px-6 py-3 text-right">
                               <div className="flex justify-end gap-2">
-                                <button 
-                                  onClick={() => openValueUpdateModal(item)}
-                                  className="whitespace-nowrap rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/60 hover:bg-brand-cyan/15"
-                                >
-                                  Actualizar valor
-                                </button>
-                                <button 
-                                  onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
-                                  className="whitespace-nowrap rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:border-brand-red/60 hover:bg-brand-red/15"
-                                >
-                                  Borrar
-                                </button>
+                                {canEditMaterial && (
+                                  <button
+                                    onClick={() => openValueUpdateModal(item)}
+                                    className="whitespace-nowrap rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/60 hover:bg-brand-cyan/15"
+                                  >
+                                    Actualizar valor
+                                  </button>
+                                )}
+                                {canDeactivateMaterial && (
+                                  <button
+                                    onClick={() => setConfirmCatAction({ type: 'delete', id: item.id })}
+                                    className="whitespace-nowrap rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-semibold text-brand-red transition-colors hover:border-brand-red/60 hover:bg-brand-red/15"
+                                  >
+                                    Borrar
+                                  </button>
+                                )}
+                                {!canEditMaterial && !canDeactivateMaterial && (
+                                  <span className="text-xs text-text-muted">Sin acciones</span>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -3534,7 +3746,9 @@ function Dashboard({ setView }) {
                                 ? 'No hay materiales que coincidan con los filtros.'
                                 : 'No hay materiales registrados en el catálogo.'}
                             </p>
-                            <button onClick={() => setShowAddMaterialModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar el primer material</button>
+                            {canCreateMaterial && (
+                              <button onClick={() => setShowAddMaterialModal(true)} className="mt-4 text-brand-cyan hover:underline">Agregar el primer material</button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -3704,13 +3918,15 @@ function Dashboard({ setView }) {
                 >
                   Campanas
                 </button>
-                <button
-                  type="button"
-                  onClick={() => selectDonacionesView('configuracion')}
-                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
-                >
-                  Configuracion de pago
-                </button>
+                {(canViewPaymentConfig || canManagePaymentConfig) && (
+                  <button
+                    type="button"
+                    onClick={() => selectDonacionesView('configuracion')}
+                    className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
+                  >
+                    Configuracion de pago
+                  </button>
+                )}
               </div>
 
               {donacionesView === 'campanas' && selectedCampanaDetalle ? (
@@ -3875,7 +4091,7 @@ function Dashboard({ setView }) {
                     )}
                   </section>
                 </div>
-              ) : donacionesView === 'configuracion' ? (
+              ) : donacionesView === 'configuracion' && (canViewPaymentConfig || canManagePaymentConfig) ? (
                 <form onSubmit={handleSavePaymentConfig} className="max-w-5xl rounded-xl border border-dark-border bg-dark-surface shadow-lg">
                   <div className="border-b border-dark-border px-6 py-5">
                     <h3 className="rajdhani text-2xl font-bold text-text-main">Configuracion de pago</h3>
@@ -3889,6 +4105,7 @@ function Dashboard({ setView }) {
                         type="text"
                         value={paymentConfigData.apiKey}
                         onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
+                        disabled={!canManagePaymentConfig || savingPaymentConfig}
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_API_KEY_FLOW"
                       />
@@ -3900,6 +4117,7 @@ function Dashboard({ setView }) {
                         type="password"
                         value={paymentConfigData.secretKey}
                         onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
+                        disabled={!canManagePaymentConfig || savingPaymentConfig}
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_SECRET_KEY_FLOW"
                       />
@@ -3912,23 +4130,25 @@ function Dashboard({ setView }) {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-dark-border px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={resetPaymentConfigData}
-                      disabled={savingPaymentConfig}
-                      className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Restaurar valores
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingPaymentConfig}
-                      className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {savingPaymentConfig ? 'Guardando...' : 'Guardar configuracion'}
-                    </button>
-                  </div>
+                  {canManagePaymentConfig && (
+                    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-dark-border px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={resetPaymentConfigData}
+                        disabled={savingPaymentConfig}
+                        className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Restaurar valores
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingPaymentConfig}
+                        className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {savingPaymentConfig ? 'Guardando...' : 'Guardar configuracion'}
+                      </button>
+                    </div>
+                  )}
                 </form>
               ) : (
                 <>
@@ -3990,14 +4210,16 @@ function Dashboard({ setView }) {
                     </div>
                     <div className="flex items-center justify-between border-t border-dark-border bg-dark-bg2 px-5 py-3">
                       <button onClick={() => openCampanaDetalle(campaign)} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:border-brand-cyan/50">Ver detalles</button>
-                      <button
-                        type="button"
-                        onClick={() => generateAndCopyDonationLink(campaign)}
-                        disabled={generatingDonationLinkId === campaign.id}
-                        className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
-                      </button>
+                      {canCreateDonationLink && (
+                        <button
+                          type="button"
+                          onClick={() => generateAndCopyDonationLink(campaign)}
+                          disabled={generatingDonationLinkId === campaign.id}
+                          className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
+                        </button>
+                      )}
                     </div>
                   </article>
                 )) : (
@@ -4061,14 +4283,16 @@ function Dashboard({ setView }) {
                       <p className="mt-1 text-sm" style={{ color: palette.muted }}>Gestiona los registros de novedades y servicio de guardia</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={selectedLibroGuardia ? openCreateRegistroModal : openCreateLibroGuardiaModal}
-                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
-                  >
-                    <span className="text-base leading-none">+</span>
-                    {selectedLibroGuardia ? 'Agregar registro' : 'Crear libro'}
-                  </button>
+                  {((selectedLibroGuardia && canRegisterLibroGuardia) || (!selectedLibroGuardia && canCreateLibroGuardia)) && (
+                    <button
+                      type="button"
+                      onClick={selectedLibroGuardia ? openCreateRegistroModal : openCreateLibroGuardiaModal}
+                      className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.25)] transition-opacity hover:opacity-90"
+                    >
+                      <span className="text-base leading-none">+</span>
+                      {selectedLibroGuardia ? 'Agregar registro' : 'Crear libro'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -4170,9 +4394,11 @@ function Dashboard({ setView }) {
                     ) : (
                       <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
                         <p className="text-sm font-semibold" style={{ color: palette.text }}>Este libro aún no tiene registros.</p>
-                        <button type="button" onClick={openCreateRegistroModal} className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg">
-                          Agregar primer registro
-                        </button>
+                        {canRegisterLibroGuardia && (
+                          <button type="button" onClick={openCreateRegistroModal} className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg">
+                            Agregar primer registro
+                          </button>
+                        )}
                       </div>
                     )}
                   </section>
@@ -4335,13 +4561,15 @@ function Dashboard({ setView }) {
                 ) : (
                   <div className="rounded-xl border border-dashed px-6 py-16 text-center" style={{ borderColor: palette.border, background: palette.card }}>
                     <p className="text-sm font-semibold" style={{ color: palette.text }}>No hay libros de guardia creados.</p>
-                    <button
-                      type="button"
-                      onClick={openCreateLibroGuardiaModal}
-                      className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg transition-opacity hover:opacity-90"
-                    >
-                      Crear primer libro
-                    </button>
+                    {canCreateLibroGuardia && (
+                      <button
+                        type="button"
+                        onClick={openCreateLibroGuardiaModal}
+                        className="mt-4 rounded-lg bg-brand-cyan px-4 py-2 text-sm font-semibold text-dark-bg transition-opacity hover:opacity-90"
+                      >
+                        Crear primer libro
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -4399,7 +4627,7 @@ function Dashboard({ setView }) {
                         Inactivos <span className="ml-1 rounded-full border border-dark-border bg-dark-bg3 px-2 py-0.5 text-xs font-bold text-text-muted">{bomberosInactivos.length}</span>
                       </button>
                     </div>
-                    {renderPersonalTable(currentPersonalData, activePersonalTab === 'activos')}
+                    {renderPersonalTable(currentPersonalData, activePersonalTab === 'activos' && canManageUsers)}
                   </div>
                 )}
               </div>
@@ -4407,15 +4635,35 @@ function Dashboard({ setView }) {
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'reportes' && (
-            <ReportsView palette={palette} />
+            <ReportsView
+              palette={palette}
+              canViewFullReports={canViewFullReports}
+              canViewBasicReports={canViewReports}
+            />
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'vehiculos' && (
-            <VehiculosView />
+            <VehiculosView
+              canManageVehicles={canManageVehicles}
+              canManageImages={canManageVehicles}
+              canManageObservations={canManageObservations}
+              canManageMaintenances={canManageMaintenances}
+            />
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'epp' && (
-            <EppView eppData={eppData} setEppData={setEppData} onDetailChange={setShowingEppDetail} />
+            <EppView
+              eppData={eppData}
+              setEppData={setEppData}
+              onDetailChange={setShowingEppDetail}
+              canViewCompanyEpp={canViewEpp}
+              canViewOwnEpp={canViewOwnEpp}
+              canManageEpp={canManageEpp}
+              canChangeState={canChangeMaterialState}
+              canDeactivate={canDeactivateMaterial}
+              canManageObservations={canManageObservations}
+              canManageMaintenances={canManageMaintenances}
+            />
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'mis-datos' && (
@@ -4492,7 +4740,7 @@ function Dashboard({ setView }) {
           )}
         </div>
 
-        {showEditContactModal && (
+        {showEditContactModal && canManageOwnUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <form onSubmit={handleUpdateContactProfile} className="w-full max-w-lg overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
@@ -4561,7 +4809,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showCreateCampanaModal && (
+        {showCreateCampanaModal && canManageDonaciones && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateCampana} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -4668,7 +4916,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showAddUbicacionModal && (
+        {showAddUbicacionModal && canManageLocations && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateUbicacion} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -4757,7 +5005,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showAddTipoUbicacionModal && (
+        {showAddTipoUbicacionModal && canManageLocations && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateTipoUbicacion} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -4820,7 +5068,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {tipoUbicacionPendingDelete && (
+        {tipoUbicacionPendingDelete && canManageLocations && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
             style={{ background: palette.overlay }}
@@ -4956,7 +5204,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {editingTipoRelations && (
+        {editingTipoRelations && canManageLocations && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleAddTipoChildRelation} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -5069,7 +5317,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showCreateLibroGuardiaModal && (
+        {showCreateLibroGuardiaModal && canCreateLibroGuardia && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <form onSubmit={handleCreateLibroGuardia} className="w-full max-w-lg overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
@@ -5146,7 +5394,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showCreateRegistroModal && selectedLibroGuardia && (
+        {showCreateRegistroModal && selectedLibroGuardia && canRegisterLibroGuardia && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <form onSubmit={handleCreateRegistroLibroGuardia} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
@@ -5221,7 +5469,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showAddStockMinimoModal && (
+        {showAddStockMinimoModal && canAddStock && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleSaveStockMinimo} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -5373,7 +5621,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {valueUpdateMaterial && (
+        {valueUpdateMaterial && canEditMaterial && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleUpdateMaterialValue} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2">
@@ -5418,7 +5666,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {stockMinimoPendingDelete && (
+        {stockMinimoPendingDelete && canAddStock && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
             style={{ background: palette.overlay }}
@@ -5480,7 +5728,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {confirmCatAction && (
+        {confirmCatAction && canDeactivateMaterial && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-sm overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex items-center gap-3">
@@ -5519,7 +5767,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showAddMaterialModal && (
+        {showAddMaterialModal && canCreateMaterial && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateMaterial} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">
@@ -5633,7 +5881,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showAssignEppModal && (
+        {showAssignEppModal && canManageEpp && (
           <AssignEppModal 
             onClose={() => setShowAssignEppModal(false)}
             onAssign={(newAssignments) => {
@@ -5648,14 +5896,14 @@ function Dashboard({ setView }) {
           />
         )}
 
-        {showAddBomberoModal && (
+        {showAddBomberoModal && canManageUsers && (
           <AddBomberoModal
             onClose={() => setShowAddBomberoModal(false)}
             onAdded={fetchBomberosPersonal}
           />
         )}
 
-        {bomberoPendingInactivation && (
+        {bomberoPendingInactivation && canManageUsers && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
             style={{ background: palette.overlay }}
@@ -5717,7 +5965,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showInventoryMaterialModal && (
+        {showInventoryMaterialModal && canAddStock && (
           <AddInventoryMaterialModal
             idUbicacion={activeUbicacion}
             onClose={() => setShowInventoryMaterialModal(false)}
@@ -5725,7 +5973,7 @@ function Dashboard({ setView }) {
           />
         )}
 
-        {movingMaterial && (
+        {movingMaterial && canMoveMaterial && (
           <MoveMaterialModal
             material={movingMaterial}
             origen={selectedOrigen}

@@ -41,7 +41,14 @@ function KpiCard({ title, value, sub, icon, color, loading }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function InicioView({ onNavigate }) {
+export default function InicioView({
+  onNavigate,
+  canViewBomberos = true,
+  canViewVehiculos = true,
+  canViewEpp = true,
+  canViewInventory = true,
+  canViewDonaciones = true,
+}) {
   const [bomberos, setBomberos]         = useState([]);
   const [vehiculos, setVehiculos]       = useState([]);
   const [eppItems, setEppItems]         = useState([]);
@@ -55,12 +62,12 @@ export default function InicioView({ onNavigate }) {
     const fetchAll = async () => {
       try {
         const [bData, vData, eppData, smData, nData, cData] = await Promise.allSettled([
-          apiFetch('/api/bomberos'),
-          apiFetch('/api/vehiculos'),
-          apiFetch('/api/materiales/items/epp'),
-          apiFetch('/api/stockminimos'),
+          canViewBomberos ? apiFetch('/api/bomberos') : Promise.resolve([]),
+          canViewVehiculos ? apiFetch('/api/vehiculos') : Promise.resolve([]),
+          canViewEpp ? apiFetch('/api/materiales/items/epp') : Promise.resolve([]),
+          canViewInventory ? apiFetch('/api/stockminimos') : Promise.resolve([]),
           apiFetch('/api/notificaciones?leida=false'),
-          apiFetch('/api/campanasdonaciones?estado=Activa'),
+          canViewDonaciones ? apiFetch('/api/campanasdonaciones?estado=Activa') : Promise.resolve([]),
         ]);
         if (ignore) return;
         if (bData.status === 'fulfilled')  setBomberos(Array.isArray(bData.value) ? bData.value : []);
@@ -75,7 +82,7 @@ export default function InicioView({ onNavigate }) {
     };
     fetchAll();
     return () => { ignore = true; };
-  }, []);
+  }, [canViewBomberos, canViewVehiculos, canViewEpp, canViewInventory, canViewDonaciones]);
 
   // ── Derived KPI data ──────────────────────────────────────────────────────
   const personalActivo = bomberos.filter(b =>
@@ -132,22 +139,29 @@ export default function InicioView({ onNavigate }) {
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}
           sub="Notificaciones pendientes"
           icon={<Icons.AlertTriangle />} color="#ef4444" />
-        <KpiCard loading={loading} title="Personal activo" value={personalActivo}
-          sub={`${bomberos.length} bomberos en total`}
-          icon={<Icons.User />} color="#06b6d4" />
-        <KpiCard loading={loading} title="Recaudación"
-          value={campanaActiva ? `${progreso}%` : '—'}
-          sub={campanaActiva ? campanaActiva.nombre : 'Sin campaña activa'}
-          icon={<Icons.Finance />} color="#10b981" />
-        <KpiCard loading={loading} title="Stock crítico" value={stockCritico}
-          sub="Materiales bajo mínimo"
-          icon={<Icons.Inventory />} color="#f97316" />
+        {canViewBomberos && (
+          <KpiCard loading={loading} title="Personal activo" value={personalActivo}
+            sub={`${bomberos.length} bomberos en total`}
+            icon={<Icons.User />} color="#06b6d4" />
+        )}
+        {canViewDonaciones && (
+          <KpiCard loading={loading} title="Recaudación"
+            value={campanaActiva ? `${progreso}%` : '—'}
+            sub={campanaActiva ? campanaActiva.nombre : 'Sin campaña activa'}
+            icon={<Icons.Finance />} color="#10b981" />
+        )}
+        {canViewInventory && (
+          <KpiCard loading={loading} title="Stock crítico" value={stockCritico}
+            sub="Materiales bajo mínimo"
+            icon={<Icons.Inventory />} color="#f97316" />
+        )}
       </div>
 
       {/* Gráficos fila 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Neon Visualizer: Flota */}
+        {canViewVehiculos && (
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6 flex flex-col items-center">
           <div className="flex justify-between items-center w-full mb-4">
             <h3 className="text-white font-semibold text-sm">Estado de Flota</h3>
@@ -361,8 +375,10 @@ export default function InicioView({ onNavigate }) {
             </>
           )}
         </div>
+        )}
 
         {/* Barras: EPP por vencer */}
+        {canViewEpp && (
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6 lg:col-span-2 flex flex-col">
           <h3 className="text-white font-semibold mb-5 text-sm">EPP Próximo a Vencer</h3>
           {loading ? <Spinner /> : eppItems.length === 0 ? (
@@ -392,12 +408,14 @@ export default function InicioView({ onNavigate }) {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Gráficos fila 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Campaña activa: barra de progreso + stats */}
+        {canViewDonaciones && (
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6 lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-white font-semibold text-sm">Campaña de Donación Activa</h3>
@@ -451,6 +469,7 @@ export default function InicioView({ onNavigate }) {
             </>
           )}
         </div>
+        )}
 
         {/* Alertas / Notificaciones */}
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6">

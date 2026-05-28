@@ -93,12 +93,25 @@ const mapEppItem = (item) => {
   };
 };
 
-function EppView({ eppData, setEppData, onDetailChange }) {
-  const [activeEppTab, setActiveEppTab] = useState('asignados');
+function EppView({
+  eppData,
+  setEppData,
+  onDetailChange,
+  canViewCompanyEpp = true,
+  canViewOwnEpp = true,
+  canManageEpp = false,
+  canChangeState = false,
+  canDeactivate = false,
+  canManageObservations = false,
+  canManageMaintenances = false,
+}) {
+  const [activeEppTab, setActiveEppTab] = useState(canViewCompanyEpp ? 'asignados' : 'propio');
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('Filtrar');
   const [loadingEpp, setLoadingEpp] = useState(false);
+  const [loadingOwnEpp, setLoadingOwnEpp] = useState(false);
   const [eppError, setEppError] = useState('');
+  const [ownEppError, setOwnEppError] = useState('');
   const [eppActionError, setEppActionError] = useState('');
   const [unassigningEppId, setUnassigningEppId] = useState(null);
   const [decommissionItem, setDecommissionItem] = useState(null);
@@ -108,6 +121,11 @@ function EppView({ eppData, setEppData, onDetailChange }) {
   const [selectedEppDetailId, setSelectedEppDetailId] = useState(null);
   const [eppPage, setEppPage] = useState(1);
   const [eppPageSize, setEppPageSize] = useState(5);
+  const [ownEppData, setOwnEppData] = useState([]);
+  const [stateChangeItem, setStateChangeItem] = useState(null);
+  const [stateChangeValue, setStateChangeValue] = useState('Operativo');
+  const [stateChangeSaving, setStateChangeSaving] = useState(false);
+  const [stateChangeError, setStateChangeError] = useState('');
 
   const [editingEppId, setEditingEppId] = useState(null);
   const [editEppData, setEditEppData] = useState({});
@@ -122,6 +140,12 @@ function EppView({ eppData, setEppData, onDetailChange }) {
     let ignore = false;
 
     const fetchEppItems = async () => {
+      if (!canViewCompanyEpp) {
+        setEppData([]);
+        setLoadingEpp(false);
+        return;
+      }
+
       setLoadingEpp(true);
       setEppError('');
 
@@ -150,11 +174,68 @@ function EppView({ eppData, setEppData, onDetailChange }) {
     return () => {
       ignore = true;
     };
-  }, [setEppData]);
+  }, [canViewCompanyEpp, setEppData]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchOwnEppItems = async () => {
+      if (!canViewOwnEpp) {
+        setOwnEppData([]);
+        setLoadingOwnEpp(false);
+        return;
+      }
+
+      setLoadingOwnEpp(true);
+      setOwnEppError('');
+
+      try {
+        const data = await apiFetch('/api/materiales/items/epp/propio');
+        const mappedItems = getArrayPayload(data).map(mapEppItem).filter(item => item.id);
+
+        if (!ignore) {
+          setOwnEppData(mappedItems);
+        }
+      } catch (error) {
+        console.error('Error al cargar EPP propio:', error);
+        if (!ignore) {
+          setOwnEppError(error.message || 'No se pudo cargar tu EPP.');
+          setOwnEppData([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingOwnEpp(false);
+        }
+      }
+    };
+
+    fetchOwnEppItems();
+
+    return () => {
+      ignore = true;
+    };
+  }, [canViewOwnEpp]);
+
+  useEffect(() => {
+    if (!canViewCompanyEpp && activeEppTab !== 'propio') {
+      setActiveEppTab('propio');
+      return;
+    }
+
+    if (!canViewOwnEpp && activeEppTab === 'propio') {
+      setActiveEppTab(canViewCompanyEpp ? 'asignados' : 'propio');
+    }
+  }, [activeEppTab, canViewCompanyEpp, canViewOwnEpp]);
 
   const assignedData = useMemo(() => eppData.filter(isAssigned), [eppData]);
   const unassignedData = useMemo(() => eppData.filter(item => !isAssigned(item)), [eppData]);
-  const currentTabData = activeEppTab === 'asignados' ? assignedData : unassignedData;
+  const currentTabData = activeEppTab === 'propio'
+    ? ownEppData
+    : activeEppTab === 'asignados'
+      ? assignedData
+      : unassignedData;
+  const currentLoading = activeEppTab === 'propio' ? loadingOwnEpp : loadingEpp;
+  const currentError = activeEppTab === 'propio' ? ownEppError : eppError;
 
   const availableStates = ['Operativo', 'De baja', 'Mantenimiento'];
 
@@ -184,7 +265,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
 
   const handleUnassign = async (item) => {
     const itemId = item.idItem || item.id;
-    if (!itemId || unassigningEppId) return;
+    if (!canManageEpp || !itemId || unassigningEppId) return;
 
     setUnassigningEppId(item.id);
     setEppActionError('');
@@ -219,6 +300,8 @@ function EppView({ eppData, setEppData, onDetailChange }) {
   };
 
   const openDecommissionModal = (item) => {
+    if (!canDeactivate) return;
+
     setDecommissionItem(item);
     setDecommissionReason('');
     setConfirmDecommission(false);
@@ -233,7 +316,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
   };
 
   const handleDecommission = async () => {
-    if (!decommissionItem || !decommissionReason.trim() || decommissioning) return;
+    if (!canDeactivate || !decommissionItem || !decommissionReason.trim() || decommissioning) return;
 
     const itemId = decommissionItem.idItem || decommissionItem.id;
     if (!itemId) {
@@ -266,11 +349,68 @@ function EppView({ eppData, setEppData, onDetailChange }) {
     }
   };
 
+  const openStateChangeModal = (item) => {
+    if (!canChangeState) return;
+
+    setStateChangeItem(item);
+    setStateChangeValue(item.estado || 'Operativo');
+    setStateChangeError('');
+  };
+
+  const closeStateChangeModal = () => {
+    if (stateChangeSaving) return;
+    setStateChangeItem(null);
+    setStateChangeError('');
+  };
+
+  const handleStateChange = async (event) => {
+    event.preventDefault();
+    if (!canChangeState || !stateChangeItem || stateChangeSaving) return;
+
+    const itemId = stateChangeItem.idItem || stateChangeItem.id;
+    if (!itemId) {
+      setStateChangeError('No se pudo identificar el EPP.');
+      return;
+    }
+
+    const payload = { estado: stateChangeValue };
+
+    setStateChangeSaving(true);
+    setStateChangeError('');
+    setEppActionError('');
+
+    try {
+      const updatedDetail = await apiFetch(`/api/materiales/items/${itemId}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      const updatedState = normalizeEstado(updatedDetail?.estado || updatedDetail?.estadoEpp || updatedDetail?.estadoInventario || payload.estado);
+      const applyUpdate = item => (
+        String(item.idItem || item.id) === String(itemId)
+          ? { ...item, ...(updatedDetail || {}), estadoInventario: payload.estado, estado: updatedState }
+          : item
+      );
+
+      setOwnEppData(prev => prev.map(applyUpdate));
+      setEppData(prev => prev.map(applyUpdate));
+      setStateChangeItem(null);
+    } catch (error) {
+      setStateChangeError(error.message || 'No se pudo cambiar el estado del EPP.');
+    } finally {
+      setStateChangeSaving(false);
+    }
+  };
+
   if (selectedEppDetailId) {
     return (
       <EppDetailView
         itemId={selectedEppDetailId}
         onBack={() => setSelectedEppDetailId(null)}
+        canEdit={canManageEpp}
+        canDeactivate={canDeactivate}
+        canManageImages={canManageEpp}
+        canManageObservations={canManageObservations}
+        canManageMaintenances={canManageMaintenances}
         onRemoved={() => {
           setEppData(prev => prev.filter(item => String(item.idItem || item.id) !== String(selectedEppDetailId)));
           setSelectedEppDetailId(null);
@@ -280,22 +420,35 @@ function EppView({ eppData, setEppData, onDetailChange }) {
   }
 
   return (
-    <div className="p-8 flex flex-col h-full fade-in">
+    <div className="h-full overflow-auto p-8 custom-scrollbar fade-in">
       <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => setActiveEppTab('asignados')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
-        >
-          <Icons.User className="w-4 h-4 text-brand-cyan" />
-          Asignados <span className="bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full text-xs font-bold ml-1">{assignedData.length}</span>
-        </button>
-        <button
-          onClick={() => setActiveEppTab('no-asignados')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'no-asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
-        >
-          <Icons.Inventory className="w-4 h-4 text-text-muted" />
-          No asignados <span className="bg-dark-bg3 text-text-muted px-2 py-0.5 rounded-full text-xs font-bold border border-dark-border ml-1">{unassignedData.length}</span>
-        </button>
+        {canViewCompanyEpp && (
+          <>
+            <button
+              onClick={() => setActiveEppTab('asignados')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
+            >
+              <Icons.User className="w-4 h-4 text-brand-cyan" />
+              Asignados <span className="bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full text-xs font-bold ml-1">{assignedData.length}</span>
+            </button>
+            <button
+              onClick={() => setActiveEppTab('no-asignados')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'no-asignados' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
+            >
+              <Icons.Inventory className="w-4 h-4 text-text-muted" />
+              No asignados <span className="bg-dark-bg3 text-text-muted px-2 py-0.5 rounded-full text-xs font-bold border border-dark-border ml-1">{unassignedData.length}</span>
+            </button>
+          </>
+        )}
+        {canViewOwnEpp && (
+          <button
+            onClick={() => setActiveEppTab('propio')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeEppTab === 'propio' ? 'bg-dark-bg3 border-dark-border text-text-main' : 'bg-transparent border-transparent text-text-muted hover:text-text-main'}`}
+          >
+            <Icons.Shield className="w-4 h-4 text-brand-cyan" />
+            Mi EPP <span className="bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full text-xs font-bold ml-1">{ownEppData.length}</span>
+          </button>
+        )}
       </div>
 
       <div className="flex gap-4 mb-6">
@@ -336,32 +489,32 @@ function EppView({ eppData, setEppData, onDetailChange }) {
         </div>
       )}
 
-      <div className="border border-dark-border rounded-xl overflow-hidden bg-dark-surface shadow-lg flex flex-col">
+      <div className="border border-dark-border rounded-xl overflow-hidden bg-dark-surface shadow-lg">
         <div
-          className="custom-scrollbar max-h-[34rem] overflow-auto"
+          className="custom-scrollbar min-h-[27rem] max-h-[27rem] overflow-auto"
           style={{ scrollbarGutter: 'stable' }}
         >
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-dark-bg2 border-b border-dark-border text-text-muted font-medium rajdhani text-xs tracking-wider sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 font-semibold">EQUIPO</th>
-                <th className="px-6 py-4 font-semibold">CÓDIGO ÚNICO</th>
-                <th className="px-6 py-4 font-semibold">ASIGNADO A</th>
-                <th className="px-6 py-4 font-semibold">{activeEppTab === 'asignados' ? 'FECHA ASIGNACIÓN' : 'FECHA VENCIMIENTO'}</th>
-                <th className="px-6 py-4 font-semibold">ESTADO</th>
-                <th className="px-6 py-4 font-semibold text-right">ACCIONES</th>
+                <th className="px-6 py-3 font-semibold">EQUIPO</th>
+                <th className="px-6 py-3 font-semibold">CÓDIGO ÚNICO</th>
+                <th className="px-6 py-3 font-semibold">ASIGNADO A</th>
+                <th className="px-6 py-3 font-semibold">{activeEppTab === 'asignados' ? 'FECHA ASIGNACIÓN' : 'FECHA VENCIMIENTO'}</th>
+                <th className="px-6 py-3 font-semibold">ESTADO</th>
+                <th className="px-6 py-3 font-semibold text-right">ACCIONES</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-border">
-              {loadingEpp ? (
+              {currentLoading ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center text-text-muted">Cargando EPP...</td>
                 </tr>
-              ) : eppError ? (
+              ) : currentError ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center">
                     <div className="inline-flex flex-col items-center rounded-xl border border-brand-red/30 bg-brand-red/10 px-6 py-4">
-                      <p className="text-sm font-semibold text-brand-red">{eppError}</p>
+                      <p className="text-sm font-semibold text-brand-red">{currentError}</p>
                     </div>
                   </td>
                 </tr>
@@ -373,7 +526,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                     onClick={() => setSelectedEppDetailId(item.idItem || item.id)}
                     className="group cursor-pointer hover:bg-dark-bg3 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-text-muted border border-dark-border shadow-[0_0_10px_rgba(0,0,0,0.2)]">
                           <Icons.Shield className="w-4 h-4" />
@@ -381,8 +534,8 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                         <span className="font-medium text-white transition-colors group-hover:text-brand-cyan">{item.equipo}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-text-muted font-mono text-xs">{item.codigo}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3 text-text-muted font-mono text-xs">{item.codigo}</td>
+                    <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-brand-cyan/20 border border-brand-cyan/30 flex items-center justify-center text-brand-cyan font-bold text-xs">
                           {item.inicial}
@@ -390,10 +543,10 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                         <span className={item.asignadoA ? 'text-white' : 'text-text-muted'}>{item.asignadoA || 'Sin asignar'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-text-muted">
+                    <td className="px-6 py-3 text-text-muted">
                       {activeEppTab === 'asignados' ? item.fecha : item.fechaVencimientoFormateada}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       {isEditing ? (
                         <select
                           value={editEppData.estado}
@@ -415,9 +568,20 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-3 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        {activeEppTab === 'asignados' && isAssigned(item) ? (
+                        {activeEppTab === 'propio' && canChangeState ? (
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openStateChangeModal(item);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0119 5m0 0h-5m5 0v5"></path></svg>
+                            Cambiar estado
+                          </button>
+                        ) : activeEppTab === 'asignados' && isAssigned(item) && canManageEpp ? (
                           <button
                             onClick={(event) => {
                               event.stopPropagation();
@@ -429,7 +593,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM3 21a6 6 0 0112 0M16 11h6"></path></svg>
                             {unassigningEppId === item.id ? 'Desasignando...' : 'Desasignar'}
                           </button>
-                        ) : activeEppTab === 'no-asignados' && !isAssigned(item) ? (
+                        ) : activeEppTab === 'no-asignados' && !isAssigned(item) && canDeactivate ? (
                           <button
                             onClick={(event) => {
                               event.stopPropagation();
@@ -455,7 +619,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
                         <Icons.Shield />
                       </div>
                       <p className="text-text-muted rajdhani text-lg">
-                        No hay EPP {activeEppTab === 'asignados' ? 'asignados' : 'no asignados'} con ese criterio.
+                        No hay EPP {activeEppTab === 'propio' ? 'propio' : activeEppTab === 'asignados' ? 'asignados' : 'no asignados'} con ese criterio.
                       </p>
                     </div>
                   </td>
@@ -466,7 +630,7 @@ function EppView({ eppData, setEppData, onDetailChange }) {
         </div>
       </div>
 
-      {!loadingEpp && !eppError && eppItemCount > 0 && (
+      {!currentLoading && !currentError && eppItemCount > 0 && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm text-text-muted">
           <div className="flex items-center gap-2">
             <span>Mostrar</span>
@@ -556,7 +720,69 @@ function EppView({ eppData, setEppData, onDetailChange }) {
         </div>
       )}
 
-      {decommissionItem && (
+      {stateChangeItem && canChangeState && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleStateChange} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl fade-in">
+            <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white rajdhani">Cambiar estado</h3>
+                <p className="mt-0.5 text-xs text-text-muted">{stateChangeItem.equipo}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeStateChangeModal}
+                disabled={stateChangeSaving}
+                className="text-text-muted hover:text-white transition-colors disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="rounded-lg border border-dark-border bg-dark-bg px-4 py-3">
+                <p className="text-sm font-semibold text-white">{stateChangeItem.equipo}</p>
+                <p className="mt-1 text-xs text-text-muted font-mono">{stateChangeItem.codigo}</p>
+              </div>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-white rajdhani tracking-wide">Estado</span>
+                <select
+                  value={stateChangeValue}
+                  onChange={(event) => setStateChangeValue(event.target.value)}
+                  disabled={stateChangeSaving}
+                  className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                >
+                  {availableStates.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </label>
+              {stateChangeError && (
+                <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                  {stateChangeError}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 bg-dark-bg2 border-t border-dark-border flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeStateChangeModal}
+                disabled={stateChangeSaving}
+                className="px-4 py-2 text-sm font-medium text-text-main hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={stateChangeSaving}
+                className="px-4 py-2 text-sm font-medium text-dark-bg bg-brand-cyan rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {stateChangeSaving ? 'Guardando...' : 'Guardar estado'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {decommissionItem && canDeactivate && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl fade-in">
             <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex items-center justify-between">

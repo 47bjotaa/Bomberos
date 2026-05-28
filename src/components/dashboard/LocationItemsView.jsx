@@ -2,7 +2,18 @@ import { useMemo, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemePalette } from '../../utils/themePalette';
 
-function LocationItemsView({ locationName, items, loading, hasSelection, onAddMaterial, onMoveMaterial, onSelectMaterial, addMaterialDisabledReason = '' }) {
+function LocationItemsView({
+  locationName,
+  items,
+  loading,
+  hasSelection,
+  onAddMaterial,
+  onMoveMaterial,
+  onSelectMaterial,
+  addMaterialDisabledReason = '',
+  canAddMaterial = Boolean(onAddMaterial),
+  canMoveMaterial = Boolean(onMoveMaterial),
+}) {
   const { theme } = useTheme();
   const palette = getThemePalette(theme);
   const [searchName, setSearchName] = useState('');
@@ -233,15 +244,17 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onMoveMaterial?.(item);
-                        }}
-                        className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-semibold text-text-main transition-all hover:border-brand-cyan/60 hover:bg-brand-cyan/15 hover:text-brand-cyan hover:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:border-brand-cyan/60 focus-visible:bg-brand-cyan/15 focus-visible:text-brand-cyan focus-visible:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:outline-none"
-                      >
-                        Mover
-                      </button>
+                      {canMoveMaterial && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onMoveMaterial?.(item);
+                          }}
+                          className="rounded-lg border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-semibold text-text-main transition-all hover:border-brand-cyan/60 hover:bg-brand-cyan/15 hover:text-brand-cyan hover:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:border-brand-cyan/60 focus-visible:bg-brand-cyan/15 focus-visible:text-brand-cyan focus-visible:shadow-[0_0_14px_rgba(56,189,248,0.3)] focus-visible:outline-none"
+                        >
+                          Mover
+                        </button>
+                      )}
                       <span className="rounded border border-brand-cyan/10 bg-brand-cyan/5 px-2 py-0.5 font-mono text-sm text-brand-cyan">
                         x{item.cantidad}
                       </span>
@@ -264,7 +277,7 @@ function LocationItemsView({ locationName, items, loading, hasSelection, onAddMa
         )}
       </div>
 
-      {hasSelection && !loading && (
+      {hasSelection && !loading && canAddMaterial && (
         <div
           className="flex-shrink-0 border-t p-3"
           style={{ background: palette.bg2, borderColor: palette.border }}
