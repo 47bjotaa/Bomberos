@@ -500,7 +500,7 @@ function EppView({
                 <th className="px-6 py-3 font-semibold">EQUIPO</th>
                 <th className="px-6 py-3 font-semibold">CÓDIGO ÚNICO</th>
                 <th className="px-6 py-3 font-semibold">ASIGNADO A</th>
-                <th className="px-6 py-3 font-semibold">{activeEppTab === 'asignados' ? 'FECHA ASIGNACIÓN' : 'FECHA VENCIMIENTO'}</th>
+                <th className="px-6 py-3 font-semibold">{activeEppTab === 'no-asignados' ? 'FECHA VENCIMIENTO' : 'FECHA ASIGNACIÓN'}</th>
                 <th className="px-6 py-3 font-semibold">ESTADO</th>
                 <th className="px-6 py-3 font-semibold text-right">ACCIONES</th>
               </tr>
@@ -544,7 +544,7 @@ function EppView({
                       </div>
                     </td>
                     <td className="px-6 py-3 text-text-muted">
-                      {activeEppTab === 'asignados' ? item.fecha : item.fechaVencimientoFormateada}
+                      {activeEppTab === 'no-asignados' ? item.fechaVencimientoFormateada : item.fecha}
                     </td>
                     <td className="px-6 py-3">
                       {isEditing ? (
