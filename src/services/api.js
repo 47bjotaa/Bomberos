@@ -138,6 +138,11 @@ export const apiFetch = async (endpoint, options = {}) => {
     ...fetchOptions.headers,
   };
 
+  if (isFormData) {
+    delete headers['Content-Type'];
+    delete headers['content-type'];
+  }
+
   if (token && !skipAuth) {
     headers['Authorization'] = `Bearer ${token}`;
   }

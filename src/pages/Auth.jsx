@@ -180,6 +180,8 @@ function AuthView({ initialMode = 'register' }) {
           setIsSubmitting(false);
         }
       } else {
+        setIsSubmitting(true);
+        setSuccessMessage('');
         try {
           // Mapeo según la API /api/Companias/registrar-compania
           const userData = {
@@ -197,11 +199,21 @@ function AuthView({ initialMode = 'register' }) {
           console.log("Registro exitoso en BD");
           
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
-          await authService.login(formData.rut, formData.password);
-          window.location.href = "/dashboard";
+          try {
+            await authService.login(formData.rut, formData.password);
+            window.location.href = "/dashboard";
+          } catch (loginError) {
+            console.warn("Registro exitoso, pero no se pudo iniciar sesión automáticamente:", loginError);
+            setSuccessMessage("Registro creado correctamente. Inicia sesión para continuar.");
+            window.setTimeout(() => {
+              navigateToMode('login');
+            }, 1500);
+          }
         } catch (error) {
           setErrors(prev => ({ ...prev, api: error.message || "Error al intentar crear la cuenta en la base de datos." }));
           console.error("Error API Registro:", error);
+        } finally {
+          setIsSubmitting(false);
         }
       }
     }
@@ -521,6 +533,7 @@ function AuthView({ initialMode = 'register' }) {
               <div className="bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-lg relative z-20">
               {step === 1 && <h3 className="text-lg font-semibold text-text-main mb-6 rajdhani">Datos Personales</h3>}
               {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
+              {successMessage && <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">{successMessage}</div>}
 
             <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(e); }}>
 
@@ -687,8 +700,8 @@ function AuthView({ initialMode = 'register' }) {
                     <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Atrás
                     </button>
-                    <button type="submit" className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 text-text-main text-lg font-medium py-3 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-                      Completar Registro
+                    <button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-text-main text-lg font-medium py-3 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                      {isSubmitting ? 'Creando...' : 'Completar Registro'}
                     </button>
                   </div>
                 </div>

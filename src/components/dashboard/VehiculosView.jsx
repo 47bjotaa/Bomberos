@@ -522,7 +522,7 @@ function VehiculosView({
     try {
       await Promise.all(filesToUpload.map((file) => {
         const formDataImage = new FormData();
-        formDataImage.append('archivo', file);
+        formDataImage.append('imagen', file);
 
         return apiFetch(imageBasePath, {
           method: 'POST',
