@@ -1,3 +1,5 @@
+import { getAppUrl } from '../utils/constants';
+
 const API_URL = import.meta.env.VITE_API_URL || "https://api.cuartelamigo.cl";
 const ACCESS_TOKEN_REFRESH_MARGIN_MS = 60 * 1000;
 let refreshRequest = null;
@@ -12,7 +14,13 @@ const clearSession = () => {
 
 const redirectToLogin = () => {
   if (window.location.pathname !== '/login') {
-    window.history.replaceState({}, '', '/login');
+    const loginUrl = getAppUrl('/login');
+    if (loginUrl.startsWith('http')) {
+      window.location.replace(loginUrl);
+      return;
+    }
+
+    window.history.replaceState({}, '', loginUrl);
     window.dispatchEvent(new Event('popstate'));
   }
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { authService } from '../services/api';
-import { cuerposBomberos } from '../utils/constants';
+import { cuerposBomberos, getAppUrl } from '../utils/constants';
 import { useTheme } from '../context/ThemeContext';
 import { Icons } from '../components/ui/Icons';
 
@@ -170,7 +170,7 @@ function AuthView({ initialMode = 'register' }) {
         try {
           const res = await authService.login(formData.rut, formData.password, turnstileToken);
           console.log("Login exitoso", res);
-          window.location.href = "/dashboard";
+          window.location.href = getAppUrl('/dashboard');
         } catch (error) {
           setErrors(prev => ({ ...prev, api: error.message || "Error al iniciar sesión." }));
           console.error("Error API Login:", error);
@@ -201,7 +201,7 @@ function AuthView({ initialMode = 'register' }) {
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
           try {
             await authService.login(formData.rut, formData.password);
-            window.location.href = "/dashboard";
+            window.location.href = getAppUrl('/dashboard');
           } catch (loginError) {
             console.warn("Registro exitoso, pero no se pudo iniciar sesión automáticamente:", loginError);
             setSuccessMessage("Registro creado correctamente. Inicia sesión para continuar.");

@@ -1,4 +1,24 @@
-export const APP_LOGIN_URL = 'https://app.cuartelamigo.cl/login';
+export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://app.cuartelamigo.cl';
+export const PUBLIC_HOSTS = ['www.cuartelamigo.cl', 'cuartelamigo.cl'];
+export const APP_ONLY_PATHS = ['/login', '/register', '/recuperar-password', '/restablecer-password', '/dashboard'];
+
+export const APP_LOGIN_URL = `${APP_ORIGIN}/login`;
+
+export const isPublicHost = (hostname = window.location.hostname) => PUBLIC_HOSTS.includes(hostname);
+
+export const isAppOnlyPath = (pathname = window.location.pathname) => (
+  APP_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+);
+
+export const getAppUrl = (path = '/') => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return isPublicHost() ? `${APP_ORIGIN}${normalizedPath}` : normalizedPath;
+};
+
+export const getAbsoluteAppUrl = (path = '/') => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${APP_ORIGIN}${normalizedPath}`;
+};
 
 export const cuerposBomberos = [
   { "idCuerpoBomberos": 44, "nombre": "Cuerpo de Bomberos Cartagena", "region": "Region de Valparaiso" },
