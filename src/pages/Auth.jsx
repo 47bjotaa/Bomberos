@@ -53,6 +53,14 @@ function AuthView({ initialMode = 'register' }) {
 
   const navigateToMode = (nextMode) => {
     const nextPath = authPathByMode[nextMode] || '/login';
+    const nextUrl = getAppUrl(nextPath);
+    const nextUrlObject = nextUrl.startsWith('http') ? new URL(nextUrl) : null;
+
+    if (nextUrlObject && nextUrlObject.origin !== window.location.origin) {
+      window.location.href = nextUrl;
+      return;
+    }
+
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, '', nextPath);
     }

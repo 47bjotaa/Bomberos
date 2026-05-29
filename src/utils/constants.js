@@ -6,13 +6,19 @@ export const APP_LOGIN_URL = `${APP_ORIGIN}/login`;
 
 export const isPublicHost = (hostname = window.location.hostname) => PUBLIC_HOSTS.includes(hostname);
 
+export const isLocalHost = (hostname = window.location.hostname) => (
+  hostname === 'localhost' ||
+  hostname === '127.0.0.1' ||
+  hostname === '[::1]'
+);
+
 export const isAppOnlyPath = (pathname = window.location.pathname) => (
   APP_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 );
 
 export const getAppUrl = (path = '/') => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return isPublicHost() ? `${APP_ORIGIN}${normalizedPath}` : normalizedPath;
+  return isLocalHost() ? normalizedPath : `${APP_ORIGIN}${normalizedPath}`;
 };
 
 export const getAbsoluteAppUrl = (path = '/') => {
