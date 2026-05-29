@@ -8,14 +8,21 @@
     <script>
       (function () {
         var publicHosts = ['www.cuartelamigo.cl', 'cuartelamigo.cl'];
+        var appHosts = ['app.cuartelamigo.cl'];
         var appOnlyPaths = ['/login', '/register', '/recuperar-password', '/restablecer-password', '/dashboard'];
+        var currentPath = window.location.pathname;
         var isPublicHost = publicHosts.indexOf(window.location.hostname) !== -1;
+        var isAppHost = appHosts.indexOf(window.location.hostname) !== -1;
         var isAppOnlyPath = appOnlyPaths.some(function (path) {
-          return window.location.pathname === path || window.location.pathname.indexOf(path + '/') === 0;
+          return currentPath === path || currentPath.indexOf(path + '/') === 0;
         });
 
         if (isPublicHost && isAppOnlyPath) {
-          window.location.replace('https://app.cuartelamigo.cl' + window.location.pathname + window.location.search + window.location.hash);
+          window.location.replace('https://app.cuartelamigo.cl' + currentPath + window.location.search + window.location.hash);
+        }
+
+        if (isAppHost && !isAppOnlyPath) {
+          window.location.replace('https://www.cuartelamigo.cl' + currentPath + window.location.search + window.location.hash);
         }
       })();
     </script>

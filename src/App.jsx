@@ -4,7 +4,7 @@ import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import PaginaDonacion from './pages/PaginaDonacion';
 import RetornoDonacion from './pages/RetornoDonacion';
-import { getAbsoluteAppUrl, isAppOnlyPath, isPublicHost } from './utils/constants';
+import { getAbsoluteAppUrl, getPublicUrl, isAppHost, isAppOnlyPath, isPublicHost } from './utils/constants';
 import './App.css';
 
 const hasAuthToken = () => Boolean(localStorage.getItem('token'));
@@ -57,6 +57,10 @@ export default function App() {
   const [routeState, setRouteState] = useState(() => {
     if (isPublicHost() && isAppOnlyPath()) {
       window.location.replace(getAbsoluteAppUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`));
+    }
+
+    if (isAppHost() && !isAppOnlyPath()) {
+      window.location.replace(getPublicUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`));
     }
 
     const initialRoute = getRouteStateFromPath(window.location.pathname);
