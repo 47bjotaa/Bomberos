@@ -300,7 +300,7 @@ function VehiculosView({
     } finally {
       if (imageRequestRef.current === requestId) setLoadingVehicleImages(false);
     }
-  }, [imageBasePath]);
+  }, [imageBasePath, selectedId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

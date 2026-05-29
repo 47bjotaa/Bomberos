@@ -649,6 +649,7 @@ function Dashboard({ setView }) {
     : formatProfileName(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
   const headerProfileCargo = bomberoProfile?.cargo || sessionUser.cargo || 'Sin cargo';
   const headerProfileInitials = getProfileInitials(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
+  const bomberoProfileStatus = bomberoProfile?.estadoUsuario || bomberoProfile?.estado;
 
   const getCurrentBomberoId = async () => {
     if (bomberoProfile?.idBombero) return bomberoProfile.idBombero;
@@ -4919,8 +4920,8 @@ function Dashboard({ setView }) {
                           <p className="mt-1 text-sm text-brand-cyan">{bomberoProfile?.cargo || 'Sin cargo registrado'}</p>
                         </div>
                         <div className="ml-auto flex flex-wrap items-center gap-3">
-                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${bomberoProfile?.estadoUsuario === 'Activo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
-                            {bomberoProfile?.estadoUsuario || 'Sin estado'}
+                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${bomberoProfileStatus === 'Activo' ? 'border-brand-green/20 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-bg3 text-text-muted'}`}>
+                            {bomberoProfileStatus || 'Sin estado'}
                           </span>
                           <button
                             type="button"
@@ -4935,14 +4936,10 @@ function Dashboard({ setView }) {
 
                     <section className="grid gap-4 md:grid-cols-2">
                       {[
-                        ['ID Bombero', bomberoProfile?.idBombero],
-                        ['ID Usuario', bomberoProfile?.idUsuario],
-                        ['ID Compania', bomberoProfile?.idCompania],
                         ['RUT', bomberoProfile?.rut],
                         ['Email', bomberoProfile?.email],
                         ['Telefono', bomberoProfile?.telefono],
                         ['Genero', bomberoProfile?.genero],
-                        ['Cargo', bomberoProfile?.cargo],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-dark-border bg-dark-surface p-5">
                           <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{label}</p>
