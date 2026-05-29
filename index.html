@@ -5,24 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CuartelAmigo</title>
-    <script>
-      (function () {
-        var publicHosts = ['www.cuartelamigo.cl', 'cuartelamigo.cl'];
-        var appOnlyPaths = ['/login', '/register', '/recuperar-password', '/restablecer-password', '/dashboard'];
-        var currentPath = window.location.pathname;
-        var isBarePublicHost = window.location.hostname === 'cuartelamigo.cl';
-        var isPublicHost = publicHosts.indexOf(window.location.hostname) !== -1;
-        var isAppOnlyPath = appOnlyPaths.some(function (path) {
-          return currentPath === path || currentPath.indexOf(path + '/') === 0;
-        });
-
-        if (isPublicHost && isAppOnlyPath) {
-          window.location.replace('https://app.cuartelamigo.cl' + currentPath + window.location.search + window.location.hash);
-        } else if (isBarePublicHost) {
-          window.location.replace('https://www.cuartelamigo.cl' + currentPath + window.location.search + window.location.hash);
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
