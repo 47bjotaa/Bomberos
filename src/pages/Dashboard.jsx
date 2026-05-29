@@ -36,7 +36,7 @@ const DEFAULT_PAYMENT_CONFIG = {
   ambiente: 'Sandbox',
   urlApi: 'https://sandbox.flow.cl/api',
   urlConfirmacion: 'https://api.cuartelamigo.cl/api/donaciones/flow/confirmacion',
-  urlRetorno: 'https://cuartelamigo.cl/donacion-gracias',
+  urlRetorno: 'https://www.cuartelamigo.cl/donacion-gracias',
   paymentMethodDefault: '9',
   monedaDefault: 'CLP',
   timeoutSegundos: '',
@@ -694,7 +694,7 @@ function Dashboard({ setView }) {
         method: 'POST',
         body: JSON.stringify({
           idBombero: Number(idBombero),
-          urlBasePublica: 'https://cuartelamigo.cl',
+          urlBasePublica: 'https://www.cuartelamigo.cl',
         }),
       });
 

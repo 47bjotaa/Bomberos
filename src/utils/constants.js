@@ -1,14 +1,11 @@
 export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://app.cuartelamigo.cl';
 export const PUBLIC_ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || 'https://www.cuartelamigo.cl';
-export const APP_HOSTS = ['app.cuartelamigo.cl'];
+export const BARE_PUBLIC_HOST = 'cuartelamigo.cl';
 export const PUBLIC_HOSTS = ['www.cuartelamigo.cl', 'cuartelamigo.cl'];
 export const APP_ONLY_PATHS = ['/login', '/register', '/recuperar-password', '/restablecer-password', '/dashboard'];
 
-export const APP_LOGIN_URL = `${APP_ORIGIN}/login`;
-
 export const isPublicHost = (hostname = window.location.hostname) => PUBLIC_HOSTS.includes(hostname);
-export const isAppHost = (hostname = window.location.hostname) => APP_HOSTS.includes(hostname);
-
+export const isBarePublicHost = (hostname = window.location.hostname) => hostname === BARE_PUBLIC_HOST;
 export const isLocalHost = (hostname = window.location.hostname) => (
   hostname === 'localhost' ||
   hostname === '127.0.0.1' ||

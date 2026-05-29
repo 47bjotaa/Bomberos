@@ -1,6 +1,5 @@
 import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
-import { APP_LOGIN_URL } from '../../utils/constants';
 import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
 import { useState, useEffect } from 'react';
 

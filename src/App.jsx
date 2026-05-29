@@ -4,7 +4,7 @@ import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import PaginaDonacion from './pages/PaginaDonacion';
 import RetornoDonacion from './pages/RetornoDonacion';
-import { getAbsoluteAppUrl, getPublicUrl, isAppHost, isAppOnlyPath, isPublicHost } from './utils/constants';
+import { getAbsoluteAppUrl, getAppUrl, getPublicUrl, isAppOnlyPath, isBarePublicHost, isPublicHost } from './utils/constants';
 import './App.css';
 
 const hasAuthToken = () => Boolean(localStorage.getItem('token'));
@@ -57,9 +57,7 @@ export default function App() {
   const [routeState, setRouteState] = useState(() => {
     if (isPublicHost() && isAppOnlyPath()) {
       window.location.replace(getAbsoluteAppUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`));
-    }
-
-    if (isAppHost() && !isAppOnlyPath()) {
+    } else if (isBarePublicHost()) {
       window.location.replace(getPublicUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`));
     }
 
@@ -94,7 +92,13 @@ export default function App() {
 
   const setView = (nextView) => {
     if (nextView === 'dashboard' && !hasAuthToken()) {
-      window.history.pushState({}, '', '/login');
+      const loginUrl = getAppUrl('/login');
+      if (loginUrl.startsWith('http')) {
+        window.location.href = loginUrl;
+        return;
+      }
+
+      window.history.pushState({}, '', loginUrl);
       setRouteState({ view: 'auth', authMode: 'login', path: '/login', shouldReplace: false });
       return;
     }
