@@ -262,6 +262,19 @@
   .step-content h3 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--text); font-weight: 600; }
   .step-content p { color: var(--muted); line-height: 1.6; font-size: 1.05rem; }
 
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; display: flex; flex-direction: column; min-height: 360px; box-shadow: 0 18px 42px rgba(0,0,0,0.28); }
+  .pricing-card-featured { border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 22px 55px rgba(56, 189, 248, 0.12); }
+  .pricing-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--cyan); background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.18); margin-bottom: 1.25rem; }
+  .pricing-icon svg { width: 24px; height: 24px; }
+  .pricing-title { font-size: 1.55rem; font-weight: 700; margin-bottom: 0.65rem; color: var(--text); }
+  .pricing-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.55; min-height: 4.5rem; }
+  .pricing-price { font-family: 'Rajdhani', sans-serif; font-size: 2.45rem; font-weight: 700; color: var(--text); margin: 1.5rem 0; }
+  .pricing-price span { margin-left: 0.35rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--muted); }
+  .pricing-btn { margin-top: auto; width: 100%; }
+  .pricing-status { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); padding: 2rem; text-align: center; }
+  .pricing-status-error { border-color: rgba(232,55,42,0.28); color: var(--red); background: rgba(232,55,42,0.08); }
+
   .cta-section { padding: 100px 0; text-align: center; background: linear-gradient(to top, var(--bg2), transparent); border-top: 1px solid var(--border); position: relative; }
   .cta-title { font-size: 3.5rem; font-weight: 700; margin-bottom: 2.5rem; max-width: 800px; margin-inline: auto; line-height: 1.1; }
   .cta-note { color: var(--muted); font-size: 0.95rem; margin-top: 2rem; }
@@ -369,7 +382,7 @@
     .mobile-menu-btn { display: block; }
     .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); }
     .hero-subtitle { font-size: 1.1rem; }
-    .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    .grid-4, .grid-3, .grid-2, .pricing-grid { grid-template-columns: 1fr; }
     .dash-sidebar { display: none; }
     .dash-main { padding: 1.5rem; }
     .dash-table { display: block; overflow-x: auto; }

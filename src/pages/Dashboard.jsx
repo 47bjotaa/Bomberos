@@ -44,6 +44,107 @@ const DEFAULT_PAYMENT_CONFIG = {
   activo: true,
 };
 
+const normalizeSubscriptionCode = (value) => String(value || '').trim().toLowerCase();
+
+const getSubscriptionCodeFromObject = (source = {}) => {
+  const nestedSources = [
+    source.suscripcion,
+    source.Suscripcion,
+    source.subscription,
+    source.plan,
+    source.Plan,
+    source.planSuscripcion,
+    source.suscripcionActual,
+    source.SuscripcionActual,
+    source.compania?.suscripcion,
+    source.compania?.Suscripcion,
+    source.compania?.subscription,
+    source.compania?.plan,
+    source.compania?.Plan,
+    source.compania?.suscripcionActual,
+    source.compania?.SuscripcionActual,
+    source.Compania?.suscripcion,
+    source.Compania?.Suscripcion,
+    source.Compania?.subscription,
+    source.Compania?.plan,
+    source.Compania?.Plan,
+    source.Compania?.suscripcionActual,
+    source.Compania?.SuscripcionActual,
+  ];
+  const codeKeys = [
+    'codigo',
+    'Codigo',
+    'codigoSuscripcion',
+    'CodigoSuscripcion',
+    'suscripcionCodigo',
+    'SuscripcionCodigo',
+    'codigoPlan',
+    'CodigoPlan',
+    'planCodigo',
+    'PlanCodigo',
+    'subscriptionCode',
+    'SubscriptionCode',
+    'planCode',
+    'PlanCode',
+  ];
+
+  for (const nestedSource of nestedSources) {
+    if (!nestedSource) continue;
+    if (typeof nestedSource !== 'object') {
+      const code = normalizeSubscriptionCode(nestedSource);
+      if (code) return code;
+      continue;
+    }
+
+    for (const key of codeKeys) {
+      const code = normalizeSubscriptionCode(nestedSource[key]);
+      if (code) return code;
+    }
+  }
+
+  for (const key of codeKeys) {
+    const code = normalizeSubscriptionCode(source[key]);
+    if (code) return code;
+  }
+
+  return '';
+};
+
+const getJwtPayload = (token) => {
+  if (!token) return {};
+
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return {};
+
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const jsonPayload = decodeURIComponent(
+      window.atob(paddedBase64)
+        .split('')
+        .map(char => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join('')
+    );
+
+    return JSON.parse(jsonPayload);
+  } catch {
+    return {};
+  }
+};
+
+const getCurrentSubscriptionCode = () => {
+  const tokenPayload = getJwtPayload(localStorage.getItem('token'));
+  let storedUser = {};
+
+  try {
+    storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    storedUser = {};
+  }
+
+  return getSubscriptionCodeFromObject({ ...tokenPayload, ...storedUser });
+};
+
 const getMaterialDetailRoute = (pathname) => {
   const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
   if (eppItemMatch) {
@@ -288,6 +389,10 @@ function Dashboard({ setView }) {
     fechaFin: '',
     imagenUrl: '',
   });
+  const [subscriptionCode, setSubscriptionCode] = useState(() => getCurrentSubscriptionCode());
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const hasProSubscription = subscriptionCode === 'pro';
+  const subscriptionChecked = !loadingSubscription;
 
   useEffect(() => {
     if (activeTab === 'bodegas') {
@@ -324,6 +429,10 @@ function Dashboard({ setView }) {
 
   useEffect(() => {
     fetchBomberoProfile();
+  }, []);
+
+  useEffect(() => {
+    fetchCurrentCompanySubscription();
   }, []);
 
   useEffect(() => {
@@ -371,10 +480,10 @@ function Dashboard({ setView }) {
   }, [activeTab, inventoryView, catalogPage, catalogPageSize, filtroNombre, filtroTipo]);
 
   useEffect(() => {
-    if (activeTab === 'donaciones') {
+    if (activeTab === 'donaciones' && subscriptionChecked && hasProSubscription) {
       fetchCampanasDonaciones();
     }
-  }, [activeTab]);
+  }, [activeTab, subscriptionChecked, hasProSubscription]);
 
   useEffect(() => {
     if (activeTab === 'personal') {
@@ -395,7 +504,7 @@ function Dashboard({ setView }) {
   }, [registrosPage, registrosPageSize]);
 
   useEffect(() => {
-    if (activeTab !== 'donaciones') return undefined;
+    if (activeTab !== 'donaciones' || !subscriptionChecked || !hasProSubscription) return undefined;
 
     const refreshDonaciones = () => {
       fetchCampanasDonaciones();
@@ -420,13 +529,13 @@ function Dashboard({ setView }) {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [activeTab, selectedCampanaDetalle]);
+  }, [activeTab, selectedCampanaDetalle, subscriptionChecked, hasProSubscription]);
 
   useEffect(() => {
-    if (selectedCampanaDetalle) {
+    if (selectedCampanaDetalle && subscriptionChecked && hasProSubscription) {
       fetchDonacionesCampana(selectedCampanaDetalle);
     }
-  }, [selectedCampanaDetalle]);
+  }, [selectedCampanaDetalle, subscriptionChecked, hasProSubscription]);
 
   const getArrayPayload = (payload, keys = []) => {
     if (Array.isArray(payload)) return payload;
@@ -573,6 +682,31 @@ function Dashboard({ setView }) {
     return `${parts[0]} ${parts[parts.length - 1][0]}.`;
   };
 
+  const fetchCurrentCompanySubscription = async () => {
+    setLoadingSubscription(true);
+
+    try {
+      const data = await apiFetch('/api/companias/mi-compania');
+      const nextSubscriptionCode = getSubscriptionCodeFromObject(data);
+      const currentUser = getSessionUser();
+
+      setSubscriptionCode(nextSubscriptionCode);
+      localStorage.setItem('user', JSON.stringify({
+        ...currentUser,
+        compania: data,
+        Compania: data,
+        suscripcionActual: data.suscripcionActual || data.SuscripcionActual || currentUser.suscripcionActual,
+        SuscripcionActual: data.SuscripcionActual || data.suscripcionActual || currentUser.SuscripcionActual,
+        codigoSuscripcion: nextSubscriptionCode || currentUser.codigoSuscripcion,
+      }));
+    } catch (error) {
+      console.error('No se pudo cargar la suscripcion de la compania:', error);
+      setSubscriptionCode(getCurrentSubscriptionCode());
+    } finally {
+      setLoadingSubscription(false);
+    }
+  };
+
   const fetchBomberoProfile = async () => {
     setLoadingBomberoProfile(true);
     setBomberoProfileError('');
@@ -587,6 +721,10 @@ function Dashboard({ setView }) {
           idUsuario: data.idUsuario,
           email: data.email,
           cargo: data.cargo,
+          suscripcion: data.suscripcion || data.subscription || data.plan || getSessionUser().suscripcion,
+          codigoSuscripcion: data.codigoSuscripcion || data.suscripcionCodigo || data.subscriptionCode || data.planCode || getSessionUser().codigoSuscripcion,
+          codigoPlan: data.codigoPlan || data.planCodigo || getSessionUser().codigoPlan,
+          plan: data.plan || getSessionUser().plan,
         }));
         return data;
       }
@@ -606,6 +744,10 @@ function Dashboard({ setView }) {
         idCompania: data.idCompania,
         email: data.email,
         cargo: data.cargo,
+        suscripcion: data.suscripcion || data.subscription || data.plan || getSessionUser().suscripcion,
+        codigoSuscripcion: data.codigoSuscripcion || data.suscripcionCodigo || data.subscriptionCode || data.planCode || getSessionUser().codigoSuscripcion,
+        codigoPlan: data.codigoPlan || data.planCodigo || getSessionUser().codigoPlan,
+        plan: data.plan || getSessionUser().plan,
       }));
       return data;
     } catch (error) {
@@ -685,7 +827,7 @@ function Dashboard({ setView }) {
   };
 
   const generateAndCopyDonationLink = async (campaign) => {
-    if (!canCreateDonationLink || !campaign?.id || generatingDonationLinkId) return;
+    if (!hasProSubscription || !canCreateDonationLink || !campaign?.id || generatingDonationLinkId) return;
 
     setGeneratingDonationLinkId(campaign.id);
     setDonationLinkError('');
@@ -1526,6 +1668,8 @@ function Dashboard({ setView }) {
   };
 
   const fetchCampanasDonaciones = async () => {
+    if (!hasProSubscription) return;
+
     setLoadingCampanas(true);
     setCampanasError('');
 
@@ -1552,6 +1696,8 @@ function Dashboard({ setView }) {
   };
 
   const fetchDonacionesCampana = async (campana) => {
+    if (!hasProSubscription) return;
+
     if (!campana?.idCompania || !campana?.idCampanaDonacion) {
       setDonacionesCampana([]);
       setDonacionesCampanaError('No se pudo identificar la compañía o la campaña.');
@@ -1590,6 +1736,7 @@ function Dashboard({ setView }) {
   };
 
   const selectDonacionesView = (view) => {
+    if (!hasProSubscription) return;
     if (view === 'configuracion' && !canViewPaymentConfig && !canManagePaymentConfig) return;
 
     setDonacionesView(view);
@@ -1728,7 +1875,7 @@ function Dashboard({ setView }) {
 
   const handleSavePaymentConfig = async (event) => {
     event.preventDefault();
-    if (!canManagePaymentConfig) return;
+    if (!hasProSubscription || !canManagePaymentConfig) return;
 
     setPaymentConfigError('');
     setPaymentConfigSuccess('');
@@ -1790,7 +1937,7 @@ function Dashboard({ setView }) {
   };
 
   const openCreateCampanaModal = () => {
-    if (!canManageDonaciones) return;
+    if (!hasProSubscription || !canManageDonaciones) return;
 
     resetNewCampanaData();
     setShowCreateCampanaModal(true);
@@ -1804,7 +1951,7 @@ function Dashboard({ setView }) {
 
   const handleCreateCampana = async (event) => {
     event.preventDefault();
-    if (!canManageDonaciones) return;
+    if (!hasProSubscription || !canManageDonaciones) return;
 
     setCreateCampanaError('');
 
@@ -3174,7 +3321,7 @@ function Dashboard({ setView }) {
                   Asignar EPP
                 </button>
               )}
-              {activeTab === 'donaciones' && donacionesView === 'campanas' && selectedCampanaDetalle && canCreateDonationLink && (
+              {activeTab === 'donaciones' && hasProSubscription && donacionesView === 'campanas' && selectedCampanaDetalle && canCreateDonationLink && (
                 <button
                   type="button"
                   onClick={() => generateAndCopyDonationLink(selectedCampanaDetalle)}
@@ -3185,7 +3332,7 @@ function Dashboard({ setView }) {
                   {generatingDonationLinkId === selectedCampanaDetalle.id ? 'Generando...' : copiedDonationSlug === (selectedCampanaDetalle.slug || String(selectedCampanaDetalle.id)) ? 'Link copiado' : 'Generar link'}
                 </button>
               )}
-              {activeTab === 'donaciones' && donacionesView === 'campanas' && !selectedCampanaDetalle && canManageDonaciones && (
+              {activeTab === 'donaciones' && hasProSubscription && donacionesView === 'campanas' && !selectedCampanaDetalle && canManageDonaciones && (
                 <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
                   <span className="text-base leading-none">+</span>
                   Crear campaña
@@ -3398,7 +3545,7 @@ function Dashboard({ setView }) {
                 canViewVehiculos={can(PERMISSIONS.VER_VEHICULOS)}
                 canViewEpp={canViewEpp}
                 canViewInventory={canViewInventory}
-                canViewDonaciones={canViewDonaciones}
+                canViewDonaciones={canViewDonaciones && hasProSubscription}
               />
             </div>
           )}
@@ -4066,7 +4213,34 @@ function Dashboard({ setView }) {
           )}
 
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'donaciones' && (
-            <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+            <div className="relative h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+              {(loadingSubscription || !hasProSubscription) && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
+                  <div className="max-w-md text-center">
+                    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 text-brand-red [&>svg]:h-7 [&>svg]:w-7">
+                      <Icons.Finance />
+                    </div>
+                    <h3 className="rajdhani text-3xl font-bold text-white">{loadingSubscription ? 'Verificando plan' : 'Donaciones bloqueadas'}</h3>
+                    <p className="mt-2 text-sm text-text-muted">
+                      {loadingSubscription
+                        ? 'Estamos validando la suscripcion actual de tu compania.'
+                        : 'Esta funcion requiere una suscripcion Pro para gestionar campanas y enlaces de pago.'}
+                    </p>
+                    {loadingSubscription ? (
+                      <div className="mx-auto mt-6 h-8 w-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500"></div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { window.location.href = 'mailto:contacto@cuartelamigo.cl?subject=Actualizar%20plan%20Pro'; }}
+                        className="mt-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-bold text-white shadow-[0_4px_18px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90"
+                      >
+                        Actualizar plan
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className={hasProSubscription ? '' : 'pointer-events-none select-none opacity-25 blur-[1px]'} aria-hidden={!hasProSubscription || loadingSubscription}>
               <div className="mb-6 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -4479,6 +4653,7 @@ function Dashboard({ setView }) {
               )}
                 </>
               )}
+              </div>
             </div>
           )}
 
@@ -5112,7 +5287,7 @@ function Dashboard({ setView }) {
           </div>
         )}
 
-        {showCreateCampanaModal && canManageDonaciones && (
+        {showCreateCampanaModal && hasProSubscription && canManageDonaciones && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <form onSubmit={handleCreateCampana} className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl fade-in">
               <div className="px-6 py-4 border-b border-dark-border bg-dark-bg2 flex justify-between items-center">

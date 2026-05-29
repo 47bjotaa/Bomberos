@@ -4,6 +4,7 @@ import { authService } from '../services/api';
 import { cuerposBomberos, getAppUrl } from '../utils/constants';
 import { useTheme } from '../context/ThemeContext';
 import { Icons } from '../components/ui/Icons';
+import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 
 const authPathByMode = {
   login: '/login',
@@ -13,6 +14,43 @@ const authPathByMode = {
 };
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+const getArrayPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.value)) return payload.value;
+  return [];
+};
+
+const normalizePlan = (plan = {}) => ({
+  ...plan,
+  id: plan.idTipoSuscripcion ?? plan.IdTipoSuscripcion ?? plan.id ?? plan.Id,
+  codigo: plan.codigo ?? plan.Codigo ?? '',
+  nombre: plan.nombre ?? plan.Nombre ?? plan.titulo ?? plan.Titulo ?? 'Plan',
+  descripcion: plan.descripcion ?? plan.Descripcion ?? '',
+  precioMensual: Number(plan.precioMensual ?? plan.PrecioMensual ?? plan.precio ?? plan.Precio ?? 0) || 0,
+  flowPlanId: plan.flowPlanId ?? plan.FlowPlanId ?? '',
+});
+
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+
+const getFlowRegistrationData = (response = {}) => {
+  const source = response.data || response.result || response.value || response;
+  const token = source.flowRegisterToken || source.FlowRegisterToken;
+  const url = source.flowRegisterUrl || source.FlowRegisterUrl;
+  const widgetBaseUrl = source.flowRegisterWidgetBaseUrl || source.FlowRegisterWidgetBaseUrl;
+
+  if (!token && !url && !widgetBaseUrl) return null;
+
+  return {
+    token,
+    url,
+    widgetBaseUrl,
+    widgetUrl: widgetBaseUrl && token ? `${widgetBaseUrl}${widgetBaseUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : (url || ''),
+  };
+};
 
 function AuthView({ initialMode = 'register' }) {
   const { theme, toggleTheme } = useTheme();
@@ -34,12 +72,17 @@ function AuthView({ initialMode = 'register' }) {
     correo: '',
     cuartel: '',
     cuerpoBomberos: '',
+    idTipoSuscripcion: '',
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileKey, setTurnstileKey] = useState(0);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [plansError, setPlansError] = useState('');
+  const [flowRegistration, setFlowRegistration] = useState(null);
 
   const formatRut = (value) => {
     const digits = value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
@@ -77,9 +120,48 @@ function AuthView({ initialMode = 'register' }) {
     setMode(initialMode);
     setErrors({});
     setSuccessMessage('');
+    setFlowRegistration(null);
     setTurnstileToken('');
     setTurnstileKey(key => key + 1);
   }, [initialMode]);
+
+  useEffect(() => {
+    if (mode !== 'register') return;
+
+    let alive = true;
+    const selectedPlanFromUrl = new URLSearchParams(window.location.search).get('plan') || '';
+
+    const loadPlans = async () => {
+      setLoadingPlans(true);
+      setPlansError('');
+
+      try {
+        const data = await authService.getSubscriptionPlans({ soloActivos: true });
+        const plans = getArrayPayload(data).map(normalizePlan).slice(0, 3);
+        if (!alive) return;
+
+        setSubscriptionPlans(plans);
+        setFormData(current => {
+          if (current.idTipoSuscripcion) return current;
+
+          const selectedPlan = plans.find(plan => String(plan.id) === String(selectedPlanFromUrl));
+          return {
+            ...current,
+            idTipoSuscripcion: String((selectedPlan || plans[0])?.id || ''),
+          };
+        });
+      } catch (error) {
+        if (alive) setPlansError(error.message || 'No se pudieron cargar los planes.');
+      } finally {
+        if (alive) setLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+    return () => {
+      alive = false;
+    };
+  }, [mode]);
 
   const validate = () => {
     const newErrors = {};
@@ -95,6 +177,7 @@ function AuthView({ initialMode = 'register' }) {
       } else if (step === 2) {
         if (!formData.cuartel) newErrors.cuartel = "Obligatorio";
         if (!formData.cuerpoBomberos) newErrors.cuerpoBomberos = "Obligatorio";
+        if (!formData.idTipoSuscripcion) newErrors.idTipoSuscripcion = "Selecciona un plan";
       } else if (step === 3) {
         if (!formData.password) newErrors.password = "Obligatorio";
         if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Las contraseñas no coinciden";
@@ -200,11 +283,18 @@ function AuthView({ initialMode = 'register' }) {
             password: formData.password,
             nombreBombero: formData.nombre,
             telefonoBombero: formData.telefono || "N/A",
+            IdTipoSuscripcion: Number(formData.idTipoSuscripcion),
             rol: "Administrador" // Rol por defecto al crear una compañía
           };
           
-          await authService.register(userData);
+          const registerResponse = await authService.register(userData);
           console.log("Registro exitoso en BD");
+          const nextFlowRegistration = getFlowRegistrationData(registerResponse);
+          if (nextFlowRegistration) {
+            setFlowRegistration(nextFlowRegistration);
+            setSuccessMessage("Cuenta creada. Registra la tarjeta para activar tu suscripciÃ³n.");
+            return;
+          }
           
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
           try {
@@ -368,6 +458,98 @@ function AuthView({ initialMode = 'register' }) {
             <button onClick={() => navigateToMode('login')} className="text-brand-cyan font-medium hover:text-text-main transition-colors">Ir a iniciar sesión</button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (flowRegistration) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-text-main relative overflow-y-auto">
+        <div className="sticky top-0 z-20 border-b border-dark-border bg-dark-bg2/90 px-6 py-4 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
+            <LogoCuartelAmigo size={86} />
+            <button
+              type="button"
+              onClick={() => navigateToMode('login')}
+              className="rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-text-main"
+            >
+              Iniciar sesion
+            </button>
+          </div>
+        </div>
+
+        <div className="absolute top-24 right-8 z-10">
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle"
+            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+          </button>
+        </div>
+
+        <main className="mx-auto grid min-h-[calc(100vh-88px)] max-w-6xl items-start gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="mx-auto w-full max-w-[640px]">
+            <p className="mb-3 text-sm font-bold uppercase tracking-wider text-brand-cyan">Metodo de pago</p>
+            <div className="overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-5">
+                <div>
+                  <h1 className="rajdhani text-3xl font-bold text-white">Tarjeta de credito o debito</h1>
+                  <p className="mt-1 text-sm text-white/60">Registro seguro procesado por Flow.</p>
+                </div>
+                <div className="rounded-md border border-brand-red/30 bg-brand-red/10 p-2 text-brand-red">
+                  <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2.5" y="5" width="19" height="14" rx="2"></rect>
+                    <path d="M2.5 9h19"></path>
+                    <path d="M6 15h5"></path>
+                    <path d="M15 15h3"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <div className="px-6 pt-5">
+                {successMessage && (
+                  <div className="mb-4 rounded border border-brand-green/30 bg-brand-green/10 p-3 text-sm text-brand-green">
+                    {successMessage}
+                  </div>
+                )}
+                <p className="mb-4 text-sm font-semibold text-text-muted">* indica un campo obligatorio.</p>
+              </div>
+
+              <div className="px-4 pb-4 sm:px-6 sm:pb-6">
+                {flowRegistration.widgetUrl ? (
+                  <iframe
+                    title="Registro de tarjeta Flow"
+                    src={flowRegistration.widgetUrl}
+                    className="h-[650px] w-full rounded-md border border-dark-border bg-white"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-5 text-center text-sm text-brand-red">
+                    No se recibio una URL de registro de tarjeta desde Flow.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              {flowRegistration.url && (
+                <a href={flowRegistration.url} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                  Abrir registro en Flow
+                </a>
+              )}
+            </div>
+          </section>
+
+          <aside className="hidden rounded-lg border border-dark-border bg-dark-surface p-5 shadow-lg lg:block">
+            <h2 className="rajdhani text-xl font-bold text-white">Activacion de suscripcion</h2>
+            <p className="mt-2 text-sm leading-6 text-text-muted">
+              Al registrar la tarjeta, Flow confirmara el medio de pago y CuartelAmigo activara la suscripcion de la compania.
+            </p>
+            <div className="mt-5 rounded-lg border border-brand-red/20 bg-brand-red/10 p-4 text-sm text-brand-red">
+              No se realizara ningun cambio visual fuera de este paso de pago.
+            </div>
+          </aside>
+        </main>
       </div>
     );
   }
@@ -641,6 +823,41 @@ function AuthView({ initialMode = 'register' }) {
                         )}
                       </div>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-[var(--color-text-main)] mb-3">Plan de suscripciÃ³n</label>
+                    {loadingPlans ? (
+                      <div className="rounded-xl border border-dark-border bg-dark-bg2 p-4 text-sm text-text-muted">Cargando planes...</div>
+                    ) : plansError ? (
+                      <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-4 text-sm text-brand-red">{plansError}</div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {subscriptionPlans.map(plan => (
+                          <label
+                            key={plan.id || plan.codigo || plan.nombre}
+                            className={`flex cursor-pointer items-start justify-between gap-4 rounded-xl border p-4 transition-colors ${String(formData.idTipoSuscripcion) === String(plan.id) ? 'border-brand-cyan bg-brand-cyan/10' : 'border-dark-border bg-dark-bg2 hover:border-brand-cyan/40'}`}
+                          >
+                            <input
+                              type="radio"
+                              name="idTipoSuscripcion"
+                              value={plan.id}
+                              checked={String(formData.idTipoSuscripcion) === String(plan.id)}
+                              onChange={handleChange}
+                              className="mt-1 h-4 w-4 text-brand-cyan"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-base font-semibold text-text-main">{plan.nombre}</span>
+                              {plan.descripcion && <span className="mt-1 block text-sm text-text-muted">{plan.descripcion}</span>}
+                            </span>
+                            <span className="whitespace-nowrap text-right font-semibold text-brand-cyan">
+                              {plan.precioMensual > 0 ? `${formatCurrency(plan.precioMensual)}/mes` : 'Gratis'}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {errors.idTipoSuscripcion && <p className="text-brand-red text-sm mt-1">{errors.idTipoSuscripcion}</p>}
                   </div>
 
                   <div className="pt-8 flex justify-between">

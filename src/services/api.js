@@ -192,6 +192,12 @@ export const apiFetch = async (endpoint, options = {}) => {
 
 // --- AUTHENTICATION ---
 export const authService = {
+  getSubscriptionPlans: async ({ soloActivos = true } = {}) => {
+    const params = new URLSearchParams({ soloActivos: String(soloActivos) });
+    return apiFetch(`/api/Suscripciones/planes?${params.toString()}`, {
+      skipAuth: true,
+    });
+  },
   login: async (rut, password, turnstileToken) => {
     const data = await apiFetch('/api/Auth/login', {
       method: 'POST',
@@ -207,7 +213,13 @@ export const authService = {
         idRol: data.idRol || data.rolId,
         cargo: data.cargo,
         permisos: data.permisos || [],
-        email: data.email
+        email: data.email,
+        suscripcion: data.suscripcion || data.Suscripcion || data.subscription || null,
+        suscripcionActual: data.suscripcionActual || data.SuscripcionActual || null,
+        SuscripcionActual: data.SuscripcionActual || data.suscripcionActual || null,
+        codigoSuscripcion: data.codigoSuscripcion || data.CodigoSuscripcion || data.suscripcionCodigo || data.SuscripcionCodigo || data.subscriptionCode || data.SubscriptionCode || data.planCode || data.PlanCode || data.codigoPlan || data.CodigoPlan,
+        codigoPlan: data.codigoPlan || data.CodigoPlan || data.planCodigo || data.PlanCodigo,
+        plan: data.plan || data.Plan || null,
       };
       localStorage.setItem('user', JSON.stringify(userInfo));
     }

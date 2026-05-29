@@ -6,6 +6,7 @@ import Solucion from '../components/landing/Solucion';
 import Semaforo from '../components/landing/Semaforo';
 import DashboardPreview from '../components/landing/DashboardPreview';
 import ComoFunciona from '../components/landing/ComoFunciona';
+import PlanesSuscripcion from '../components/landing/PlanesSuscripcion';
 import CtaFinal from '../components/landing/CtaFinal';
 import Footer from '../components/landing/Footer';
 
@@ -32,6 +33,7 @@ function Landing() {
       <Semaforo />
       <DashboardPreview />
       <ComoFunciona />
+      <PlanesSuscripcion />
       <CtaFinal />
       <Footer />
     </div>
