@@ -13,6 +13,7 @@ import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
+import { goToPublicHome } from '../utils/constants';
 import { getThemePalette } from '../utils/themePalette';
 import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
@@ -2951,7 +2952,7 @@ function Dashboard({ setView }) {
       {/* Top Navigation Bar */}
       <header className="flex justify-between items-center px-5 py-3 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
         {/* Left: Logo */}
-        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-3 md:mr-6" onClick={() => setView('landing')}>
+        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-3 md:mr-6" onClick={goToPublicHome}>
           <LogoCuartelAmigo size={68} />
         </div>
 
@@ -3099,7 +3100,7 @@ function Dashboard({ setView }) {
               <button
                 onClick={() => {
                   authService.logout();
-                  setView('auth');
+                  goToPublicHome();
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-red hover:bg-dark-bg3 transition-colors text-left"
               >

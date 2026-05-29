@@ -1,19 +1,9 @@
-export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://app.cuartelamigo.cl';
 export const PUBLIC_ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || 'https://www.cuartelamigo.cl';
-export const BARE_PUBLIC_HOST = 'cuartelamigo.cl';
-export const PUBLIC_HOSTS = ['www.cuartelamigo.cl', 'cuartelamigo.cl'];
-export const APP_ONLY_PATHS = ['/login', '/register', '/recuperar-password', '/restablecer-password', '/dashboard'];
-
-export const isPublicHost = (hostname = window.location.hostname) => PUBLIC_HOSTS.includes(hostname);
-export const isBarePublicHost = (hostname = window.location.hostname) => hostname === BARE_PUBLIC_HOST;
+export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || PUBLIC_ORIGIN;
 export const isLocalHost = (hostname = window.location.hostname) => (
   hostname === 'localhost' ||
   hostname === '127.0.0.1' ||
   hostname === '[::1]'
-);
-
-export const isAppOnlyPath = (pathname = window.location.pathname) => (
-  APP_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 );
 
 export const getAppUrl = (path = '/') => {
@@ -21,14 +11,13 @@ export const getAppUrl = (path = '/') => {
   return isLocalHost() ? normalizedPath : `${APP_ORIGIN}${normalizedPath}`;
 };
 
-export const getAbsoluteAppUrl = (path = '/') => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${APP_ORIGIN}${normalizedPath}`;
-};
-
 export const getPublicUrl = (path = '/') => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${PUBLIC_ORIGIN}${normalizedPath}`;
+};
+
+export const goToPublicHome = () => {
+  window.location.href = getPublicUrl('/');
 };
 
 export const cuerposBomberos = [
