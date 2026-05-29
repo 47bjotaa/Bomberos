@@ -221,25 +221,13 @@ function VehiculosView({
   };
 
   const uploadVehicleImageFile = async (file) => {
-    const uploadWithField = (fieldName) => {
-      const formDataImage = new FormData();
-      formDataImage.append(fieldName, file);
+    const formDataImage = new FormData();
+    formDataImage.append('imagen', file);
 
-      return apiFetch(imageBasePath, {
-        method: 'POST',
-        body: formDataImage,
-      });
-    };
-
-    try {
-      return await uploadWithField('imagen');
-    } catch (err) {
-      if (err.status === 400) {
-        return uploadWithField('archivo');
-      }
-
-      throw err;
-    }
+    return apiFetch(imageBasePath, {
+      method: 'POST',
+      body: formDataImage,
+    });
   };
 
   const fetchVehicleDetail = useCallback(async () => {

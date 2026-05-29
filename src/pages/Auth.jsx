@@ -452,7 +452,7 @@ function AuthView({ initialMode = 'register' }) {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-[40%] xl:w-[35%] relative bg-dark-bg items-end p-12 border-r border-dark-border overflow-hidden">
         <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
-          <source src="/images/necesito_que_crees_un_video_de.mp4" type="video/mp4" />
+          <source src="/images/b_a_b_af_ec_e_e_b_c_d_b_e_b_mp_.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-dark-bg/60 to-transparent z-10"></div>
         <div className="relative z-20 max-w-lg">
