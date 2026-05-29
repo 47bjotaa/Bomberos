@@ -165,6 +165,22 @@ function AuthView({ initialMode = 'register' }) {
     };
   }, [mode]);
 
+  const getSelectedSubscriptionPlan = () => (
+    subscriptionPlans.find(plan => String(plan.id) === String(formData.idTipoSuscripcion))
+  );
+
+  const getRegisterErrorMessage = (error) => {
+    const message = error?.message || '';
+    const selectedPlan = getSelectedSubscriptionPlan();
+    const isGenericServerError = !message || /^error interno$/i.test(message.trim()) || /^error api: 500$/i.test(message.trim());
+
+    if (isGenericServerError && selectedPlan?.precioMensual > 0) {
+      return 'No se pudo iniciar el registro de tarjeta en Flow. Revisa la configuracion de FlowSubscriptions o el Flow_Plan_Id del plan.';
+    }
+
+    return message || 'Error al intentar crear la cuenta en la base de datos.';
+  };
+
   const validate = () => {
     const newErrors = {};
     const rutRegex = /^[0-9]+-[0-9K]{1}$/i;
@@ -276,6 +292,7 @@ function AuthView({ initialMode = 'register' }) {
         setIsSubmitting(true);
         setSuccessMessage('');
         try {
+          const selectedPlan = getSelectedSubscriptionPlan();
           // Mapeo según la API /api/Companias/registrar-compania
           const userData = {
             idCuerpoBomberos: parseInt(formData.cuerpoBomberos) || 1,
@@ -299,6 +316,14 @@ function AuthView({ initialMode = 'register' }) {
           }
           
           // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
+          if (selectedPlan?.precioMensual > 0) {
+            setErrors(prev => ({
+              ...prev,
+              api: 'La cuenta fue enviada con un plan pagado, pero no se recibio el registro de tarjeta de Flow. Revisa la configuracion del plan o intenta con otro plan.',
+            }));
+            return;
+          }
+
           try {
             await authService.login(formData.rut, formData.password);
             window.location.href = getAppUrl('/dashboard');
@@ -310,7 +335,7 @@ function AuthView({ initialMode = 'register' }) {
             }, 1500);
           }
         } catch (error) {
-          setErrors(prev => ({ ...prev, api: error.message || "Error al intentar crear la cuenta en la base de datos." }));
+          setErrors(prev => ({ ...prev, api: getRegisterErrorMessage(error) }));
           console.error("Error API Registro:", error);
         } finally {
           setIsSubmitting(false);

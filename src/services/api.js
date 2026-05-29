@@ -78,7 +78,21 @@ const readApiError = async (response) => {
 
   try {
     const errorData = JSON.parse(errorText);
-    errorMessage = errorData.message || errorData.mensaje || errorData.title || errorData.detail || errorData.error || errorText;
+    if (typeof errorData === 'string') {
+      errorMessage = errorData;
+    } else {
+      errorMessage = errorData.message
+        || errorData.Message
+        || errorData.mensaje
+        || errorData.Mensaje
+        || errorData.title
+        || errorData.Title
+        || errorData.detail
+        || errorData.Detail
+        || errorData.error
+        || errorData.Error
+        || errorText;
+    }
     if (errorData.errors) {
       const errorDetails = Array.isArray(errorData.errors)
         ? errorData.errors
