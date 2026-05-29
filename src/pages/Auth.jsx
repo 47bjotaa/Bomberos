@@ -85,6 +85,7 @@ function AuthView({ initialMode = 'register' }) {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [plansError, setPlansError] = useState('');
   const [flowRegistration, setFlowRegistration] = useState(null);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
 
   const formatRut = (value) => {
     const digits = value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
@@ -123,6 +124,7 @@ function AuthView({ initialMode = 'register' }) {
     setErrors({});
     setSuccessMessage('');
     setFlowRegistration(null);
+    setRegistrationComplete(false);
     setTurnstileToken('');
     setTurnstileKey(key => key + 1);
   }, [initialMode]);
@@ -314,8 +316,7 @@ function AuthView({ initialMode = 'register' }) {
             setSuccessMessage("Cuenta creada. Registra la tarjeta para activar tu suscripciÃ³n.");
             return;
           }
-          
-          // Auto-login después de registrarse (opcional, o podrías enviarlo a 'login')
+
           if (selectedPlan?.precioMensual > 0) {
             setErrors(prev => ({
               ...prev,
@@ -324,16 +325,8 @@ function AuthView({ initialMode = 'register' }) {
             return;
           }
 
-          try {
-            await authService.login(formData.rut, formData.password);
-            window.location.href = getAppUrl('/dashboard');
-          } catch (loginError) {
-            console.warn("Registro exitoso, pero no se pudo iniciar sesión automáticamente:", loginError);
-            setSuccessMessage("Registro creado correctamente. Inicia sesión para continuar.");
-            window.setTimeout(() => {
-              navigateToMode('login');
-            }, 1500);
-          }
+          setRegistrationComplete(true);
+          setSuccessMessage("Registro creado correctamente. Inicia sesion para continuar.");
         } catch (error) {
           setErrors(prev => ({ ...prev, api: getRegisterErrorMessage(error) }));
           console.error("Error API Registro:", error);
@@ -750,9 +743,18 @@ function AuthView({ initialMode = 'register' }) {
               <div className="bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-lg relative z-20">
               {step === 1 && <h3 className="text-lg font-semibold text-text-main mb-6 rajdhani">Datos Personales</h3>}
               {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
-              {successMessage && <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">{successMessage}</div>}
+              {successMessage && (
+                <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">
+                  {successMessage}
+                  {registrationComplete && (
+                    <button type="button" onClick={() => navigateToMode('login')} className="mt-3 block w-full rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90">
+                      Ir a iniciar sesion
+                    </button>
+                  )}
+                </div>
+              )}
 
-            <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(e); }}>
+            <form onSubmit={(e) => { e.preventDefault(); if (step === 3 && !registrationComplete) handleSubmit(e); }}>
 
               {/* STEP 1 */}
               {step === 1 && (
@@ -955,8 +957,8 @@ function AuthView({ initialMode = 'register' }) {
                     <button type="button" onClick={handlePrev} className="bg-dark-bg border border-dark-border hover:bg-dark-bg3 text-text-muted text-lg font-medium py-3 px-8 rounded-xl transition-colors">
                       Atrás
                     </button>
-                    <button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-text-main text-lg font-medium py-3 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
-                      {isSubmitting ? 'Creando...' : 'Completar Registro'}
+                    <button type="submit" disabled={isSubmitting || registrationComplete} className="bg-gradient-to-r from-brand-red to-brand-ember hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-text-main text-lg font-medium py-3 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(232,55,42,0.3)]">
+                      {isSubmitting ? 'Creando...' : registrationComplete ? 'Registro completado' : 'Completar Registro'}
                     </button>
                   </div>
                 </div>
