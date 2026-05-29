@@ -163,7 +163,9 @@ export const apiFetch = async (endpoint, options = {}) => {
       redirectToLogin();
     }
 
-    throw new Error(await readApiError(response));
+    const error = new Error(await readApiError(response));
+    error.status = response.status;
+    throw error;
   }
 
   if (responseType === 'blob') {

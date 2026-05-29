@@ -220,6 +220,28 @@ function VehiculosView({
     setSelectedVehiculo(updatedV);
   };
 
+  const uploadVehicleImageFile = async (file) => {
+    const uploadWithField = (fieldName) => {
+      const formDataImage = new FormData();
+      formDataImage.append(fieldName, file);
+
+      return apiFetch(imageBasePath, {
+        method: 'POST',
+        body: formDataImage,
+      });
+    };
+
+    try {
+      return await uploadWithField('imagen');
+    } catch (err) {
+      if (err.status === 400) {
+        return uploadWithField('archivo');
+      }
+
+      throw err;
+    }
+  };
+
   const fetchVehicleDetail = useCallback(async () => {
     if (!selectedId) return;
 
@@ -520,15 +542,7 @@ function VehiculosView({
     setImageUploadError(selectedFiles.length > vehicleImageSlotsAvailable ? 'Solo puedes tener hasta 3 imagenes del vehiculo.' : '');
 
     try {
-      await Promise.all(filesToUpload.map((file) => {
-        const formDataImage = new FormData();
-        formDataImage.append('imagen', file);
-
-        return apiFetch(imageBasePath, {
-          method: 'POST',
-          body: formDataImage,
-        });
-      }));
+      await Promise.all(filesToUpload.map(uploadVehicleImageFile));
       await fetchVehicleImages();
     } catch (err) {
       setImageUploadError(err.message || 'No se pudo subir la imagen.');
