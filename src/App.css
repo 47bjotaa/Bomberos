@@ -271,6 +271,8 @@
   .pricing-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.55; min-height: 4.5rem; }
   .pricing-price { font-family: 'Rajdhani', sans-serif; font-size: 2.45rem; font-weight: 700; color: var(--text); margin: 1.5rem 0; }
   .pricing-price span { margin-left: 0.35rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--muted); }
+  .pricing-features { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+  .pricing-features span { border: 1px solid var(--border); background: rgba(255,255,255,0.03); border-radius: 6px; padding: 0.55rem 0.75rem; }
   .pricing-btn { margin-top: auto; width: 100%; }
   .pricing-status { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); padding: 2rem; text-align: center; }
   .pricing-status-error { border-color: rgba(232,55,42,0.28); color: var(--red); background: rgba(232,55,42,0.08); }

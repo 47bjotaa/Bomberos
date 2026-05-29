@@ -31,6 +31,8 @@ const normalizePlan = (plan = {}) => ({
   nombre: plan.nombre ?? plan.Nombre ?? plan.titulo ?? plan.Titulo ?? 'Plan',
   descripcion: plan.descripcion ?? plan.Descripcion ?? '',
   precioMensual: Number(plan.precioMensual ?? plan.PrecioMensual ?? plan.precio ?? plan.Precio ?? 0) || 0,
+  duracionDias: plan.duracionDias ?? plan.DuracionDias ?? null,
+  donaciones: Boolean(plan.donaciones ?? plan.Donaciones ?? false),
   flowPlanId: plan.flowPlanId ?? plan.FlowPlanId ?? '',
 });
 
@@ -849,6 +851,9 @@ function AuthView({ initialMode = 'register' }) {
                             <span className="min-w-0 flex-1">
                               <span className="block text-base font-semibold text-text-main">{plan.nombre}</span>
                               {plan.descripcion && <span className="mt-1 block text-sm text-text-muted">{plan.descripcion}</span>}
+                              <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+                                {plan.duracionDias ? `${plan.duracionDias} dias de prueba` : 'Uso mensual'} - {plan.donaciones ? 'Incluye donaciones' : 'Sin donaciones'}
+                              </span>
                             </span>
                             <span className="whitespace-nowrap text-right font-semibold text-brand-cyan">
                               {plan.precioMensual > 0 ? `${formatCurrency(plan.precioMensual)}/mes` : 'Gratis'}

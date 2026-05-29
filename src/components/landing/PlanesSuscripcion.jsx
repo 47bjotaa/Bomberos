@@ -23,6 +23,8 @@ const normalizePlan = (plan = {}) => {
     nombre: plan.nombre ?? plan.Nombre ?? plan.titulo ?? plan.Titulo ?? 'Plan',
     descripcion: plan.descripcion ?? plan.Descripcion ?? '',
     precioMensual: precio,
+    duracionDias: plan.duracionDias ?? plan.DuracionDias ?? null,
+    donaciones: Boolean(plan.donaciones ?? plan.Donaciones ?? false),
     flowPlanId: plan.flowPlanId ?? plan.FlowPlanId ?? '',
     activo: plan.activo ?? plan.Activo ?? true,
   };
@@ -87,6 +89,10 @@ function PlanesSuscripcion() {
               <div className="pricing-price">
                 {plan.precioMensual > 0 ? formatCurrency(plan.precioMensual) : 'Gratis'}
                 <span>{plan.precioMensual > 0 ? '/mes' : ''}</span>
+              </div>
+              <div className="pricing-features">
+                {plan.duracionDias ? <span>{plan.duracionDias} dias de prueba</span> : <span>Uso mensual</span>}
+                <span>{plan.donaciones ? 'Incluye donaciones' : 'Sin modulo de donaciones'}</span>
               </div>
               <a className="btn btn-primary pricing-btn" href={getRegisterUrl(plan)}>
                 {plan.precioMensual > 0 ? 'Elegir plan' : 'Comenzar'}
