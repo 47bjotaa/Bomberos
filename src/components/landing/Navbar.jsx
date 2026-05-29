@@ -41,6 +41,7 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
           <a href="#solucion" onClick={() => setMobileMenuOpen(false)}>Solución</a>
           <a href="#plataforma" onClick={() => setMobileMenuOpen(false)}>Plataforma</a>
           <a href="#como-funciona" onClick={() => setMobileMenuOpen(false)}>Cómo Funciona</a>
+          <a href="#planes" onClick={() => setMobileMenuOpen(false)}>Planes</a>
         </div>
         <div className="flex items-center gap-4">
           <button 

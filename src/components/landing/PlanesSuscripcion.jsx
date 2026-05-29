@@ -74,13 +74,13 @@ function PlanesSuscripcion() {
       </div>
 
       {loading ? (
-        <div className="pricing-status reveal">Cargando planes...</div>
+        <div className="pricing-status reveal is-visible">Cargando planes...</div>
       ) : error ? (
-        <div className="pricing-status pricing-status-error reveal">{error}</div>
+        <div className="pricing-status pricing-status-error reveal is-visible">{error}</div>
       ) : (
         <div className="pricing-grid">
           {plans.map((plan, index) => (
-            <article key={plan.id || plan.codigo || plan.nombre} className={`pricing-card reveal ${index === 1 ? 'pricing-card-featured delay-100' : index === 2 ? 'delay-200' : ''}`}>
+            <article key={plan.id || plan.codigo || plan.nombre} className={`pricing-card reveal is-visible ${index === 1 ? 'pricing-card-featured delay-100' : index === 2 ? 'delay-200' : ''}`}>
               <div className="pricing-icon">
                 <Icons.Finance />
               </div>
