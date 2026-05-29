@@ -247,6 +247,10 @@ function Dashboard({ setView }) {
   const [donacionesPage, setDonacionesPage] = useState(1);
   const [donacionesPageSize, setDonacionesPageSize] = useState(8);
   const [donacionesView, setDonacionesView] = useState('campanas');
+  const [campanasListView, setCampanasListView] = useState('activas');
+  const [filtroNombreCampana, setFiltroNombreCampana] = useState('');
+  const [filtroFechaInicioCampana, setFiltroFechaInicioCampana] = useState('');
+  const [filtroFechaFinCampana, setFiltroFechaFinCampana] = useState('');
   const [paymentConfigData, setPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
   const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
   const [paymentConfigError, setPaymentConfigError] = useState('');
@@ -1537,8 +1541,8 @@ function Dashboard({ setView }) {
         ...getArrayPayload(canceladasData).map(mapCampana),
       ]);
     } catch (error) {
-      console.error('Error al cargar campanas de donaciones:', error);
-      setCampanasError(error.message || 'No se pudieron cargar las campanas de donaciones.');
+      console.error('Error al cargar campañas de donaciones:', error);
+      setCampanasError(error.message || 'No se pudieron cargar las campañas de donaciones.');
       setCampanasActivas([]);
       setCampanasFinalizadas([]);
     } finally {
@@ -1764,9 +1768,9 @@ function Dashboard({ setView }) {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      setPaymentConfigSuccess('Configuracion de pago guardada correctamente.');
+      setPaymentConfigSuccess('Configuración de pago guardada correctamente.');
     } catch (error) {
-      setPaymentConfigError(error.message || 'No se pudo guardar la configuracion de pago.');
+      setPaymentConfigError(error.message || 'No se pudo guardar la configuración de pago.');
     } finally {
       setSavingPaymentConfig(false);
     }
@@ -2788,6 +2792,29 @@ function Dashboard({ setView }) {
 
   const filtroDonanteNormalizado = filtroNombreDonante.trim().toLowerCase();
   const filtroBomberoDonacionNormalizado = filtroNombreBomberoDonacion.trim().toLowerCase();
+  const filtroCampanaNormalizado = filtroNombreCampana.trim().toLowerCase();
+  const getDateOnlyTime = (value, endOfDay = false) => {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    return date.getTime();
+  };
+  const campanaMatchesFilters = (campana) => {
+    const nombreMatches = !filtroCampanaNormalizado || String(campana.nombre || '').toLowerCase().includes(filtroCampanaNormalizado);
+    const filterStart = getDateOnlyTime(filtroFechaInicioCampana);
+    const filterEnd = getDateOnlyTime(filtroFechaFinCampana, true);
+    const campanaStart = getDateOnlyTime(campana.fechaInicio);
+    const campanaEnd = getDateOnlyTime(campana.fechaFin, true) || campanaStart;
+    const dateMatches = (!filterStart || (campanaEnd || campanaStart || 0) >= filterStart)
+      && (!filterEnd || (campanaStart || campanaEnd || 0) <= filterEnd);
+
+    return nombreMatches && dateMatches;
+  };
+  const currentCampanas = campanasListView === 'activas' ? campanasActivas : campanasFinalizadas;
+  const filteredCampanas = currentCampanas.filter(campanaMatchesFilters);
+  const currentCampanasTitle = campanasListView === 'activas' ? 'Campañas activas' : 'Campañas finalizadas';
+  const currentCampanasEmptyMessage = campanasListView === 'activas' ? 'No hay campañas activas.' : 'No hay campañas finalizadas.';
   const catalogoFiltrado = catalogo
     .filter(item => filtroTipo === 'Todos los tipos' || item.tipo === filtroTipo)
     .filter(item => (item.nombre || '').toLowerCase().includes(filtroNombre.trim().toLowerCase()));
@@ -4045,7 +4072,7 @@ function Dashboard({ setView }) {
                   onClick={() => selectDonacionesView('campanas')}
                   className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'campanas' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
                 >
-                  Campanas
+                  Campañas
                 </button>
                 {(canViewPaymentConfig || canManagePaymentConfig) && (
                   <button
@@ -4053,7 +4080,7 @@ function Dashboard({ setView }) {
                     onClick={() => selectDonacionesView('configuracion')}
                     className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
                   >
-                    Configuracion de pago
+                    Configuración de pago
                   </button>
                 )}
               </div>
@@ -4223,7 +4250,7 @@ function Dashboard({ setView }) {
               ) : donacionesView === 'configuracion' && (canViewPaymentConfig || canManagePaymentConfig) ? (
                 <form onSubmit={handleSavePaymentConfig} className="max-w-5xl rounded-xl border border-dark-border bg-dark-surface shadow-lg">
                   <div className="border-b border-dark-border px-6 py-5">
-                    <h3 className="rajdhani text-2xl font-bold text-text-main">Configuracion de pago</h3>
+                    <h3 className="rajdhani text-2xl font-bold text-text-main">Configuración de pago</h3>
                     <p className="mt-1 text-sm text-text-muted">Credenciales y URLs usadas para crear pagos Flow.</p>
                   </div>
 
@@ -4274,7 +4301,7 @@ function Dashboard({ setView }) {
                         disabled={savingPaymentConfig}
                         className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {savingPaymentConfig ? 'Guardando...' : 'Guardar configuracion'}
+                        {savingPaymentConfig ? 'Guardando...' : 'Guardar configuración'}
                       </button>
                     </div>
                   )}
@@ -4282,7 +4309,7 @@ function Dashboard({ setView }) {
               ) : (
                 <>
               <div className="mb-8">
-                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campanas</h3>
+                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campañas</h3>
                 <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campañas de recaudación de fondos y genera enlaces de pago.</p>
               </div>
 
@@ -4305,12 +4332,61 @@ function Dashboard({ setView }) {
                 </div>
               )}
 
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCampanasListView('activas')}
+                    className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${campanasListView === 'activas' ? 'border-brand-green/30 bg-brand-green/10 text-brand-green' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-green/40 hover:text-white'}`}
+                  >
+                    Campañas activas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCampanasListView('finalizadas')}
+                    className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${campanasListView === 'finalizadas' ? 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan' : 'border-dark-border bg-dark-surface text-text-muted hover:border-brand-cyan/40 hover:text-white'}`}
+                  >
+                    Campañas finalizadas
+                  </button>
+                </div>
+                <p className="text-sm font-semibold text-text-muted">{filteredCampanas.length} de {currentCampanas.length} campañas</p>
+              </div>
+
+              <div className="mb-6 grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem]">
+                <div className="relative">
+                  <svg className="absolute left-3 top-2.5 h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  <input
+                    type="text"
+                    value={filtroNombreCampana}
+                    onChange={(event) => setFiltroNombreCampana(event.target.value)}
+                    placeholder="Buscar por nombre..."
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg3 py-2 pl-10 pr-4 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  />
+                </div>
+                <input
+                  type="date"
+                  value={filtroFechaInicioCampana}
+                  onChange={(event) => setFiltroFechaInicioCampana(event.target.value)}
+                  className="w-full rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  aria-label="Filtrar desde"
+                />
+                <input
+                  type="date"
+                  value={filtroFechaFinCampana}
+                  onChange={(event) => setFiltroFechaFinCampana(event.target.value)}
+                  className="w-full rounded-lg border border-dark-border bg-dark-bg3 px-3 py-2 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  aria-label="Filtrar hasta"
+                />
+              </div>
+
+              {campanasListView === 'activas' && (
+                <>
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-brand-green"></span>
-                <h4 className="text-sm font-bold text-white">Campanas Activas</h4>
+                <h4 className="text-sm font-bold text-white">{currentCampanasTitle}</h4>
               </div>
               <div className="mb-8 grid gap-5 lg:grid-cols-3">
-                {campanasActivas.length > 0 ? campanasActivas.map(campaign => (
+                {filteredCampanas.length > 0 ? filteredCampanas.map(campaign => (
                   <article key={campaign.id} className="overflow-hidden rounded-xl border border-brand-cyan/40 bg-dark-surface shadow-lg">
                     <div className="p-5">
                       <div className="mb-5 flex items-start justify-between gap-3">
@@ -4346,24 +4422,28 @@ function Dashboard({ setView }) {
                           disabled={generatingDonationLinkId === campaign.id}
                           className="rounded-lg bg-blue-600/20 px-3 py-2 text-xs font-semibold text-text-main transition-colors hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar Link'}
+                          {generatingDonationLinkId === campaign.id ? 'Generando...' : copiedDonationSlug === (campaign.slug || String(campaign.id)) ? 'Link copiado' : 'Generar link'}
                         </button>
                       )}
                     </div>
                   </article>
                 )) : (
                   <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
-                    No hay campañas activas.
+                    {currentCampanas.length > 0 ? 'No hay campañas que coincidan con los filtros.' : currentCampanasEmptyMessage}
                   </div>
                 )}
               </div>
+                </>
+              )}
 
+              {campanasListView === 'finalizadas' && (
+                <>
               <div className="mb-4 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-text-muted"></span>
-                <h4 className="text-sm font-bold text-white">Campanas Finalizadas</h4>
+                <h4 className="text-sm font-bold text-white">{currentCampanasTitle}</h4>
               </div>
               <div className="grid gap-5 lg:grid-cols-3">
-                {campanasFinalizadas.length > 0 ? campanasFinalizadas.map(campaign => (
+                {filteredCampanas.length > 0 ? filteredCampanas.map(campaign => (
                 <article key={campaign.id} className="overflow-hidden rounded-xl border border-dark-border bg-dark-surface opacity-90 shadow-lg">
                   <div className="p-5">
                     <div className="mb-5 flex items-start justify-between gap-3">
@@ -4388,10 +4468,12 @@ function Dashboard({ setView }) {
                 </article>
                 )) : (
                   <div className="rounded-xl border border-dashed border-dark-border bg-dark-surface px-6 py-14 text-center text-text-muted lg:col-span-3">
-                    No hay campañas finalizadas.
+                    {currentCampanas.length > 0 ? 'No hay campañas que coincidan con los filtros.' : currentCampanasEmptyMessage}
                   </div>
                 )}
               </div>
+                </>
+              )}
                 </>
               )}
                 </>
