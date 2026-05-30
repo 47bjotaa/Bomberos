@@ -482,7 +482,6 @@ function Dashboard({ setView }) {
   const subscriptionStatus = getSubscriptionStatusFromObject(currentCompany || {});
   const pendingCardRegistration = subscriptionStatus === 'pendiente_registro_tarjeta';
   const flowRegisterUrl = getFlowRegisterUrlFromObject(currentCompany || {});
-  const userCanRegisterSubscriptionCard = canRegisterSubscriptionCard(getSessionUser());
 
   useEffect(() => {
     if (activeTab === 'bodegas') {
@@ -853,6 +852,7 @@ function Dashboard({ setView }) {
   };
 
   const sessionUser = getSessionUser();
+  const userCanRegisterSubscriptionCard = canRegisterSubscriptionCard(sessionUser);
   const permissionSet = getUserPermissionSet(sessionUser);
   const can = (permission) => hasPermission(permissionSet, permission);
   const canAny = (permissions) => hasAnyPermission(permissionSet, permissions);
