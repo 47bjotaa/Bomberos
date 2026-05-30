@@ -161,6 +161,25 @@ const isPendingCardRegistrationStatus = (value) => (
   compactSubscriptionStatus(value) === 'pendienteregistrotarjeta'
 );
 
+const readStatusValue = (value) => {
+  if (value === undefined || value === null || value === '') return '';
+
+  if (typeof value !== 'object') {
+    return normalizeSubscriptionStatus(value);
+  }
+
+  return normalizeSubscriptionStatus(
+    value.codigo
+    || value.Codigo
+    || value.nombre
+    || value.Nombre
+    || value.descripcion
+    || value.Descripcion
+    || value.estado
+    || value.Estado
+  );
+};
+
 const normalizeRoleKey = (value = '') => (
   String(value)
     .normalize('NFD')
@@ -189,18 +208,29 @@ const getSubscriptionStatusFromObject = (source = {}) => {
     source.Compania?.suscripcionActual,
     source.Compania?.SuscripcionActual,
   ];
-  const statusKeys = ['estado', 'Estado', 'estadoSuscripcion', 'EstadoSuscripcion', 'status', 'Status'];
+  const statusKeys = [
+    'estado',
+    'Estado',
+    'estadoActual',
+    'EstadoActual',
+    'estadoSuscripcion',
+    'EstadoSuscripcion',
+    'estadoSuscripcionActual',
+    'EstadoSuscripcionActual',
+    'status',
+    'Status',
+  ];
 
   for (const subscriptionSource of subscriptionSources) {
     if (!subscriptionSource || typeof subscriptionSource !== 'object') continue;
     for (const key of statusKeys) {
-      const status = normalizeSubscriptionStatus(subscriptionSource[key]);
+      const status = readStatusValue(subscriptionSource[key]);
       if (status) return status;
     }
   }
 
   for (const key of statusKeys) {
-    const status = normalizeSubscriptionStatus(source[key]);
+    const status = readStatusValue(source[key]);
     if (status) return status;
   }
 
@@ -491,10 +521,11 @@ function Dashboard({ setView }) {
   const [subscriptionCode, setSubscriptionCode] = useState(() => getCurrentSubscriptionCode());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [currentCompany, setCurrentCompany] = useState(null);
+  const [currentSubscriptionStatus, setCurrentSubscriptionStatus] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
   const hasProSubscription = subscriptionCode === 'pro';
   const subscriptionChecked = !loadingSubscription;
-  const subscriptionStatus = getSubscriptionStatusFromObject(currentCompany || {});
+  const subscriptionStatus = currentSubscriptionStatus || getSubscriptionStatusFromObject(currentCompany || {});
   const pendingCardRegistration = isPendingCardRegistrationStatus(subscriptionStatus);
   const flowRegisterUrl = getFlowRegisterUrlFromObject(currentCompany || {});
 
@@ -793,10 +824,12 @@ function Dashboard({ setView }) {
     try {
       const data = await apiFetch('/api/companias/mi-compania');
       const nextSubscriptionCode = getSubscriptionCodeFromObject(data);
+      const nextSubscriptionStatus = getSubscriptionStatusFromObject(data);
       const currentUser = getSessionUser();
 
       setCurrentCompany(data);
       setSubscriptionCode(nextSubscriptionCode);
+      setCurrentSubscriptionStatus(nextSubscriptionStatus);
       localStorage.setItem('user', JSON.stringify({
         ...currentUser,
         compania: data,
@@ -804,10 +837,12 @@ function Dashboard({ setView }) {
         suscripcionActual: data.suscripcionActual || data.SuscripcionActual || currentUser.suscripcionActual,
         SuscripcionActual: data.SuscripcionActual || data.suscripcionActual || currentUser.SuscripcionActual,
         codigoSuscripcion: nextSubscriptionCode || currentUser.codigoSuscripcion,
+        estadoSuscripcion: nextSubscriptionStatus || currentUser.estadoSuscripcion,
       }));
     } catch (error) {
       console.error('No se pudo cargar la suscripcion de la compania:', error);
       setSubscriptionCode(getCurrentSubscriptionCode());
+      setCurrentSubscriptionStatus('');
       setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compania.');
     } finally {
       setLoadingSubscription(false);
