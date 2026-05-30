@@ -145,7 +145,21 @@ const getCurrentSubscriptionCode = () => {
   return getSubscriptionCodeFromObject({ ...tokenPayload, ...storedUser });
 };
 
-const normalizeSubscriptionStatus = (value) => String(value || '').trim().toLowerCase();
+const normalizeSubscriptionStatus = (value) => (
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+);
+
+const compactSubscriptionStatus = (value) => (
+  normalizeSubscriptionStatus(value).replace(/[^a-z0-9]/g, '')
+);
+
+const isPendingCardRegistrationStatus = (value) => (
+  compactSubscriptionStatus(value) === 'pendienteregistrotarjeta'
+);
 
 const normalizeRoleKey = (value = '') => (
   String(value)
@@ -164,6 +178,7 @@ const canRegisterSubscriptionCard = (user = {}) => {
 
 const getSubscriptionStatusFromObject = (source = {}) => {
   const subscriptionSources = [
+    source,
     source.suscripcionActual,
     source.SuscripcionActual,
     source.suscripcion,
@@ -480,7 +495,7 @@ function Dashboard({ setView }) {
   const hasProSubscription = subscriptionCode === 'pro';
   const subscriptionChecked = !loadingSubscription;
   const subscriptionStatus = getSubscriptionStatusFromObject(currentCompany || {});
-  const pendingCardRegistration = subscriptionStatus === 'pendiente_registro_tarjeta';
+  const pendingCardRegistration = isPendingCardRegistrationStatus(subscriptionStatus);
   const flowRegisterUrl = getFlowRegisterUrlFromObject(currentCompany || {});
 
   useEffect(() => {
