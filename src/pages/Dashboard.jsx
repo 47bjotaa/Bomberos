@@ -145,6 +145,90 @@ const getCurrentSubscriptionCode = () => {
   return getSubscriptionCodeFromObject({ ...tokenPayload, ...storedUser });
 };
 
+const normalizeSubscriptionStatus = (value) => String(value || '').trim().toLowerCase();
+
+const normalizeRoleKey = (value = '') => (
+  String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+);
+
+const canRegisterSubscriptionCard = (user = {}) => {
+  const roleId = Number(user.idRol || user.rolId || user.roleId || user.idRole);
+  const roleKey = normalizeRoleKey(user.cargo || user.rol || user.role || user.nombreRol);
+
+  return roleId === 1 || roleId === 5 || roleKey === 'capitan' || roleKey === 'director';
+};
+
+const getSubscriptionStatusFromObject = (source = {}) => {
+  const subscriptionSources = [
+    source.suscripcionActual,
+    source.SuscripcionActual,
+    source.suscripcion,
+    source.Suscripcion,
+    source.subscription,
+    source.compania?.suscripcionActual,
+    source.compania?.SuscripcionActual,
+    source.Compania?.suscripcionActual,
+    source.Compania?.SuscripcionActual,
+  ];
+  const statusKeys = ['estado', 'Estado', 'estadoSuscripcion', 'EstadoSuscripcion', 'status', 'Status'];
+
+  for (const subscriptionSource of subscriptionSources) {
+    if (!subscriptionSource || typeof subscriptionSource !== 'object') continue;
+    for (const key of statusKeys) {
+      const status = normalizeSubscriptionStatus(subscriptionSource[key]);
+      if (status) return status;
+    }
+  }
+
+  for (const key of statusKeys) {
+    const status = normalizeSubscriptionStatus(source[key]);
+    if (status) return status;
+  }
+
+  return '';
+};
+
+const getFlowRegisterUrlFromObject = (source = {}) => {
+  const subscriptionSources = [
+    source.suscripcionActual,
+    source.SuscripcionActual,
+    source.suscripcion,
+    source.Suscripcion,
+    source.subscription,
+    source.compania?.suscripcionActual,
+    source.compania?.SuscripcionActual,
+    source.Compania?.suscripcionActual,
+    source.Compania?.SuscripcionActual,
+  ];
+  const urlKeys = [
+    'flowRegisterUrl',
+    'FlowRegisterUrl',
+    'urlRegistroTarjeta',
+    'UrlRegistroTarjeta',
+    'flowRegisterWidgetBaseUrl',
+    'FlowRegisterWidgetBaseUrl',
+  ];
+
+  for (const subscriptionSource of subscriptionSources) {
+    if (!subscriptionSource || typeof subscriptionSource !== 'object') continue;
+    for (const key of urlKeys) {
+      const url = String(subscriptionSource[key] || '').trim();
+      if (url) return url;
+    }
+  }
+
+  for (const key of urlKeys) {
+    const url = String(source[key] || '').trim();
+    if (url) return url;
+  }
+
+  return '';
+};
+
 const getMaterialDetailRoute = (pathname) => {
   const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
   if (eppItemMatch) {
@@ -391,8 +475,14 @@ function Dashboard({ setView }) {
   });
   const [subscriptionCode, setSubscriptionCode] = useState(() => getCurrentSubscriptionCode());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [currentCompany, setCurrentCompany] = useState(null);
+  const [subscriptionError, setSubscriptionError] = useState('');
   const hasProSubscription = subscriptionCode === 'pro';
   const subscriptionChecked = !loadingSubscription;
+  const subscriptionStatus = getSubscriptionStatusFromObject(currentCompany || {});
+  const pendingCardRegistration = subscriptionStatus === 'pendiente_registro_tarjeta';
+  const flowRegisterUrl = getFlowRegisterUrlFromObject(currentCompany || {});
+  const userCanRegisterSubscriptionCard = canRegisterSubscriptionCard(getSessionUser());
 
   useEffect(() => {
     if (activeTab === 'bodegas') {
@@ -684,12 +774,14 @@ function Dashboard({ setView }) {
 
   const fetchCurrentCompanySubscription = async () => {
     setLoadingSubscription(true);
+    setSubscriptionError('');
 
     try {
       const data = await apiFetch('/api/companias/mi-compania');
       const nextSubscriptionCode = getSubscriptionCodeFromObject(data);
       const currentUser = getSessionUser();
 
+      setCurrentCompany(data);
       setSubscriptionCode(nextSubscriptionCode);
       localStorage.setItem('user', JSON.stringify({
         ...currentUser,
@@ -702,6 +794,7 @@ function Dashboard({ setView }) {
     } catch (error) {
       console.error('No se pudo cargar la suscripcion de la compania:', error);
       setSubscriptionCode(getCurrentSubscriptionCode());
+      setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compania.');
     } finally {
       setLoadingSubscription(false);
     }
@@ -3093,6 +3186,82 @@ function Dashboard({ setView }) {
       setSavingUbicacion(false);
     }
   };
+
+  const handleGoToFlowCardRegistration = () => {
+    if (flowRegisterUrl) {
+      window.location.href = flowRegisterUrl;
+    }
+  };
+
+  const renderSubscriptionGate = ({ title, message, tone = 'info' }) => (
+    <div className="flex min-h-screen items-center justify-center bg-dark-bg px-6 py-10 text-text-main">
+      <div className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+        <div className="border-b border-dark-border bg-dark-bg2 px-6 py-5">
+          <LogoCuartelAmigo size={74} />
+        </div>
+        <div className="px-6 py-8 text-center">
+          <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg border [&>svg]:h-7 [&>svg]:w-7 ${tone === 'error' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan'}`}>
+            <Icons.Finance />
+          </div>
+          <h1 className="rajdhani text-3xl font-bold text-white">{title}</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-muted">{message}</p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            {pendingCardRegistration && userCanRegisterSubscriptionCard && flowRegisterUrl && (
+              <button
+                type="button"
+                onClick={handleGoToFlowCardRegistration}
+                className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-3 text-sm font-bold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90"
+              >
+                Registrar tarjeta
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={fetchCurrentCompanySubscription}
+              disabled={loadingSubscription}
+              className="rounded-lg border border-dark-border bg-dark-bg px-5 py-3 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loadingSubscription ? 'Verificando...' : 'Reintentar'}
+            </button>
+          </div>
+          {pendingCardRegistration && !userCanRegisterSubscriptionCard && (
+            <p className="mt-5 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-3 text-sm text-brand-cyan">
+              Solo Capitanes y Directores pueden registrar la tarjeta de la compania. Contacta a uno de ellos para completar este paso.
+            </p>
+          )}
+          {pendingCardRegistration && userCanRegisterSubscriptionCard && !flowRegisterUrl && (
+            <p className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+              No se recibio la URL de Flow para registrar la tarjeta. Reintenta en unos segundos o revisa la configuracion del plan.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loadingSubscription) {
+    return renderSubscriptionGate({
+      title: 'Verificando suscripcion',
+      message: 'Estamos revisando el estado de la suscripcion de tu compania antes de abrir el panel.',
+    });
+  }
+
+  if (subscriptionError) {
+    return renderSubscriptionGate({
+      title: 'No se pudo verificar la suscripcion',
+      message: subscriptionError,
+      tone: 'error',
+    });
+  }
+
+  if (pendingCardRegistration) {
+    return renderSubscriptionGate({
+      title: userCanRegisterSubscriptionCard ? 'Registra la tarjeta para continuar' : 'Suscripcion pendiente',
+      message: userCanRegisterSubscriptionCard
+        ? 'Tu compania tiene la suscripcion pendiente de registro de tarjeta. Completa este paso en Flow para acceder al panel.'
+        : 'Tu compania tiene la suscripcion pendiente de registro de tarjeta. El acceso quedara bloqueado hasta que un Capitan o Director complete este paso.',
+    });
+  }
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">

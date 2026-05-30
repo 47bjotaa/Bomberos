@@ -50,7 +50,6 @@ const getFlowRegistrationData = (response = {}) => {
     token,
     url,
     widgetBaseUrl,
-    widgetUrl: widgetBaseUrl && token ? `${widgetBaseUrl}${widgetBaseUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : (url || ''),
   };
 };
 
@@ -312,8 +311,13 @@ function AuthView({ initialMode = 'register' }) {
           console.log("Registro exitoso en BD");
           const nextFlowRegistration = getFlowRegistrationData(registerResponse);
           if (nextFlowRegistration) {
+            if (nextFlowRegistration.url) {
+              window.location.href = nextFlowRegistration.url;
+              return;
+            }
+
             setFlowRegistration(nextFlowRegistration);
-            setSuccessMessage("Cuenta creada. Registra la tarjeta para activar tu suscripciÃ³n.");
+            setSuccessMessage("Cuenta creada. No se recibio la URL de Flow para registrar la tarjeta.");
             return;
           }
 
@@ -508,7 +512,7 @@ function AuthView({ initialMode = 'register' }) {
           </button>
         </div>
 
-        <main className="mx-auto grid min-h-[calc(100vh-88px)] max-w-6xl items-start gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <main className="mx-auto flex min-h-[calc(100vh-88px)] max-w-4xl items-center justify-center px-6 py-10">
           <section className="mx-auto w-full max-w-[640px]">
             <p className="mb-3 text-sm font-bold uppercase tracking-wider text-brand-cyan">Metodo de pago</p>
             <div className="overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
@@ -527,27 +531,15 @@ function AuthView({ initialMode = 'register' }) {
                 </div>
               </div>
 
-              <div className="px-6 pt-5">
+              <div className="px-6 py-6">
                 {successMessage && (
                   <div className="mb-4 rounded border border-brand-green/30 bg-brand-green/10 p-3 text-sm text-brand-green">
                     {successMessage}
                   </div>
                 )}
-                <p className="mb-4 text-sm font-semibold text-text-muted">* indica un campo obligatorio.</p>
-              </div>
-
-              <div className="px-4 pb-4 sm:px-6 sm:pb-6">
-                {flowRegistration.widgetUrl ? (
-                  <iframe
-                    title="Registro de tarjeta Flow"
-                    src={flowRegistration.widgetUrl}
-                    className="h-[650px] w-full rounded-md border border-dark-border bg-white"
-                  />
-                ) : (
-                  <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-5 text-center text-sm text-brand-red">
-                    No se recibio una URL de registro de tarjeta desde Flow.
-                  </div>
-                )}
+                <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-5 text-sm text-brand-red">
+                  Flow no permite cargar el registro de tarjeta dentro de esta pagina. La redireccion debe hacerse con FlowRegisterUrl.
+                </div>
               </div>
             </div>
 
@@ -557,18 +549,11 @@ function AuthView({ initialMode = 'register' }) {
                   Abrir registro en Flow
                 </a>
               )}
+              <button type="button" onClick={() => navigateToMode('login')} className="rounded-lg border border-dark-border bg-dark-bg px-5 py-2.5 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/40">
+                Ir a iniciar sesion
+              </button>
             </div>
           </section>
-
-          <aside className="hidden rounded-lg border border-dark-border bg-dark-surface p-5 shadow-lg lg:block">
-            <h2 className="rajdhani text-xl font-bold text-white">Activacion de suscripcion</h2>
-            <p className="mt-2 text-sm leading-6 text-text-muted">
-              Al registrar la tarjeta, Flow confirmara el medio de pago y CuartelAmigo activara la suscripcion de la compania.
-            </p>
-            <div className="mt-5 rounded-lg border border-brand-red/20 bg-brand-red/10 p-4 text-sm text-brand-red">
-              No se realizara ningun cambio visual fuera de este paso de pago.
-            </div>
-          </aside>
         </main>
       </div>
     );
@@ -855,7 +840,7 @@ function AuthView({ initialMode = 'register' }) {
                   </div>
 
                   <div>
-                    <label className="block text-base font-medium text-[var(--color-text-main)] mb-3">Plan de suscripciÃ³n</label>
+                    <label className="block text-base font-medium text-[var(--color-text-main)] mb-3">Plan de suscripcion</label>
                     {loadingPlans ? (
                       <div className="rounded-xl border border-dark-border bg-dark-bg2 p-4 text-sm text-text-muted">Cargando planes...</div>
                     ) : plansError ? (
