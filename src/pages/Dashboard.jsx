@@ -197,7 +197,6 @@ const canRegisterSubscriptionCard = (user = {}) => {
 
 const getSubscriptionStatusFromObject = (source = {}) => {
   const subscriptionSources = [
-    source,
     source.suscripcionActual,
     source.SuscripcionActual,
     source.suscripcion,
@@ -207,6 +206,7 @@ const getSubscriptionStatusFromObject = (source = {}) => {
     source.compania?.SuscripcionActual,
     source.Compania?.suscripcionActual,
     source.Compania?.SuscripcionActual,
+    source,
   ];
   const statusKeys = [
     'estado',
