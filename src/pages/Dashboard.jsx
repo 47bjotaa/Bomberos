@@ -110,6 +110,45 @@ const getSubscriptionCodeFromObject = (source = {}) => {
   return '';
 };
 
+const hasDonationFeatureFromObject = (source = {}) => {
+  const subscriptionSources = [
+    source.suscripcionActual,
+    source.SuscripcionActual,
+    source.suscripcion,
+    source.Suscripcion,
+    source.subscription,
+    source.plan,
+    source.Plan,
+    source.planSuscripcion,
+    source.compania?.suscripcionActual,
+    source.compania?.SuscripcionActual,
+    source.compania?.suscripcion,
+    source.compania?.Suscripcion,
+    source.compania?.subscription,
+    source.compania?.plan,
+    source.compania?.Plan,
+    source.Compania?.suscripcionActual,
+    source.Compania?.SuscripcionActual,
+    source.Compania?.suscripcion,
+    source.Compania?.Suscripcion,
+    source.Compania?.subscription,
+    source.Compania?.plan,
+    source.Compania?.Plan,
+    source,
+  ];
+  const donationKeys = ['donaciones', 'Donaciones', 'incluyeDonaciones', 'IncluyeDonaciones', 'hasDonations', 'HasDonations'];
+
+  for (const subscriptionSource of subscriptionSources) {
+    if (!subscriptionSource || typeof subscriptionSource !== 'object') continue;
+    for (const key of donationKeys) {
+      if (subscriptionSource[key] === true) return true;
+      if (typeof subscriptionSource[key] === 'string' && subscriptionSource[key].trim().toLowerCase() === 'true') return true;
+    }
+  }
+
+  return false;
+};
+
 const getJwtPayload = (token) => {
   if (!token) return {};
 
@@ -132,7 +171,7 @@ const getJwtPayload = (token) => {
   }
 };
 
-const getCurrentSubscriptionCode = () => {
+const getCurrentDonationFeature = () => {
   const tokenPayload = getJwtPayload(localStorage.getItem('token'));
   let storedUser = {};
 
@@ -142,7 +181,7 @@ const getCurrentSubscriptionCode = () => {
     storedUser = {};
   }
 
-  return getSubscriptionCodeFromObject({ ...tokenPayload, ...storedUser });
+  return hasDonationFeatureFromObject({ ...tokenPayload, ...storedUser });
 };
 
 const normalizeSubscriptionStatus = (value) => (
@@ -548,12 +587,12 @@ function Dashboard({ setView }) {
     fechaFin: '',
     imagenUrl: '',
   });
-  const [subscriptionCode, setSubscriptionCode] = useState(() => getCurrentSubscriptionCode());
+  const [hasDonationFeature, setHasDonationFeature] = useState(() => getCurrentDonationFeature());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [currentCompany, setCurrentCompany] = useState(null);
   const [currentSubscriptionStatus, setCurrentSubscriptionStatus] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
-  const hasProSubscription = subscriptionCode === 'pro';
+  const hasProSubscription = hasDonationFeature;
   const subscriptionChecked = !loadingSubscription;
   const subscriptionStatus = currentSubscriptionStatus || getSubscriptionStatusFromObject(currentCompany || {});
   const pendingCardRegistration = isPendingCardRegistrationStatus(subscriptionStatus);
@@ -855,11 +894,12 @@ function Dashboard({ setView }) {
     try {
       const data = await apiFetch('/api/companias/mi-compania');
       const nextSubscriptionCode = getSubscriptionCodeFromObject(data);
+      const nextHasDonationFeature = hasDonationFeatureFromObject(data);
       const nextSubscriptionStatus = getSubscriptionStatusFromObject(data);
       const currentUser = getSessionUser();
 
       setCurrentCompany(data);
-      setSubscriptionCode(nextSubscriptionCode);
+      setHasDonationFeature(nextHasDonationFeature);
       setCurrentSubscriptionStatus(nextSubscriptionStatus);
       localStorage.setItem('user', JSON.stringify({
         ...currentUser,
@@ -868,13 +908,14 @@ function Dashboard({ setView }) {
         suscripcionActual: data.suscripcionActual || data.SuscripcionActual || currentUser.suscripcionActual,
         SuscripcionActual: data.SuscripcionActual || data.suscripcionActual || currentUser.SuscripcionActual,
         codigoSuscripcion: nextSubscriptionCode || currentUser.codigoSuscripcion,
+        donaciones: nextHasDonationFeature,
         estadoSuscripcion: nextSubscriptionStatus || currentUser.estadoSuscripcion,
         flowRegisterUrl: getFlowRegisterUrlFromObject(data) || currentUser.flowRegisterUrl,
         ultimoErrorPago: getLastPaymentErrorFromObject(data) || currentUser.ultimoErrorPago,
       }));
     } catch (error) {
       console.error('No se pudo cargar la suscripcion de la compania:', error);
-      setSubscriptionCode(getCurrentSubscriptionCode());
+      setHasDonationFeature(getCurrentDonationFeature());
       setCurrentSubscriptionStatus('');
       setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compania.');
     } finally {
@@ -4455,7 +4496,7 @@ function Dashboard({ setView }) {
                     <p className="mt-2 text-sm text-text-muted">
                       {loadingSubscription
                         ? 'Estamos validando la suscripcion actual de tu compania.'
-                        : 'Esta funcion requiere una suscripcion Pro para gestionar campanas y enlaces de pago.'}
+                        : 'Esta funcion requiere un plan con donaciones activadas para gestionar campanas y enlaces de pago.'}
                     </p>
                     {loadingSubscription ? (
                       <div className="mx-auto mt-6 h-8 w-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500"></div>
@@ -5352,6 +5393,7 @@ function Dashboard({ setView }) {
               palette={palette}
               canViewFullReports={canViewFullReports}
               canViewBasicReports={canViewReports}
+              canViewDonationReports={canViewDonaciones && hasProSubscription}
             />
           )}
 
