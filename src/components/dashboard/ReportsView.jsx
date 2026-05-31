@@ -442,14 +442,19 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   };
 
   const openEmergencyFlow = () => {
+    if (!emergencyForm.idUbicacion) {
+      setEmergencyError('Selecciona un vehiculo para iniciar el reporte.');
+      return;
+    }
+
     setEmergencyError('');
     setEmergencyNotice('');
     setEmergencyModalStep('base');
   };
 
   const continueEmergencyBase = () => {
-    if (!emergencyForm.fecha || !emergencyForm.hora || !emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim() || !emergencyForm.idUbicacion) {
-      setEmergencyError('Completa fecha, hora, tipo de emergencia, direccion/sector y vehiculo.');
+    if (!emergencyForm.fecha || !emergencyForm.hora || !emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim()) {
+      setEmergencyError('Completa fecha, hora, tipo de emergencia y direccion/sector.');
       return;
     }
 
@@ -705,21 +710,18 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
-              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Vehiculo</p>
-              <p className="mt-1 truncate text-sm font-semibold text-text-main">
-                {selectedEmergencyVehicle ? `${selectedEmergencyVehicle.nombre}${selectedEmergencyVehicle.patente ? ` - ${selectedEmergencyVehicle.patente}` : ''}` : 'Sin seleccionar'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
-              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Seleccionados</p>
-              <p className="mt-1 text-sm font-semibold text-text-main">{selectedEmergencyCount}</p>
-            </div>
-            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
-              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Estado</p>
-              <p className="mt-1 text-sm font-semibold text-text-main">{emergencySaving ? 'Registrando' : 'Disponible'}</p>
-            </div>
+          <div className="mt-5">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Vehiculo</span>
+              <select name="idUbicacion" value={emergencyForm.idUbicacion} onChange={handleEmergencyFormChange} disabled={loadingEmergencyCatalogs || emergencySaving} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
+                <option value="">{loadingEmergencyCatalogs ? 'Cargando vehiculos...' : 'Selecciona vehiculo'}</option>
+                {emergencyVehicles.map(vehicle => (
+                  <option key={vehicle.idUbicacion} value={vehicle.idUbicacion}>
+                    {vehicle.nombre}{vehicle.patente ? ` - ${vehicle.patente}` : ''}{vehicle.tipo ? ` - ${vehicle.tipo}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {emergencyError && (
@@ -730,9 +732,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           )}
 
           <div className="mt-5 flex justify-end">
-            <button type="button" onClick={openEmergencyFlow} disabled={loadingEmergencyCatalogs || emergencySaving} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:opacity-60">
+            <button type="button" onClick={openEmergencyFlow} disabled={loadingEmergencyCatalogs || emergencySaving || !emergencyForm.idUbicacion} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:opacity-60">
               <Icons.Report className="h-4 w-4" />
-              Nuevo reporte
+              Continuar
             </button>
           </div>
         </section>
@@ -959,14 +961,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Vehiculo</span>
-                  <select name="idUbicacion" value={emergencyForm.idUbicacion} onChange={handleEmergencyFormChange} disabled={loadingEmergencyCatalogs} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
-                    <option value="">{loadingEmergencyCatalogs ? 'Cargando...' : 'Selecciona vehiculo'}</option>
-                    {emergencyVehicles.map(vehicle => (
-                      <option key={vehicle.idUbicacion} value={vehicle.idUbicacion}>
-                        {vehicle.nombre}{vehicle.patente ? ` - ${vehicle.patente}` : ''}{vehicle.tipo ? ` - ${vehicle.tipo}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm font-semibold text-text-main">
+                    {selectedEmergencyVehicle ? `${selectedEmergencyVehicle.nombre}${selectedEmergencyVehicle.patente ? ` - ${selectedEmergencyVehicle.patente}` : ''}` : 'Sin seleccionar'}
+                  </div>
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Direccion/sector</span>
