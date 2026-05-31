@@ -193,11 +193,12 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     cargoResponsable: getSessionUserCargo(),
     observaciones: '',
   });
-  const [emergencyMaterials, setEmergencyMaterials] = useState([createEmptyEmergencyMaterial()]);
+  const [emergencyMaterials, setEmergencyMaterials] = useState([]);
   const [emergencyItems, setEmergencyItems] = useState([]);
   const [emergencyVehicles, setEmergencyVehicles] = useState([]);
   const [materialsCatalog, setMaterialsCatalog] = useState([]);
   const [serialItems, setSerialItems] = useState([]);
+  const [emergencyModalStep, setEmergencyModalStep] = useState(null);
   const [loadingEmergencyCatalogs, setLoadingEmergencyCatalogs] = useState(false);
   const [loadingEmergencyInventory, setLoadingEmergencyInventory] = useState(false);
   const [emergencySaving, setEmergencySaving] = useState(false);
@@ -366,7 +367,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         idUbicacion: value,
         idVehiculo: selectedVehicle?.idVehiculo ? String(selectedVehicle.idVehiculo) : '',
       }));
-      setEmergencyMaterials([createEmptyEmergencyMaterial()]);
+      setEmergencyMaterials([]);
       setEmergencyItems([]);
     } else {
       setEmergencyForm(current => ({ ...current, [name]: value }));
@@ -411,20 +412,82 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     setEmergencyNotice('');
   };
 
-  const addEmergencyMaterial = () => {
-    setEmergencyMaterials(current => [...current, createEmptyEmergencyMaterial()]);
+  const selectedEmergencyVehicle = emergencyVehicles.find(vehicle => (
+    String(vehicle.idUbicacion) === String(emergencyForm.idUbicacion)
+  ));
+  const emergencyInventoryRows = [
+    ...materialsCatalog.map(material => ({
+      ...material,
+      selectionKey: `material-${material.idMaterial}`,
+      kind: 'material',
+      typeLabel: 'Material',
+      code: '',
+    })),
+    ...serialItems.map(item => ({
+      ...item,
+      selectionKey: `item-${item.idItem}`,
+      kind: 'item',
+      typeLabel: 'Serializado',
+      code: item.codigo,
+    })),
+  ];
+  const selectedEmergencyCount = emergencyMaterials.length + emergencyItems.length;
+
+  const resetEmergencyFlow = () => {
+    setEmergencyModalStep(null);
+    setEmergencyMaterials([]);
+    setEmergencyItems([]);
+    setEmergencyError('');
+    setEmergencyNotice('');
   };
 
-  const removeEmergencyMaterial = (index) => {
-    setEmergencyMaterials(current => current.filter((_, materialIndex) => materialIndex !== index));
+  const openEmergencyFlow = () => {
+    setEmergencyError('');
+    setEmergencyNotice('');
+    setEmergencyModalStep('base');
   };
 
-  const addEmergencyItem = () => {
-    setEmergencyItems(current => [...current, createEmptyEmergencyItem()]);
+  const continueEmergencyBase = () => {
+    if (!emergencyForm.fecha || !emergencyForm.hora || !emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim() || !emergencyForm.idUbicacion) {
+      setEmergencyError('Completa fecha, hora, tipo de emergencia, direccion/sector y vehiculo.');
+      return;
+    }
+
+    setEmergencyError('');
+    setEmergencyModalStep('materials');
   };
 
-  const removeEmergencyItem = (index) => {
-    setEmergencyItems(current => current.filter((_, itemIndex) => itemIndex !== index));
+  const isEmergencyInventorySelected = (row) => (
+    row.kind === 'material'
+      ? emergencyMaterials.some(material => String(material.idMaterial) === String(row.idMaterial))
+      : emergencyItems.some(item => String(item.idItem) === String(row.idItem))
+  );
+
+  const toggleEmergencyInventoryRow = (row) => {
+    if (row.kind === 'material') {
+      setEmergencyMaterials(current => (
+        current.some(material => String(material.idMaterial) === String(row.idMaterial))
+          ? current.filter(material => String(material.idMaterial) !== String(row.idMaterial))
+          : [...current, { ...createEmptyEmergencyMaterial(), idMaterial: String(row.idMaterial), cantidad: 1 }]
+      ));
+    } else {
+      setEmergencyItems(current => (
+        current.some(item => String(item.idItem) === String(row.idItem))
+          ? current.filter(item => String(item.idItem) !== String(row.idItem))
+          : [...current, { ...createEmptyEmergencyItem(), idItem: String(row.idItem) }]
+      ));
+    }
+    setEmergencyError('');
+  };
+
+  const continueEmergencyMaterials = () => {
+    if (selectedEmergencyCount === 0) {
+      setEmergencyError('Selecciona al menos un material o item del vehiculo.');
+      return;
+    }
+
+    setEmergencyError('');
+    setEmergencyModalStep('observations');
   };
 
   const createEmergencyReport = async () => {
@@ -493,8 +556,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       });
       triggerPdfDownload(pdf, `reporte-post-emergencia-${idEmergencia}.pdf`);
       setEmergencyNotice(`Emergencia ${idEmergencia} registrada y PDF descargado.`);
-      setEmergencyMaterials([createEmptyEmergencyMaterial()]);
+      setEmergencyMaterials([]);
       setEmergencyItems([]);
+      setEmergencyModalStep(null);
       setEmergencyForm(current => ({
         ...current,
         fecha: getTodayDateValue(),
@@ -625,7 +689,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
         {canViewAdvancedReports && (
-        <section className="h-fit rounded-lg border p-5 lg:col-span-2" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-ember/30 bg-brand-ember/10 text-brand-ember">
@@ -641,145 +705,20 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Fecha</span>
-              <input name="fecha" type="date" value={emergencyForm.fecha} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Hora</span>
-              <input name="hora" type="time" step="1" value={emergencyForm.hora} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Tipo</span>
-              <input name="tipoEmergencia" value={emergencyForm.tipoEmergencia} onChange={handleEmergencyFormChange} placeholder="Rescate vehicular" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Vehiculo</span>
-              <select name="idUbicacion" value={emergencyForm.idUbicacion} onChange={handleEmergencyFormChange} disabled={loadingEmergencyCatalogs} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
-                <option value="">{loadingEmergencyCatalogs ? 'Cargando...' : 'Selecciona vehiculo'}</option>
-                {emergencyVehicles.map(vehicle => (
-                  <option key={vehicle.idUbicacion} value={vehicle.idUbicacion}>
-                    {vehicle.nombre}{vehicle.patente ? ` - ${vehicle.patente}` : ''}{vehicle.tipo ? ` - ${vehicle.tipo}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block md:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Direccion/sector</span>
-              <input name="direccionSector" value={emergencyForm.direccionSector} onChange={handleEmergencyFormChange} placeholder="Ruta 5 km 42" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Cargo responsable</span>
-              <input name="cargoResponsable" value={emergencyForm.cargoResponsable} onChange={handleEmergencyFormChange} placeholder="Teniente" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
-            </label>
-            <label className="block md:col-span-2 lg:col-span-4">
-              <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Observaciones</span>
-              <textarea name="observaciones" value={emergencyForm.observaciones} onChange={handleEmergencyFormChange} rows="3" placeholder="Procedimiento con apoyo de SAMU." className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
-            </label>
-          </div>
-
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            <div className="rounded-lg border border-dark-border bg-dark-bg/60 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h5 className="text-sm font-bold text-text-main">Materiales</h5>
-                <button type="button" onClick={addEmergencyMaterial} className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20">
-                  Agregar
-                </button>
-              </div>
-              <div className="mt-4 space-y-4">
-                {emergencyMaterials.map((material, index) => (
-                  <div key={`material-${index}`} className="rounded-lg border border-dark-border bg-dark-bg p-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="block sm:col-span-2">
-                        <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Material</span>
-                        <select value={material.idMaterial} onChange={(event) => updateEmergencyMaterial(index, 'idMaterial', event.target.value)} disabled={!emergencyForm.idUbicacion || loadingEmergencyCatalogs || loadingEmergencyInventory} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60">
-                          <option value="">{loadingEmergencyInventory ? 'Cargando inventario...' : emergencyForm.idUbicacion ? 'Selecciona material' : 'Selecciona vehiculo primero'}</option>
-                          {materialsCatalog.map(item => (
-                            <option key={item.id} value={item.id}>
-                              {item.nombre}{item.stock !== null ? ` - Stock ${item.stock}` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Cantidad</span>
-                        <input type="number" min="1" value={material.cantidad} onChange={(event) => updateEmergencyMaterial(index, 'cantidad', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Tipo uso</span>
-                        <select value={material.tipoUso} onChange={(event) => updateEmergencyMaterial(index, 'tipoUso', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
-                          {TIPOS_USO_MATERIAL.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
-                        </select>
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-text-main">
-                        <input type="checkbox" checked={material.descontarStock} onChange={(event) => updateEmergencyMaterial(index, 'descontarStock', event.target.checked)} className="h-4 w-4 rounded border-dark-border bg-dark-bg text-brand-cyan" />
-                        Descontar stock
-                      </label>
-                      <label className="block sm:col-span-2">
-                        <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Observacion</span>
-                        <textarea rows="2" value={material.observacion} onChange={(event) => updateEmergencyMaterial(index, 'observacion', event.target.value)} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
-                      </label>
-                    </div>
-                    {emergencyMaterials.length > 1 && (
-                      <button type="button" onClick={() => removeEmergencyMaterial(index)} className="mt-3 text-xs font-semibold text-brand-red hover:text-brand-ember">
-                        Quitar material
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
+              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Vehiculo</p>
+              <p className="mt-1 truncate text-sm font-semibold text-text-main">
+                {selectedEmergencyVehicle ? `${selectedEmergencyVehicle.nombre}${selectedEmergencyVehicle.patente ? ` - ${selectedEmergencyVehicle.patente}` : ''}` : 'Sin seleccionar'}
+              </p>
             </div>
-
-            <div className="rounded-lg border border-dark-border bg-dark-bg/60 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h5 className="text-sm font-bold text-text-main">Items serializados</h5>
-                <button type="button" onClick={addEmergencyItem} className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-1.5 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20">
-                  Agregar
-                </button>
-              </div>
-              {emergencyItems.length === 0 ? (
-                <div className="mt-4 rounded-lg border border-dashed border-dark-border px-4 py-8 text-center text-sm text-text-muted">
-                  No hay items serializados agregados.
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  {emergencyItems.map((item, index) => (
-                    <div key={`item-${index}`} className="rounded-lg border border-dark-border bg-dark-bg p-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Item</span>
-                          <select value={item.idItem} onChange={(event) => updateEmergencyItem(index, 'idItem', event.target.value)} disabled={!emergencyForm.idUbicacion || loadingEmergencyCatalogs || loadingEmergencyInventory} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60">
-                            <option value="">{loadingEmergencyInventory ? 'Cargando inventario...' : emergencyForm.idUbicacion ? 'Selecciona item' : 'Selecciona vehiculo primero'}</option>
-                            {serialItems.map(serialItem => (
-                              <option key={serialItem.id} value={serialItem.id}>
-                                {serialItem.nombre}{serialItem.codigo ? ` - ${serialItem.codigo}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Afectacion</span>
-                          <select value={item.tipoAfectacion} onChange={(event) => updateEmergencyItem(index, 'tipoAfectacion', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
-                            {TIPOS_AFECTACION_ITEM.map(tipo => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Estado aplicado</span>
-                          <input value={item.estadoAplicado} onChange={(event) => updateEmergencyItem(index, 'estadoAplicado', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1.5 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Observacion</span>
-                          <textarea rows="2" value={item.observacion} onChange={(event) => updateEmergencyItem(index, 'observacion', event.target.value)} className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
-                        </label>
-                      </div>
-                      <button type="button" onClick={() => removeEmergencyItem(index)} className="mt-3 text-xs font-semibold text-brand-red hover:text-brand-ember">
-                        Quitar item
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
+              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Seleccionados</p>
+              <p className="mt-1 text-sm font-semibold text-text-main">{selectedEmergencyCount}</p>
+            </div>
+            <div className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2">
+              <p className="text-xs font-semibold uppercase" style={{ color: palette.muted }}>Estado</p>
+              <p className="mt-1 text-sm font-semibold text-text-main">{emergencySaving ? 'Registrando' : 'Disponible'}</p>
             </div>
           </div>
 
@@ -791,9 +730,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           )}
 
           <div className="mt-5 flex justify-end">
-            <button type="button" onClick={createEmergencyReport} disabled={emergencySaving || loadingEmergencyCatalogs || loadingEmergencyInventory} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:opacity-60">
+            <button type="button" onClick={openEmergencyFlow} disabled={loadingEmergencyCatalogs || emergencySaving} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:opacity-60">
               <Icons.Report className="h-4 w-4" />
-              {emergencySaving ? 'Registrando...' : 'Registrar y descargar PDF'}
+              Nuevo reporte
             </button>
           </div>
         </section>
@@ -991,6 +930,233 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         )}
         </div>
+
+        {emergencyModalStep === 'base' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-3xl overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h4 className="rajdhani text-xl font-bold text-text-main">Datos de la emergencia</h4>
+                  <p className="mt-1 text-xs text-text-muted">Paso 1 de 3</p>
+                </div>
+                <button type="button" onClick={resetEmergencyFlow} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
+                  x
+                </button>
+              </div>
+
+              <div className="grid max-h-[calc(90vh-140px)] gap-4 overflow-y-auto p-6 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Fecha</span>
+                  <input name="fecha" type="date" value={emergencyForm.fecha} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Hora</span>
+                  <input name="hora" type="time" step="1" value={emergencyForm.hora} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Tipo</span>
+                  <input name="tipoEmergencia" value={emergencyForm.tipoEmergencia} onChange={handleEmergencyFormChange} placeholder="Rescate vehicular" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Vehiculo</span>
+                  <select name="idUbicacion" value={emergencyForm.idUbicacion} onChange={handleEmergencyFormChange} disabled={loadingEmergencyCatalogs} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
+                    <option value="">{loadingEmergencyCatalogs ? 'Cargando...' : 'Selecciona vehiculo'}</option>
+                    {emergencyVehicles.map(vehicle => (
+                      <option key={vehicle.idUbicacion} value={vehicle.idUbicacion}>
+                        {vehicle.nombre}{vehicle.patente ? ` - ${vehicle.patente}` : ''}{vehicle.tipo ? ` - ${vehicle.tipo}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Direccion/sector</span>
+                  <input name="direccionSector" value={emergencyForm.direccionSector} onChange={handleEmergencyFormChange} placeholder="Ruta 5 km 42" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Cargo responsable</span>
+                  <input name="cargoResponsable" value={emergencyForm.cargoResponsable} onChange={handleEmergencyFormChange} placeholder="Teniente" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
+                </label>
+                {emergencyError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red md:col-span-2">{emergencyError}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={resetEmergencyFlow} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white">
+                  Cancelar
+                </button>
+                <button type="button" onClick={continueEmergencyBase} disabled={loadingEmergencyCatalogs} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:opacity-50">
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {emergencyModalStep === 'materials' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h4 className="rajdhani text-xl font-bold text-text-main">Materiales del vehiculo</h4>
+                  <p className="mt-1 text-xs text-text-muted">Paso 2 de 3 - {selectedEmergencyVehicle?.nombre || 'Vehiculo'}</p>
+                </div>
+                <button type="button" onClick={resetEmergencyFlow} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red">
+                  x
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-150px)] overflow-y-auto p-6">
+                {loadingEmergencyInventory ? (
+                  <div className="rounded-lg border border-dark-border bg-dark-bg px-4 py-12 text-center text-sm text-text-muted">
+                    Cargando inventario del vehiculo...
+                  </div>
+                ) : emergencyInventoryRows.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-12 text-center text-sm text-text-muted">
+                    Este vehiculo no tiene materiales disponibles.
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
+                    <table className="w-full text-left text-sm">
+                      <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
+                        <tr>
+                          <th className="w-12 px-4 py-3"></th>
+                          <th className="px-4 py-3">Material</th>
+                          <th className="px-4 py-3">Tipo</th>
+                          <th className="px-4 py-3">Codigo/stock</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emergencyInventoryRows.map(row => {
+                          const selected = isEmergencyInventorySelected(row);
+                          return (
+                            <tr key={row.selectionKey} onClick={() => toggleEmergencyInventoryRow(row)} className={`cursor-pointer border-b border-dark-border/70 transition-colors last:border-0 ${selected ? 'bg-brand-cyan/10' : 'hover:bg-dark-bg2'}`}>
+                              <td className="px-4 py-3">
+                                <input type="checkbox" checked={selected} onChange={() => toggleEmergencyInventoryRow(row)} onClick={(event) => event.stopPropagation()} className="h-4 w-4 rounded border-dark-border text-brand-cyan" />
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="font-semibold text-text-main">{row.nombre}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`rounded border px-2 py-1 text-xs font-semibold ${row.kind === 'item' ? 'border-brand-ember/30 bg-brand-ember/10 text-brand-ember' : 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan'}`}>
+                                  {row.typeLabel}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-text-muted">
+                                {row.kind === 'item' ? (row.code || 'Sin codigo') : `Stock ${row.stock ?? '-'}`}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {emergencyError && (
+                  <p className="mt-4 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">{emergencyError}</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <span className="text-sm font-semibold text-text-muted">{selectedEmergencyCount} seleccionados</span>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEmergencyModalStep('base')} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white">
+                    Volver
+                  </button>
+                  <button type="button" onClick={continueEmergencyMaterials} disabled={loadingEmergencyInventory} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:opacity-50">
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {emergencyModalStep === 'observations' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h4 className="rajdhani text-xl font-bold text-text-main">Observaciones del reporte</h4>
+                  <p className="mt-1 text-xs text-text-muted">Paso 3 de 3</p>
+                </div>
+                <button type="button" onClick={resetEmergencyFlow} disabled={emergencySaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-150px)] space-y-4 overflow-y-auto p-6">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Observacion general</span>
+                  <textarea name="observaciones" value={emergencyForm.observaciones} onChange={handleEmergencyFormChange} rows="3" placeholder="Procedimiento con apoyo de SAMU." className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
+                </label>
+
+                {emergencyMaterials.map((material, index) => {
+                  const detail = materialsCatalog.find(item => String(item.idMaterial) === String(material.idMaterial));
+                  return (
+                    <div key={`selected-material-${material.idMaterial}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                      <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Material'}</p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Cantidad</span>
+                          <input type="number" min="1" value={material.cantidad} onChange={(event) => updateEmergencyMaterial(index, 'cantidad', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Tipo uso</span>
+                          <select value={material.tipoUso} onChange={(event) => updateEmergencyMaterial(index, 'tipoUso', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
+                            {TIPOS_USO_MATERIAL.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex items-end gap-2 pb-2 text-sm text-text-main">
+                          <input type="checkbox" checked={material.descontarStock} onChange={(event) => updateEmergencyMaterial(index, 'descontarStock', event.target.checked)} className="h-4 w-4 rounded border-dark-border bg-dark-bg text-brand-cyan" />
+                          Descontar stock
+                        </label>
+                      </div>
+                      <textarea rows="2" value={material.observacion} onChange={(event) => updateEmergencyMaterial(index, 'observacion', event.target.value)} placeholder="Observacion del material" className="mt-3 w-full resize-none rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none placeholder-text-muted focus:border-brand-cyan" />
+                    </div>
+                  );
+                })}
+
+                {emergencyItems.map((item, index) => {
+                  const detail = serialItems.find(serialItem => String(serialItem.idItem) === String(item.idItem));
+                  return (
+                    <div key={`selected-item-${item.idItem}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                      <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Item serializado'}</p>
+                      {detail?.codigo && <p className="mt-1 text-xs text-text-muted">{detail.codigo}</p>}
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Afectacion</span>
+                          <select value={item.tipoAfectacion} onChange={(event) => updateEmergencyItem(index, 'tipoAfectacion', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
+                            {TIPOS_AFECTACION_ITEM.map(tipo => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Estado aplicado</span>
+                          <input value={item.estadoAplicado} onChange={(event) => updateEmergencyItem(index, 'estadoAplicado', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
+                        </label>
+                      </div>
+                      <textarea rows="2" value={item.observacion} onChange={(event) => updateEmergencyItem(index, 'observacion', event.target.value)} placeholder="Observacion del item" className="mt-3 w-full resize-none rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none placeholder-text-muted focus:border-brand-cyan" />
+                    </div>
+                  );
+                })}
+
+                {emergencyError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">{emergencyError}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={() => setEmergencyModalStep('materials')} disabled={emergencySaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Volver
+                </button>
+                <button type="button" onClick={createEmergencyReport} disabled={emergencySaving} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+                  <Icons.Report className="h-4 w-4" />
+                  {emergencySaving ? 'Registrando...' : 'Registrar y descargar PDF'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
