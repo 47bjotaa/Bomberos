@@ -60,6 +60,16 @@ const getArrayPayload = (payload) => {
     || [];
 };
 
+const getInventoryPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+
+  const materials = Array.isArray(payload?.materiales) ? payload.materiales : [];
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  if (materials.length > 0 || items.length > 0) return [...materials, ...items];
+
+  return getArrayPayload(payload);
+};
+
 const triggerPdfDownload = (pdf, filename) => {
   const url = window.URL.createObjectURL(pdf);
   const link = document.createElement('a');
@@ -103,7 +113,7 @@ const mapMaterial = (material) => ({
   idMaterial: material.idMaterial || material.id,
   nombre: material.nombre || material.nombreMaterial || material.name || 'Material sin nombre',
   stock: material.cantidadDisponible ?? material.stock ?? material.cantidad ?? null,
-  serializado: Boolean(material.idItem || material.codigoUnico || material.esSerializacion),
+  serializado: Boolean(material.idItem || material.idInventarioItem || material.codigoUnico || material.codigo || material.esSerializacion || material.esSerializado || material.serializado),
 });
 
 const mapItem = (item) => ({
@@ -115,12 +125,12 @@ const mapItem = (item) => ({
 
 const mapInventoryItem = (item) => ({
   id: item.idInventarioItem || item.idItem || item.idInventario || item.idMaterial || item.id,
-  idItem: item.idItem || item.idInventarioItem,
+  idItem: item.idItem || item.idInventarioItem || item.idDetalleEpp,
   idMaterial: item.idMaterial || item.id,
   nombre: item.nombreMaterial || item.nombre || item.equipo || 'Material sin nombre',
   codigo: item.codigoUnico || item.codigo || '',
   stock: item.cantidadDisponible ?? item.stock ?? item.cantidad ?? 1,
-  serializado: Boolean(item.idItem || item.codigoUnico || item.esSerializacion),
+  serializado: Boolean(item.idItem || item.idInventarioItem || item.idDetalleEpp || item.codigoUnico || item.codigo || item.esSerializacion || item.esSerializado || item.serializado),
 });
 
 const getEmergencyId = (payload) => (
@@ -307,9 +317,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         const inventoryPayload = await apiFetch(`/api/materiales?idUbicacion=${encodeURIComponent(emergencyForm.idUbicacion)}`);
         if (ignore) return;
 
-        const inventoryItems = getArrayPayload(inventoryPayload).map(mapInventoryItem).filter(item => item.id);
+        const inventoryItems = getInventoryPayload(inventoryPayload).map(mapInventoryItem).filter(item => item.id);
         setMaterialsCatalog(inventoryItems.filter(item => !item.serializado && item.idMaterial).map(mapMaterial));
-        setSerialItems(inventoryItems.filter(item => item.serializado && item.idItem).map(mapItem));
+        setSerialItems(inventoryItems.filter(item => item.serializado && (item.idItem || item.id)).map(mapItem));
       } catch (inventoryError) {
         if (!ignore) {
           setEmergencyError(inventoryError.message || 'No se pudo cargar el inventario de la ubicacion seleccionada.');
