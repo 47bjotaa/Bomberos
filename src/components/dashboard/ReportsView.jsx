@@ -70,6 +70,11 @@ const getInventoryPayload = (payload) => {
   return getArrayPayload(payload);
 };
 
+const mapLocationName = (location) => ({
+  id: location.idUbicacion || location.id,
+  name: location.nombre || location.name || location.nombreUbicacion || location.descripcion || 'Sin ubicacion',
+});
+
 const triggerPdfDownload = (pdf, filename) => {
   const url = window.URL.createObjectURL(pdf);
   const link = document.createElement('a');
@@ -207,6 +212,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   const [emergencyVehicles, setEmergencyVehicles] = useState([]);
   const [materialsCatalog, setMaterialsCatalog] = useState([]);
   const [serialItems, setSerialItems] = useState([]);
+  const [emergencyLocationNames, setEmergencyLocationNames] = useState({});
   const [emergencyModalStep, setEmergencyModalStep] = useState(null);
   const [loadingEmergencyCatalogs, setLoadingEmergencyCatalogs] = useState(false);
   const [loadingEmergencyInventory, setLoadingEmergencyInventory] = useState(false);
@@ -321,14 +327,26 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       setEmergencyError('');
       setMaterialsCatalog([]);
       setSerialItems([]);
+      setEmergencyLocationNames({});
 
       try {
-        const inventoryPayload = await apiFetch(`/api/materiales?idUbicacion=${encodeURIComponent(emergencyForm.idUbicacion)}`);
+        const [inventoryPayload, childLocationsPayload] = await Promise.all([
+          apiFetch(`/api/materiales?idUbicacion=${encodeURIComponent(emergencyForm.idUbicacion)}`),
+          apiFetch(`/api/ubicaciones/${encodeURIComponent(emergencyForm.idUbicacion)}/hijas`).catch(() => []),
+        ]);
         if (ignore) return;
 
+        const locationNameMap = getArrayPayload(childLocationsPayload)
+          .map(mapLocationName)
+          .filter(location => location.id)
+          .reduce((acc, location) => ({
+            ...acc,
+            [String(location.id)]: location.name,
+          }), {});
         const inventoryItems = getInventoryPayload(inventoryPayload).map(mapInventoryItem).filter(item => item.id);
         setMaterialsCatalog(inventoryItems.filter(item => !item.serializado && item.idInventario).map(mapMaterial));
         setSerialItems(inventoryItems.filter(item => item.serializado && (item.idItem || item.id)).map(mapItem));
+        setEmergencyLocationNames(locationNameMap);
       } catch (inventoryError) {
         if (!ignore) {
           setEmergencyError(inventoryError.message || 'No se pudo cargar el inventario de la ubicacion seleccionada.');
@@ -442,6 +460,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   ];
   const emergencyInventoryGroups = emergencyInventoryRows.reduce((groups, row) => {
     const key = row.idUbicacion ? String(row.idUbicacion) : row.ubicacionNombre;
+    const resolvedName = row.idUbicacion
+      ? (emergencyLocationNames[String(row.idUbicacion)] || row.ubicacionNombre || 'Sin ubicacion')
+      : (row.ubicacionNombre || 'Sin ubicacion');
     const existingGroup = groups.find(group => group.key === key);
     if (existingGroup) {
       existingGroup.rows.push(row);
@@ -452,7 +473,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       ...groups,
       {
         key,
-        name: row.ubicacionNombre || 'Sin ubicacion',
+        name: resolvedName,
         rows: [row],
       },
     ];
@@ -1125,10 +1146,13 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
                 {emergencyMaterials.map((material, index) => {
                   const detail = materialsCatalog.find(item => String(item.idInventario) === String(material.idInventario));
+                  const locationName = detail?.idUbicacion
+                    ? (emergencyLocationNames[String(detail.idUbicacion)] || detail.ubicacionNombre)
+                    : detail?.ubicacionNombre;
                   return (
                     <div key={`selected-material-${material.idInventario}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
                       <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Material'}</p>
-                      <p className="mt-1 text-xs text-text-muted">{detail?.ubicacionNombre || 'Sin ubicacion'}</p>
+                      <p className="mt-1 text-xs text-text-muted">{locationName || 'Sin ubicacion'}</p>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Cantidad</span>
