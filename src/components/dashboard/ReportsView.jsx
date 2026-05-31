@@ -109,10 +109,13 @@ const mapVehicle = (vehicle) => ({
 });
 
 const mapMaterial = (material) => ({
-  id: material.idMaterial || material.id,
+  id: material.idInventario || material.idInventarioMaterial || material.id,
+  idInventario: material.idInventario || material.idInventarioMaterial || material.idInventarioItem || '',
   idMaterial: material.idMaterial || material.id,
   nombre: material.nombre || material.nombreMaterial || material.name || 'Material sin nombre',
   stock: material.cantidadDisponible ?? material.stock ?? material.cantidad ?? null,
+  idUbicacion: material.idUbicacion || material.idUbicacionActual || material.ubicacionId || '',
+  ubicacionNombre: material.nombreUbicacion || material.ubicacion || material.nombreUbicacionActual || material.nombreUbicacionPadre || material.nombrePadre || 'Sin ubicacion',
   serializado: Boolean(material.idItem || material.idInventarioItem || material.codigoUnico || material.codigo || material.esSerializacion || material.esSerializado || material.serializado),
 });
 
@@ -121,15 +124,20 @@ const mapItem = (item) => ({
   idItem: item.idItem || item.idInventarioItem || item.idDetalleEpp || item.id,
   nombre: item.nombreMaterial || item.equipo || item.nombre || 'Item sin nombre',
   codigo: item.codigoUnico || item.codigo || '',
+  idUbicacion: item.idUbicacion || item.idUbicacionActual || item.ubicacionId || '',
+  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicacion',
 });
 
 const mapInventoryItem = (item) => ({
   id: item.idInventarioItem || item.idItem || item.idInventario || item.idMaterial || item.id,
   idItem: item.idItem || item.idInventarioItem || item.idDetalleEpp,
+  idInventario: item.idInventario || item.idInventarioMaterial || item.idInventarioItem,
   idMaterial: item.idMaterial || item.id,
   nombre: item.nombreMaterial || item.nombre || item.equipo || 'Material sin nombre',
   codigo: item.codigoUnico || item.codigo || '',
   stock: item.cantidadDisponible ?? item.stock ?? item.cantidad ?? 1,
+  idUbicacion: item.idUbicacion || item.idUbicacionActual || item.ubicacionId || '',
+  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicacion',
   serializado: Boolean(item.idItem || item.idInventarioItem || item.idDetalleEpp || item.codigoUnico || item.codigo || item.esSerializacion || item.esSerializado || item.serializado),
 });
 
@@ -144,6 +152,7 @@ const getEmergencyId = (payload) => (
 
 const createEmptyEmergencyMaterial = () => ({
   idMaterial: '',
+  idInventario: '',
   cantidad: 1,
   tipoUso: 'Consumible Usado',
   descontarStock: true,
@@ -318,7 +327,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         if (ignore) return;
 
         const inventoryItems = getInventoryPayload(inventoryPayload).map(mapInventoryItem).filter(item => item.id);
-        setMaterialsCatalog(inventoryItems.filter(item => !item.serializado && item.idMaterial).map(mapMaterial));
+        setMaterialsCatalog(inventoryItems.filter(item => !item.serializado && item.idInventario).map(mapMaterial));
         setSerialItems(inventoryItems.filter(item => item.serializado && (item.idItem || item.id)).map(mapItem));
       } catch (inventoryError) {
         if (!ignore) {
@@ -418,7 +427,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   const emergencyInventoryRows = [
     ...materialsCatalog.map(material => ({
       ...material,
-      selectionKey: `material-${material.idMaterial}`,
+      selectionKey: `material-${material.idInventario}`,
       kind: 'material',
       typeLabel: 'Material',
       code: '',
@@ -431,6 +440,23 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       code: item.codigo,
     })),
   ];
+  const emergencyInventoryGroups = emergencyInventoryRows.reduce((groups, row) => {
+    const key = row.idUbicacion ? String(row.idUbicacion) : row.ubicacionNombre;
+    const existingGroup = groups.find(group => group.key === key);
+    if (existingGroup) {
+      existingGroup.rows.push(row);
+      return groups;
+    }
+
+    return [
+      ...groups,
+      {
+        key,
+        name: row.ubicacionNombre || 'Sin ubicacion',
+        rows: [row],
+      },
+    ];
+  }, []);
   const selectedEmergencyCount = emergencyMaterials.length + emergencyItems.length;
 
   const resetEmergencyFlow = () => {
@@ -464,16 +490,16 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
   const isEmergencyInventorySelected = (row) => (
     row.kind === 'material'
-      ? emergencyMaterials.some(material => String(material.idMaterial) === String(row.idMaterial))
+      ? emergencyMaterials.some(material => String(material.idInventario) === String(row.idInventario))
       : emergencyItems.some(item => String(item.idItem) === String(row.idItem))
   );
 
   const toggleEmergencyInventoryRow = (row) => {
     if (row.kind === 'material') {
       setEmergencyMaterials(current => (
-        current.some(material => String(material.idMaterial) === String(row.idMaterial))
-          ? current.filter(material => String(material.idMaterial) !== String(row.idMaterial))
-          : [...current, { ...createEmptyEmergencyMaterial(), idMaterial: String(row.idMaterial), cantidad: 1 }]
+        current.some(material => String(material.idInventario) === String(row.idInventario))
+          ? current.filter(material => String(material.idInventario) !== String(row.idInventario))
+          : [...current, { ...createEmptyEmergencyMaterial(), idInventario: row.idInventario ? String(row.idInventario) : '', cantidad: 1 }]
       ));
     } else {
       setEmergencyItems(current => (
@@ -502,9 +528,9 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     }
 
     const materiales = emergencyMaterials
-      .filter(material => material.idMaterial)
+      .filter(material => material.idInventario)
       .map(material => ({
-        idMaterial: Number(material.idMaterial),
+        idInventario: Number(material.idInventario),
         cantidad: Number(material.cantidad) || 1,
         tipoUso: material.tipoUso,
         descontarStock: Boolean(material.descontarStock),
@@ -525,11 +551,18 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       return;
     }
 
+    const hasMissingObservation = [...materiales, ...items].some(entry => !entry.observacion);
+    if (hasMissingObservation) {
+      setEmergencyError('Agrega una observacion para cada material o item seleccionado.');
+      return;
+    }
+
     const payload = {
       fecha: emergencyForm.fecha,
       hora: emergencyForm.hora,
       tipoEmergencia: emergencyForm.tipoEmergencia.trim(),
       direccionSector: emergencyForm.direccionSector.trim(),
+      idUbicacion: Number(emergencyForm.idUbicacion),
       observaciones: emergencyForm.observaciones.trim(),
       materiales,
       items,
@@ -1008,40 +1041,47 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                     Este vehiculo no tiene materiales disponibles.
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
-                    <table className="w-full text-left text-sm">
-                      <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
-                        <tr>
-                          <th className="w-12 px-4 py-3"></th>
-                          <th className="px-4 py-3">Material</th>
-                          <th className="px-4 py-3">Tipo</th>
-                          <th className="px-4 py-3">Codigo/stock</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {emergencyInventoryRows.map(row => {
-                          const selected = isEmergencyInventorySelected(row);
-                          return (
-                            <tr key={row.selectionKey} onClick={() => toggleEmergencyInventoryRow(row)} className={`cursor-pointer border-b border-dark-border/70 transition-colors last:border-0 ${selected ? 'bg-brand-cyan/10' : 'hover:bg-dark-bg2'}`}>
-                              <td className="px-4 py-3">
-                                <input type="checkbox" checked={selected} onChange={() => toggleEmergencyInventoryRow(row)} onClick={(event) => event.stopPropagation()} className="h-4 w-4 rounded border-dark-border text-brand-cyan" />
-                              </td>
-                              <td className="px-4 py-3">
-                                <p className="font-semibold text-text-main">{row.nombre}</p>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`rounded border px-2 py-1 text-xs font-semibold ${row.kind === 'item' ? 'border-brand-ember/30 bg-brand-ember/10 text-brand-ember' : 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan'}`}>
-                                  {row.typeLabel}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-text-muted">
-                                {row.kind === 'item' ? (row.code || 'Sin codigo') : `Stock ${row.stock ?? '-'}`}
-                              </td>
+                  <div className="space-y-4">
+                    {emergencyInventoryGroups.map(group => (
+                      <div key={group.key} className="overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
+                        <div className="border-b border-dark-border bg-dark-bg2 px-4 py-3">
+                          <h5 className="text-sm font-bold text-text-main">{group.name}</h5>
+                        </div>
+                        <table className="w-full text-left text-sm">
+                          <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
+                            <tr>
+                              <th className="w-12 px-4 py-3"></th>
+                              <th className="px-4 py-3">Material</th>
+                              <th className="px-4 py-3">Tipo</th>
+                              <th className="px-4 py-3">Codigo/stock</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {group.rows.map(row => {
+                              const selected = isEmergencyInventorySelected(row);
+                              return (
+                                <tr key={row.selectionKey} onClick={() => toggleEmergencyInventoryRow(row)} className={`cursor-pointer border-b border-dark-border/70 transition-colors last:border-0 ${selected ? 'bg-brand-cyan/10' : 'hover:bg-dark-bg2'}`}>
+                                  <td className="px-4 py-3">
+                                    <input type="checkbox" checked={selected} onChange={() => toggleEmergencyInventoryRow(row)} onClick={(event) => event.stopPropagation()} className="h-4 w-4 rounded border-dark-border text-brand-cyan" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <p className="font-semibold text-text-main">{row.nombre}</p>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`rounded border px-2 py-1 text-xs font-semibold ${row.kind === 'item' ? 'border-brand-ember/30 bg-brand-ember/10 text-brand-ember' : 'border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan'}`}>
+                                      {row.typeLabel}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-text-muted">
+                                    {row.kind === 'item' ? (row.code || 'Sin codigo') : `Stock ${row.stock ?? '-'}`}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {emergencyError && (
@@ -1084,10 +1124,11 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 </label>
 
                 {emergencyMaterials.map((material, index) => {
-                  const detail = materialsCatalog.find(item => String(item.idMaterial) === String(material.idMaterial));
+                  const detail = materialsCatalog.find(item => String(item.idInventario) === String(material.idInventario));
                   return (
-                    <div key={`selected-material-${material.idMaterial}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
+                    <div key={`selected-material-${material.idInventario}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
                       <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Material'}</p>
+                      <p className="mt-1 text-xs text-text-muted">{detail?.ubicacionNombre || 'Sin ubicacion'}</p>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Cantidad</span>
