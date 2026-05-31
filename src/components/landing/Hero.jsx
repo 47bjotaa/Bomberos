@@ -1,4 +1,5 @@
 import { Icons } from '../../components/ui/Icons';
+import { getAppUrl } from '../../utils/constants';
 
 function Hero() {
   return (
@@ -18,7 +19,7 @@ function Hero() {
           integral, robusto y en tiempo real diseñado exclusivamente para bomberos.
         </p>
         <div className="flex justify-center gap-4 reveal is-visible delay-200">
-          <a href="https://www.cuartelamigo.cl/login" className="btn btn-primary">Ingresar <Icons.ChevronRight /></a>
+          <a href={getAppUrl('/login')} className="btn btn-primary">Ingresar <Icons.ChevronRight /></a>
           <a href="#solucion" className="btn btn-secondary">Explorar Módulos</a>
         </div>
       </div>
