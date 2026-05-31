@@ -80,15 +80,6 @@ const getSessionCompanyId = () => {
   }
 };
 
-const getSessionUserCargo = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.cargo || user.rol || user.nombreRol || '';
-  } catch {
-    return '';
-  }
-};
-
 const mapDonationCampaign = (campaign) => ({
   id: campaign.idCampanaDonacion || campaign.id,
   idCampaniaDonacion: campaign.idCampaniaDonacion || campaign.idCampanaDonacion || campaign.id,
@@ -190,7 +181,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     direccionSector: '',
     idUbicacion: '',
     idVehiculo: '',
-    cargoResponsable: getSessionUserCargo(),
     observaciones: '',
   });
   const [emergencyMaterials, setEmergencyMaterials] = useState([]);
@@ -530,7 +520,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       hora: emergencyForm.hora,
       tipoEmergencia: emergencyForm.tipoEmergencia.trim(),
       direccionSector: emergencyForm.direccionSector.trim(),
-      cargoResponsable: emergencyForm.cargoResponsable.trim(),
       observaciones: emergencyForm.observaciones.trim(),
       materiales,
       items,
@@ -968,10 +957,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Direccion/sector</span>
                   <input name="direccionSector" value={emergencyForm.direccionSector} onChange={handleEmergencyFormChange} placeholder="Ruta 5 km 42" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Cargo responsable</span>
-                  <input name="cargoResponsable" value={emergencyForm.cargoResponsable} onChange={handleEmergencyFormChange} placeholder="Teniente" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />
                 </label>
                 {emergencyError && (
                   <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red md:col-span-2">{emergencyError}</p>
