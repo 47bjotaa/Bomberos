@@ -6692,14 +6692,9 @@ function Dashboard({ setView }) {
         )}
       </main>
 
-      {(loadingSubscription || subscriptionError || pendingCardRegistration) && (
+      {!loadingSubscription && (subscriptionError || pendingCardRegistration) && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 px-6 py-10 backdrop-blur-sm">
-          {loadingSubscription ? (
-            renderSubscriptionGate({
-              title: 'Verificando suscripcion',
-              message: 'Estamos revisando el estado de la suscripcion de tu compania.',
-            })
-          ) : subscriptionError ? (
+          {subscriptionError ? (
             renderSubscriptionGate({
               title: 'No se pudo verificar la suscripcion',
               message: subscriptionError,
