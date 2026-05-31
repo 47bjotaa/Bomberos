@@ -13,7 +13,7 @@ import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
-import { goToPublicHome } from '../utils/constants';
+import { APP_ORIGIN, goToPublicHome } from '../utils/constants';
 import { getThemePalette } from '../utils/themePalette';
 import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
@@ -37,7 +37,7 @@ const DEFAULT_PAYMENT_CONFIG = {
   ambiente: 'Sandbox',
   urlApi: 'https://sandbox.flow.cl/api',
   urlConfirmacion: 'https://api.cuartelamigo.cl/api/donaciones/flow/confirmacion',
-  urlRetorno: 'https://www.cuartelamigo.cl/donacion-gracias',
+  urlRetorno: `${APP_ORIGIN}/donacion-gracias`,
   paymentMethodDefault: '9',
   monedaDefault: 'CLP',
   timeoutSegundos: '',
@@ -1018,7 +1018,7 @@ function Dashboard({ setView }) {
         method: 'POST',
         body: JSON.stringify({
           idBombero: Number(idBombero),
-          urlBasePublica: 'https://www.cuartelamigo.cl',
+          urlBasePublica: APP_ORIGIN,
         }),
       });
 

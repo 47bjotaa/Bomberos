@@ -1,10 +1,26 @@
 export const PUBLIC_ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || 'https://www.cuartelamigo.cl';
-export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || PUBLIC_ORIGIN;
+export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://app.cuartelamigo.cl';
 export const isLocalHost = (hostname = window.location.hostname) => (
   hostname === 'localhost' ||
   hostname === '127.0.0.1' ||
   hostname === '[::1]'
 );
+
+export const isLandingPath = (pathname = '/') => pathname === '/' || pathname === '/index.html';
+
+export const getCanonicalOriginForPath = (pathname = window.location.pathname) => (
+  isLandingPath(pathname) ? PUBLIC_ORIGIN : APP_ORIGIN
+);
+
+export const redirectToCanonicalHost = (location = window.location) => {
+  if (isLocalHost(location.hostname)) return false;
+
+  const canonicalOrigin = getCanonicalOriginForPath(location.pathname);
+  if (location.origin === canonicalOrigin) return false;
+
+  location.replace(`${canonicalOrigin}${location.pathname}${location.search}${location.hash}`);
+  return true;
+};
 
 export const getAppUrl = (path = '/') => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;

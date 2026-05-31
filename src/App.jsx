@@ -4,7 +4,7 @@ import AuthView from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import PaginaDonacion from './pages/PaginaDonacion';
 import RetornoDonacion from './pages/RetornoDonacion';
-import { getAppUrl } from './utils/constants';
+import { getAppUrl, getPublicUrl, isLandingPath, redirectToCanonicalHost } from './utils/constants';
 import './App.css';
 
 const hasAuthToken = () => Boolean(localStorage.getItem('token'));
@@ -55,6 +55,7 @@ const getRouteStateFromPath = (pathname) => {
 
 export default function App() {
   const [routeState, setRouteState] = useState(() => {
+    redirectToCanonicalHost();
     const initialRoute = getRouteStateFromPath(window.location.pathname);
 
     if (initialRoute.shouldReplace && window.location.pathname !== initialRoute.path) {
@@ -66,6 +67,8 @@ export default function App() {
   const { view, authMode } = routeState;
 
   const applyRouteFromPath = (pathname) => {
+    if (redirectToCanonicalHost()) return;
+
     const nextRoute = getRouteStateFromPath(pathname);
 
     if (nextRoute.shouldReplace && window.location.pathname !== nextRoute.path) {
@@ -85,6 +88,11 @@ export default function App() {
   }, []);
 
   const setView = (nextView) => {
+    if (nextView === 'landing' && !isLandingPath(window.location.pathname)) {
+      window.location.href = getPublicUrl('/');
+      return;
+    }
+
     if (nextView === 'dashboard' && !hasAuthToken()) {
       const loginUrl = getAppUrl('/login');
       if (loginUrl.startsWith('http')) {
