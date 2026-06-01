@@ -401,7 +401,7 @@
     flex: 1;
     min-width: 0;
     position: relative;
-    z-index: 1005;
+    z-index: 1011;
   }
   .nav-side-right {
     justify-content: flex-end;
@@ -499,7 +499,7 @@
     position: fixed;
     left: 50%;
     top: 118px;
-    z-index: 1004;
+    z-index: 1010;
     margin: 0;
     color: #FFFFFF !important;
     font-family: 'Rajdhani', sans-serif;
