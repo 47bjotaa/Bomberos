@@ -396,6 +396,7 @@ function Dashboard({ setView }) {
   const [stockMinimoDetailId, setStockMinimoDetailId] = useState(() => getStockMinimoDetailId(window.location.pathname));
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showingEppDetail, setShowingEppDetail] = useState(false);
   const [bomberoProfile, setBomberoProfile] = useState(null);
   const [loadingBomberoProfile, setLoadingBomberoProfile] = useState(false);
@@ -2497,6 +2498,26 @@ function Dashboard({ setView }) {
     { id: 'stocks', label: 'Stocks mínimos' },
     { id: 'catalogo', label: 'Catálogo' },
   ].filter(view => canAccessInventoryView(view.id));
+  const activeInventoryViewLabel = inventoryViews.find(view => view.id === inventoryView)?.label || 'Inventario';
+  const dashboardNavItems = [
+    { id: 'inicio', label: 'Inicio', icon: Icons.Dashboard },
+    { id: 'bodegas', label: 'Inventario', icon: Icons.Inventory },
+    { id: 'vehiculos', label: 'Vehiculos', icon: Icons.Truck },
+    { id: 'epp', label: 'EPP', icon: Icons.Shield },
+    { id: 'libro-guardia', label: 'Libro Guardia', icon: Icons.Traceability },
+    { id: 'donaciones', label: 'Donaciones', icon: Icons.Finance },
+    { id: 'personal', label: 'Personal', icon: Icons.User },
+    { id: 'reportes', label: 'Reportes', icon: Icons.Report },
+  ].filter(item => canAccessTab(item.id));
+  const handleMobileTabSelect = (tab) => {
+    selectDashboardTab(tab);
+    setMobileSidebarOpen(false);
+  };
+  const handleMobileInventoryViewSelect = (viewId) => {
+    selectDashboardTab('bodegas');
+    selectInventoryView(viewId);
+    setMobileSidebarOpen(false);
+  };
   const refreshActiveUbicacion = async () => {
     if (!activeUbicacion) return;
 
@@ -3369,14 +3390,26 @@ function Dashboard({ setView }) {
   return (
     <div className="relative flex flex-col h-screen bg-dark-bg text-text-main overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="flex justify-between items-center px-5 py-3 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
+      <header className="flex justify-between items-center gap-2 px-3 py-3 md:px-5 border-b border-dark-border bg-dark-surface z-20 relative flex-shrink-0">
         {/* Left: Logo */}
-        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-3 md:mr-6" onClick={goToPublicHome}>
+        <button
+          type="button"
+          onClick={() => {
+            setMobileSidebarOpen(true);
+            setShowNotificationsMenu(false);
+            setShowProfileMenu(false);
+          }}
+          className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-red/40 hover:text-brand-red"
+          aria-label="Abrir menu"
+        >
+          <Icons.Menu />
+        </button>
+        <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity mr-1 md:mr-6" onClick={goToPublicHome}>
           <LogoCuartelAmigo size={68} />
         </div>
 
         {/* Center: Navigation Icons */}
-        <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <nav className="hidden md:flex flex-1 items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
@@ -3531,6 +3564,89 @@ function Dashboard({ setView }) {
         </div>
       </header>
 
+      <div
+        className={`fixed inset-0 z-40 bg-black/60 transition-opacity md:hidden ${mobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setMobileSidebarOpen(false)}
+      />
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-full w-[min(84vw,320px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        aria-label="Menu lateral movil"
+      >
+        <div className="flex items-center justify-between border-b border-dark-border px-4 py-4">
+          <LogoCuartelAmigo size={74} />
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main"
+            aria-label="Cerrar menu"
+          >
+            <span className="text-xl leading-none">x</span>
+          </button>
+        </div>
+        <div className="border-b border-dark-border px-4 py-3">
+          <p className="text-sm font-bold text-white">{headerProfileName}</p>
+          <p className="text-xs text-brand-cyan">{headerProfileCargo}</p>
+        </div>
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted">Navegacion</p>
+          <div className="space-y-1">
+            {dashboardNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <div key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleMobileTabSelect(item.id)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${isActive ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                  >
+                    <Icon />
+                    <span>{item.label}</span>
+                  </button>
+                  {item.id === 'bodegas' && inventoryViews.length > 0 && (
+                    <div className="ml-5 mt-1 space-y-1 border-l border-dark-border pl-3">
+                      {inventoryViews.map(view => (
+                        <button
+                          key={view.id}
+                          type="button"
+                          onClick={() => handleMobileInventoryViewSelect(view.id)}
+                          className={`block w-full rounded-md px-3 py-2 text-left text-xs font-bold transition-colors ${activeTab === 'bodegas' && inventoryView === view.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                        >
+                          {view.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {canManageOwnUser && (
+              <button
+                type="button"
+                onClick={() => handleMobileTabSelect('mis-datos')}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${activeTab === 'mis-datos' ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+              >
+                <Icons.User />
+                <span>Mis Datos</span>
+              </button>
+            )}
+          </div>
+        </nav>
+        <div className="border-t border-dark-border p-3">
+          <button
+            type="button"
+            onClick={() => {
+              authService.logout();
+              goToPublicHome();
+            }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold text-brand-red transition-colors hover:bg-dark-bg3"
+          >
+            <span className="text-lg leading-none">-&gt;</span>
+            <span>Cerrar Sesion</span>
+          </button>
+        </div>
+      </aside>
+
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden bg-dark-bg relative" onClick={() => {
         if (showProfileMenu) setShowProfileMenu(false);
@@ -3538,25 +3654,30 @@ function Dashboard({ setView }) {
       }}>
         {/* Sub Header (Actions specific to active tab) */}
         {activeTab !== 'vehiculos' && activeTab !== 'libro-guardia' && !materialDetailRoute && !stockMinimoDetailId && (
-          <div className="flex justify-between items-center px-6 py-3 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
                 {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'reportes' ? <Icons.Report /> : activeTab === 'personal' || activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
               </div>
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 {activeTab === 'bodegas' ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {inventoryViews.map(view => (
-                      <button
-                        key={view.id}
-                        type="button"
-                        onClick={() => selectInventoryView(view.id)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
-                      >
-                        {view.label}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight md:hidden" style={{ color: palette.text }}>
+                      {activeInventoryViewLabel}
+                    </h2>
+                    <div className="hidden flex-wrap items-center gap-2 md:flex">
+                      {inventoryViews.map(view => (
+                        <button
+                          key={view.id}
+                          type="button"
+                          onClick={() => selectInventoryView(view.id)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${inventoryView === view.id ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                        >
+                          {view.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
                     {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? (personalView === 'importar' ? 'Importar personal' : 'Personal del Cuartel') : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
@@ -3569,7 +3690,7 @@ function Dashboard({ setView }) {
                 {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Información del bombero asociado a tu sesión</span>}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && canManageLocations && (
                 <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicación</button>
               )}
