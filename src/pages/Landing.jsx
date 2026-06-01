@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
+import CompanyMarquee from '../components/landing/CompanyMarquee';
 import Problema from '../components/landing/Problema';
 import Solucion from '../components/landing/Solucion';
 import Semaforo from '../components/landing/Semaforo';
@@ -28,6 +29,7 @@ function Landing() {
     <div className="landing-page fade-in">
       <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
       <Hero />
+      <CompanyMarquee />
       <Problema />
       <Solucion />
       <Semaforo />

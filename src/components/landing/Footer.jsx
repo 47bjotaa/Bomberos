@@ -14,7 +14,6 @@ function Footer() {
           <span>Redes</span>
           <div>
             <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">Instagram</a>
-            <a href="https://www.facebook.com/" target="_blank" rel="noreferrer">Facebook</a>
             <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
           </div>
         </div>
