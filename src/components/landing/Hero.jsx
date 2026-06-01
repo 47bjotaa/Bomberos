@@ -27,8 +27,8 @@ function Hero() {
     };
   }, []);
 
-  const titleScale = 1 - (dockProgress * 0.68);
-  const titleTop = 130 - (dockProgress * 89);
+  const titleScale = 1 - (dockProgress * 0.74);
+  const titleTop = 130 - (dockProgress * 84);
   const titleTransform = `translateX(-50%) scale(${titleScale})`;
   const cardTransform = `translateY(${-34 * dockProgress}px)`;
 

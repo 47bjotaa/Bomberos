@@ -379,12 +379,12 @@
   }
   .landing-nav.scrolled {
     height: 76px;
-    background: rgba(5, 8, 15, 0.42);
+    background: rgba(5, 8, 15, 0.56);
     border-bottom: 1px solid rgba(255,255,255,0.14);
     box-shadow: 0 10px 35px rgba(0,0,0,0.2);
   }
   .light .landing-nav.scrolled {
-    background: rgba(5, 8, 15, 0.42);
+    background: rgba(5, 8, 15, 0.56);
   }
   .nav-shell {
     position: relative;
@@ -501,7 +501,7 @@
     top: 118px;
     z-index: 1004;
     margin: 0;
-    color: rgba(238, 242, 255, 0.98);
+    color: #FFFFFF !important;
     font-family: 'Rajdhani', sans-serif;
     font-size: clamp(5.2rem, 13vw, 11.2rem);
     font-weight: 900;
@@ -509,9 +509,9 @@
     letter-spacing: -0.045em;
     text-transform: none;
     text-align: center;
-    text-shadow: 0 2px 14px rgba(0,0,0,0.62);
+    text-shadow: 0 3px 18px rgba(0,0,0,0.78);
     max-width: 100%;
-    transform-origin: top center;
+    transform-origin: center center;
     will-change: transform, top;
     pointer-events: none;
     white-space: nowrap;
