@@ -198,8 +198,19 @@
   .section { padding: 100px 0; }
   .landing-page .section {
     position: relative;
-    background: var(--bg);
     z-index: 1;
+  }
+  .landing-page .section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    background: var(--bg);
+    z-index: -1;
+    pointer-events: none;
   }
   .section-header { text-align: center; margin-bottom: 4rem; }
   .section-title { font-size: clamp(1.8rem, 4vw + 1rem, 2.5rem); font-weight: 700; margin-bottom: 1rem; }
@@ -950,6 +961,13 @@
     border-top: 1px solid rgba(255,255,255,0.08);
     border-bottom: 1px solid rgba(255,255,255,0.08);
     color: #fff;
+  }
+  .company-marquee::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: -1;
   }
   .company-marquee p {
     margin: 0 0 1.3rem;
