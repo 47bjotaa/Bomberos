@@ -2,31 +2,28 @@ import { useEffect, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 
 function Hero() {
-  const [dockProgress, setDockProgress] = useState(0);
+  const [isDocked, setIsDocked] = useState(false);
 
   useEffect(() => {
-    let frameId = 0;
-
-    const updateProgress = () => {
-      frameId = 0;
+    const updateDockState = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      setDockProgress(Math.min(scrollTop / 170, 1));
+      setIsDocked(scrollTop > 8);
     };
 
     const handleScroll = () => {
-      if (!frameId) frameId = window.requestAnimationFrame(updateProgress);
+      window.requestAnimationFrame(updateDockState);
     };
 
-    updateProgress();
+    updateDockState();
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
-      if (frameId) window.cancelAnimationFrame(frameId);
     };
   }, []);
 
+  const dockProgress = isDocked ? 1 : 0;
   const titleScale = 1 - (dockProgress * 0.78);
   const titleTop = 130 - (dockProgress * 170);
   const titleTransform = `translateX(-50%) scale(${titleScale})`;

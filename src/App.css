@@ -490,7 +490,8 @@
     padding: 120px 0 72px;
   }
   .hero-layout {
-    display: block;
+    display: flex;
+    justify-content: flex-end;
     position: relative;
     padding-top: clamp(250px, 24vw, 315px);
   }
@@ -514,22 +515,24 @@
     will-change: transform, top;
     pointer-events: none;
     white-space: nowrap;
-    transition: none;
+    transition:
+      top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .hero-info-card {
     width: min(580px, 100%);
-    border: 1px solid rgba(255,255,255,0.42);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 8px;
-    background: rgba(239, 226, 206, 0.88);
-    color: #05080F;
-    backdrop-filter: blur(12px);
+    background: rgba(8, 12, 24, 0.78);
+    color: #FFFFFF;
+    backdrop-filter: blur(16px);
     padding: 1.45rem;
-    box-shadow: 0 20px 55px rgba(0,0,0,0.32);
-    transition: none;
+    box-shadow: 0 20px 55px rgba(0,0,0,0.42);
+    transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .hero-info-card h2 {
     margin: 0 0 0.8rem;
-    color: #05080F !important;
+    color: #FFFFFF !important;
     font-family: 'DM Sans', sans-serif;
     font-size: clamp(1.45rem, 2.8vw, 2.25rem);
     font-weight: 700;
@@ -537,7 +540,7 @@
   }
   .hero-info-card p {
     margin: 0 0 1.2rem;
-    color: rgba(5, 8, 15, 0.82) !important;
+    color: rgba(238, 242, 255, 0.82) !important;
     font-size: 0.98rem;
     line-height: 1.55;
   }
@@ -570,9 +573,9 @@
     box-shadow: 0 10px 22px rgba(0,0,0,0.22);
   }
   .hero-info-card .btn-secondary {
-    background: rgba(5, 8, 15, 0.06);
-    border-color: rgba(5, 8, 15, 0.18);
-    color: #05080F !important;
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.14);
+    color: #FFFFFF !important;
   }
   .footer-social a {
     color: var(--text);
@@ -997,7 +1000,7 @@
     .navbar .nav-btn, .nav-cta { display: none; }
     .mobile-menu-btn { display: block; }
     .landing-hero { min-height: 720px; padding: 112px 0 58px; }
-    .hero-layout { padding-top: clamp(170px, 38vw, 235px); }
+    .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); }
     .hero-brand-title { top: 116px; font-size: clamp(3.9rem, 19vw, 6.9rem); text-align: center; }
     .hero-info-card { padding: 1rem; }
     .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); }
