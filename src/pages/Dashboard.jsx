@@ -3697,7 +3697,7 @@ function Dashboard({ setView }) {
               {activeTab === 'bodegas' && inventoryView === 'catalogo' && canCreateMaterial && (
                 <>
                   <button onClick={openCatalogImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <Icons.Import size={18} className="shrink-0" />
                     Importar catálogo
                   </button>
                   <button onClick={() => {
@@ -3735,7 +3735,7 @@ function Dashboard({ setView }) {
                 <>
                   {canManageUsers && (
                     <button type="button" onClick={openPersonalImportView} className="px-4 py-2 text-sm font-medium text-text-main bg-dark-bg3 border border-dark-border rounded-lg hover:bg-dark-bg2 transition-colors flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                      <Icons.Import size={18} className="shrink-0" />
                       Importar personal
                     </button>
                   )}
@@ -4373,7 +4373,7 @@ function Dashboard({ setView }) {
                   <thead className="sticky top-0 z-10 bg-dark-bg2 border-b border-dark-border text-text-muted font-medium rajdhani text-base">
                     <tr>
                       <th className="px-6 py-4 font-semibold">Nombre</th>
-                      <th className="px-6 py-4 font-semibold">Tipo Material</th>
+                      <th className="px-6 py-4 font-semibold whitespace-nowrap">Tipo Material</th>
                       <th className="px-6 py-4 font-semibold">Valor Unitario</th>
                       <th className="px-6 py-4 font-semibold text-center">Desechable</th>
                       <th className="px-6 py-4 font-semibold text-center">Serializado</th>
@@ -4395,7 +4395,7 @@ function Dashboard({ setView }) {
                       catalogRows.map(item => (
                           <tr key={item.id} className="cursor-pointer transition-all hover:bg-brand-cyan/10 hover:shadow-[inset_3px_0_0_rgba(56,189,248,0.75),0_0_18px_rgba(56,189,248,0.08)]">
                             <td className="px-6 py-3 font-medium text-text-main">{item.nombre}</td>
-                            <td className="px-6 py-3"><span className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-full text-xs font-medium">{item.tipo}</span></td>
+                            <td className="px-6 py-3"><span className="inline-flex items-center whitespace-nowrap rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-medium text-brand-cyan">{item.tipo}</span></td>
                             <td className="px-6 py-3 text-text-muted">
                               {item.valor}
                             </td>

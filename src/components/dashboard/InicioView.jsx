@@ -24,7 +24,7 @@ function Spinner() {
 function KpiCard({ title, value, sub, icon, color, loading }) {
   return (
     <div className="bg-dark-surface border border-dark-border rounded-xl p-5 flex items-center gap-4 hover:border-dark-border/80 transition-colors">
-      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center">
+      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center [&>svg]:h-10 [&>svg]:w-10">
         {icon}
       </div>
       <div className="min-w-0">

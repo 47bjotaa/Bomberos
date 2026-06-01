@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { getAppUrl } from '../../utils/constants';
 import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
-import { useState, useEffect } from 'react';
 
 function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   const { theme, toggleTheme } = useTheme();
@@ -12,46 +13,41 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
-      // Determine if we are at the top to remove the solid background
       setScrolled(currentScrollY > 20);
-      
-      // Hide on scroll down, show on scroll up
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
-        setHidden(true);
-      } else {
-        setHidden(false);
-      }
-      
+      setHidden(currentScrollY > lastScrollY && currentScrollY > 80);
       setLastScrollY(currentScrollY);
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  const closeMenu = () => setMobileMenuOpen(false);
+
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${hidden ? 'nav-hidden' : ''}`}>
       <div className="container flex items-center justify-between" style={{ width: '100%' }}>
-        <div className="flex items-center">
+        <a href="#" className="flex items-center" onClick={closeMenu} aria-label="Ir al inicio">
           <LogoCuartelAmigo size={80} />
-        </div>
+        </a>
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
-          <a href="#problema" onClick={() => setMobileMenuOpen(false)}>Problema</a>
-          <a href="#solucion" onClick={() => setMobileMenuOpen(false)}>Solución</a>
-          <a href="#plataforma" onClick={() => setMobileMenuOpen(false)}>Plataforma</a>
-          <a href="#como-funciona" onClick={() => setMobileMenuOpen(false)}>Cómo Funciona</a>
-          <a href="#planes" onClick={() => setMobileMenuOpen(false)}>Planes</a>
+          <a href="#solucion" onClick={closeMenu}>Módulos</a>
+          <a href="#semaforo" onClick={closeMenu}>Semáforo</a>
+          <a href="#plataforma" onClick={closeMenu}>Dashboard</a>
+          <a href="#como-funciona" onClick={closeMenu}>Implementación</a>
+          <a href="#planes" onClick={closeMenu}>Planes</a>
+          <a href="#contacto" onClick={closeMenu}>Contacto</a>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={toggleTheme} 
-            className="icon-btn theme-toggle" 
+          <a href={getAppUrl('/login')} className="nav-cta">Ingresar</a>
+          <button
+            onClick={toggleTheme}
+            className="icon-btn theme-toggle"
             title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
           >
             {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
           </button>
-          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir menú">
             <Icons.Menu />
           </button>
         </div>

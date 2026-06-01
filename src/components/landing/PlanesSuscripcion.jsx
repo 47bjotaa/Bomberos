@@ -69,8 +69,9 @@ function PlanesSuscripcion() {
   return (
     <section id="planes" className="section container">
       <div className="section-header">
+        <span className="section-eyebrow reveal">Planes por suscripción</span>
         <h2 className="section-title reveal">Elige el plan para tu cuartel</h2>
-        <p className="section-subtitle reveal delay-100">Comienza con el nivel que calza con tu operación y activa funciones avanzadas cuando las necesites.</p>
+        <p className="section-subtitle reveal delay-100">No vendemos una caja cerrada: habilitamos una operación digital con soporte, mejoras y módulos que crecen junto a tu compañía.</p>
       </div>
 
       {loading ? (
@@ -81,6 +82,7 @@ function PlanesSuscripcion() {
         <div className="pricing-grid">
           {plans.map((plan, index) => (
             <article key={plan.id || plan.codigo || plan.nombre} className={`pricing-card reveal is-visible ${index === 1 ? 'pricing-card-featured delay-100' : index === 2 ? 'delay-200' : ''}`}>
+              {index === 1 && <span className="pricing-ribbon">Recomendado</span>}
               <div className="pricing-icon">
                 <Icons.Finance />
               </div>
@@ -91,8 +93,9 @@ function PlanesSuscripcion() {
                 <span>{plan.precioMensual > 0 ? '/mes' : ''}</span>
               </div>
               <div className="pricing-features">
-                {plan.duracionDias ? <span>{plan.duracionDias} dias de prueba</span> : <span>Uso mensual</span>}
-                <span>{plan.donaciones ? 'Incluye donaciones' : 'Sin modulo de donaciones'}</span>
+                {plan.duracionDias ? <span>{plan.duracionDias} días de prueba</span> : <span>Uso mensual</span>}
+                <span>{plan.donaciones ? 'Incluye donaciones' : 'Sin módulo de donaciones'}</span>
+                <span>Soporte y mejoras incluidas</span>
               </div>
               <a className="btn btn-primary pricing-btn" href={getRegisterUrl(plan)}>
                 {plan.precioMensual > 0 ? 'Elegir plan' : 'Comenzar'}
