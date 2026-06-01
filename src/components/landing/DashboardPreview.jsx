@@ -291,7 +291,9 @@ function DashboardPreview() {
             <strong>{activeView === 'inicio' ? 'Panel de Control' : view.label}</strong>
             <span>{view.subtitle}</span>
           </div>
-          <div className="mini-user">NR</div>
+          <div className="mini-user" aria-label="Perfil">
+            <Icons.User />
+          </div>
         </div>
         <div className="mini-nav">
           {Object.entries(dashboardViews).map(([key, item]) => (
