@@ -97,6 +97,49 @@ body::before {
   pointer-events: none;
 }
 
+.dashboard-mobile-only {
+  display: flex;
+}
+
+.dashboard-mobile-drawer {
+  display: flex;
+}
+
+.dashboard-desktop-nav,
+.dashboard-desktop-inventory-tabs {
+  display: none;
+}
+
+.dashboard-subheader {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-mobile-inventory-title {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .dashboard-mobile-only,
+  .dashboard-mobile-drawer,
+  .dashboard-mobile-inventory-title {
+    display: none !important;
+  }
+
+  .dashboard-desktop-nav,
+  .dashboard-desktop-inventory-tabs {
+    display: flex !important;
+  }
+
+  .dashboard-subheader {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

@@ -3399,7 +3399,7 @@ function Dashboard({ setView }) {
             setShowNotificationsMenu(false);
             setShowProfileMenu(false);
           }}
-          className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-red/40 hover:text-brand-red"
+          className="dashboard-mobile-only h-10 w-10 items-center justify-center rounded-lg border border-dark-border bg-dark-bg2 text-text-main transition-colors hover:border-brand-red/40 hover:text-brand-red"
           aria-label="Abrir menu"
         >
           <Icons.Menu />
@@ -3409,7 +3409,7 @@ function Dashboard({ setView }) {
         </div>
 
         {/* Center: Navigation Icons */}
-        <nav className="hidden md:flex flex-1 items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <nav className="dashboard-desktop-nav flex-1 items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
             <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
           </button>
@@ -3565,11 +3565,11 @@ function Dashboard({ setView }) {
       </header>
 
       <div
-        className={`fixed inset-0 z-40 bg-black/60 transition-opacity md:hidden ${mobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`dashboard-mobile-only fixed inset-0 z-40 bg-black/60 transition-opacity ${mobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setMobileSidebarOpen(false)}
       />
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full w-[min(84vw,320px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`dashboard-mobile-drawer fixed left-0 top-0 z-50 h-full w-[min(84vw,320px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         aria-label="Menu lateral movil"
       >
         <div className="flex items-center justify-between border-b border-dark-border px-4 py-4">
@@ -3654,7 +3654,7 @@ function Dashboard({ setView }) {
       }}>
         {/* Sub Header (Actions specific to active tab) */}
         {activeTab !== 'vehiculos' && activeTab !== 'libro-guardia' && !materialDetailRoute && !stockMinimoDetailId && (
-          <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
+          <div className="dashboard-subheader gap-3 px-4 py-3 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex min-w-0 items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
                 {activeTab === 'bodegas' && inventoryView === 'catalogo' ? <Icons.Traceability /> : activeTab === 'epp' ? <Icons.Shield /> : activeTab === 'donaciones' ? <Icons.Finance /> : activeTab === 'reportes' ? <Icons.Report /> : activeTab === 'personal' || activeTab === 'mis-datos' ? <Icons.User /> : <Icons.Inventory />}
@@ -3662,10 +3662,10 @@ function Dashboard({ setView }) {
               <div className="flex min-w-0 flex-col">
                 {activeTab === 'bodegas' ? (
                   <>
-                    <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight md:hidden" style={{ color: palette.text }}>
+                    <h2 className="dashboard-mobile-inventory-title text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
                       {activeInventoryViewLabel}
                     </h2>
-                    <div className="hidden flex-wrap items-center gap-2 md:flex">
+                    <div className="dashboard-desktop-inventory-tabs flex-wrap items-center gap-2">
                       {inventoryViews.map(view => (
                         <button
                           key={view.id}
@@ -4826,10 +4826,11 @@ function Dashboard({ setView }) {
                     <label className="block">
                       <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">API Key Flow</span>
                       <input
-                        type="text"
+                        type="password"
                         value={paymentConfigData.apiKey}
                         onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
                         disabled={!canManagePaymentConfig || savingPaymentConfig}
+                        autoComplete="new-password"
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_API_KEY_FLOW"
                       />
@@ -4842,6 +4843,7 @@ function Dashboard({ setView }) {
                         value={paymentConfigData.secretKey}
                         onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
                         disabled={!canManagePaymentConfig || savingPaymentConfig}
+                        autoComplete="new-password"
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
                         placeholder="TU_SECRET_KEY_FLOW"
                       />
