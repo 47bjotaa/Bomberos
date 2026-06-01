@@ -85,17 +85,42 @@ export default function InicioView({
   }, [canViewBomberos, canViewVehiculos, canViewEpp, canViewInventory, canViewDonaciones]);
 
   // ── Derived KPI data ──────────────────────────────────────────────────────
-  const personalActivo = bomberos.filter(b =>
+  const bomberosActivos = bomberos.filter(b =>
     !b.estado || b.estado === 'Activo' || b.estado === 'activo'
-  ).length;
+  );
+  const personalActivo = bomberosActivos.length;
 
   const flotaTotal   = vehiculos.length;
   const flotaOp      = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('operativ')).length;
   const flotaMant    = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('mantenc')).length;
   const flotaFuera   = flotaTotal - flotaOp - flotaMant;
-  const pctOp        = flotaTotal ? Math.round((flotaOp / flotaTotal) * 100)   : 0;
-  const pctMant      = flotaTotal ? Math.round((flotaMant / flotaTotal) * 100) : 0;
-  const pctFuera     = flotaTotal ? 100 - pctOp - pctMant                      : 0;
+  const vehicleSummary = `${flotaOp} operativos / ${flotaMant} mant. / ${flotaFuera} fuera`;
+
+  const cargoColors = ['#38bdf8', '#10b981', '#f97316', '#eab308', '#ef4444', '#8b5cf6'];
+  const cargoRows = Object.entries(
+    bomberosActivos.reduce((acc, bombero) => {
+      const cargo = bombero.cargo || bombero.rol || bombero.nombreRol || 'Sin cargo';
+      acc[cargo] = (acc[cargo] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count], index) => ({
+      label,
+      count,
+      pct: personalActivo ? Math.round((count / personalActivo) * 100) : 0,
+      color: cargoColors[index % cargoColors.length],
+    }));
+
+  let cargoCursor = 0;
+  const cargoGradient = personalActivo > 0
+    ? `conic-gradient(${cargoRows.map((row) => {
+      const start = cargoCursor;
+      const end = cargoCursor + (row.count / personalActivo) * 100;
+      cargoCursor = end;
+      return `${row.color} ${start}% ${end}%`;
+    }).join(', ')})`
+    : 'conic-gradient(#374151 0% 100%)';
 
   // EPP vencimientos
   const today = new Date();
@@ -121,11 +146,6 @@ export default function InicioView({
   // Últimas 7 notificaciones como "alertas"
   const alertasPanel = notificaciones.slice(0, 5);
 
-  // ── Conical gradient for donut ─────────────────────────────────────────────
-  const conicGrad = flotaTotal > 0
-    ? `conic-gradient(#10b981 0% ${pctOp}%, #eab308 ${pctOp}% ${pctOp + pctMant}%, #ef4444 ${pctOp + pctMant}% 100%)`
-    : 'conic-gradient(#374151 0% 100%)';
-
   return (
     <div className="space-y-6 pb-10">
       {/* Header */}
@@ -139,10 +159,10 @@ export default function InicioView({
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}
           sub="Notificaciones pendientes"
           icon={<Icons.AlertTriangle />} color="#ef4444" />
-        {canViewBomberos && (
-          <KpiCard loading={loading} title="Personal activo" value={personalActivo}
-            sub={`${bomberos.length} bomberos en total`}
-            icon={<Icons.User />} color="#06b6d4" />
+        {canViewVehiculos && (
+          <KpiCard loading={loading} title="Vehículos" value={flotaTotal}
+            sub={vehicleSummary}
+            icon={<Icons.Truck />} color="#06b6d4" />
         )}
         {canViewDonaciones && (
           <KpiCard loading={loading} title="Recaudación"
@@ -160,21 +180,36 @@ export default function InicioView({
       {/* Gráficos fila 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Neon Visualizer: Flota */}
-        {canViewVehiculos && (
+        {/* Personal por cargo */}
+        {canViewBomberos && (
         <div className="bg-dark-surface border border-dark-border rounded-xl p-6 flex flex-col items-center">
           <div className="flex justify-between items-center w-full mb-4">
-            <h3 className="text-white font-semibold text-sm">Estado de Flota</h3>
+            <h3 className="text-white font-semibold text-sm">Personal por Cargo</h3>
             <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 px-2 py-0.5 rounded-full">
-              {flotaTotal} Vehículos
+              {personalActivo} activos
             </span>
           </div>
-          {loading ? <Spinner /> : flotaTotal === 0 ? (
-            <p className="text-text-muted text-sm py-8 text-center">Sin vehículos registrados</p>
+          {loading ? <Spinner /> : personalActivo === 0 ? (
+            <p className="text-text-muted text-sm py-8 text-center">Sin bomberos activos registrados</p>
           ) : (
             <>
-              {/* Neon SVG Chart */}
-              <div className="w-full relative h-[150px] mb-4 bg-dark-bg/40 rounded-lg border border-dark-border/50 overflow-hidden">
+              <div className="flex w-full flex-col items-center gap-5 rounded-lg border border-dark-border/50 bg-dark-bg/40 p-5">
+                <div
+                  className="relative flex h-40 w-40 items-center justify-center rounded-full shadow-[0_0_28px_rgba(56,189,248,0.12)]"
+                  style={{ background: cargoGradient }}
+                  aria-label="Distribución de personal activo por cargo"
+                >
+                  <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border border-dark-border bg-dark-surface text-center shadow-[inset_0_0_18px_rgba(0,0,0,0.25)]">
+                    <span className="text-3xl font-bold text-white">{personalActivo}</span>
+                    <span className="text-[11px] font-semibold uppercase text-text-muted">Activos</span>
+                  </div>
+                </div>
+                <button onClick={() => onNavigate?.('personal')}
+                  className="text-xs font-semibold text-brand-cyan transition-colors hover:text-white">
+                  Ver personal →
+                </button>
+              </div>
+              <div className="hidden">
                 <svg className="w-full h-full" viewBox="0 0 300 150" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
@@ -356,19 +391,14 @@ export default function InicioView({
                 </svg>
               </div>
 
-              {/* Legend with matching glow colors */}
               <div className="w-full space-y-2 text-sm mt-2">
-                {[
-                  { label: 'Operativos', n: flotaOp,   pct: pctOp,   color: '#10b981', glowClass: 'shadow-[0_0_8px_#10b981]' },
-                  { label: 'Mantención', n: flotaMant, pct: pctMant, color: '#eab308', glowClass: 'shadow-[0_0_8px_#eab308]' },
-                  { label: 'Fuera de Serv.', n: flotaFuera, pct: pctFuera, color: '#ef4444', glowClass: 'shadow-[0_0_8px_#ef4444]' },
-                ].map(r => (
+                {cargoRows.map(r => (
                   <div key={r.label} className="flex justify-between items-center text-xs">
                     <span className="flex items-center gap-2 text-text-muted">
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.color, boxShadow: `0 0 6px ${r.color}` }} />
                       {r.label}
                     </span>
-                    <span className="font-bold text-white">{r.n} ({r.pct}%)</span>
+                    <span className="font-bold text-white">{r.count} ({r.pct}%)</span>
                   </div>
                 ))}
               </div>
