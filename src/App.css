@@ -75,11 +75,11 @@
   }
 
   .light .hero-video-overlay {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.34) 0%, rgba(248, 250, 252, 0.72) 55%, var(--bg) 100%);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.28) 0%, rgba(248, 250, 252, 0.58) 54%, var(--bg) 100%);
   }
   .light .hero-video-bg {
-    opacity: 0.38;
-    filter: brightness(1.08) contrast(0.96) saturate(0.9);
+    opacity: 0.5;
+    filter: brightness(1.02) contrast(1.04) saturate(0.95);
   }
 
   .light .themed-ui .text-white,
@@ -681,10 +681,17 @@
     height: 48px;
     border-radius: 50%;
     opacity: 0.42;
+    cursor: pointer;
+    transform: scale(1);
+    transition: opacity 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
   }
-  .traffic-dot.active {
+  .traffic-dot.active,
+  .traffic-dot:hover,
+  .traffic-dot:focus-visible {
     opacity: 1;
     box-shadow: 0 0 30px currentColor;
+    filter: saturate(1.18) brightness(1.06);
+    transform: scale(1.08);
   }
   .traffic-dot.green { background: var(--green); color: var(--green); }
   .traffic-dot.yellow { background: var(--gold); color: var(--gold); }
@@ -1315,6 +1322,16 @@
   }
   .light .company-marquee {
     border-color: rgba(15, 23, 42, 0.14);
+    color: #FFFFFF;
+  }
+  .light .company-marquee p {
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .light .company-logo {
+    color: rgba(255, 255, 255, 0.94);
+  }
+  .light .company-logo svg {
+    color: rgba(226, 232, 240, 0.9);
   }
   .light .cta-section {
     background: linear-gradient(to top, #E2E8F0, transparent);

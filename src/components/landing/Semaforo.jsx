@@ -50,7 +50,7 @@ function Semaforo() {
           </div>
           <div className="semaforo-visual" aria-hidden="true">
             <div className="traffic-device">
-              <div className="traffic-dot green active"></div>
+              <div className="traffic-dot green"></div>
               <div className="traffic-dot yellow"></div>
               <div className="traffic-dot orange"></div>
               <div className="traffic-dot red"></div>
