@@ -82,7 +82,7 @@ function PlanesSuscripcion() {
         <div className="pricing-grid">
           {plans.map((plan, index) => (
             <article key={plan.id || plan.codigo || plan.nombre} className={`pricing-card reveal is-visible ${index === 1 ? 'pricing-card-featured delay-100' : index === 2 ? 'delay-200' : ''}`}>
-              {index === 1 && <span className="pricing-ribbon">Recomendado</span>}
+              {index === 1 && <span className="pricing-ribbon"><span>Recomendado</span></span>}
               <div className="pricing-icon">
                 <Icons.Finance />
               </div>

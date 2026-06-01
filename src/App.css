@@ -149,6 +149,7 @@
   @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
   @keyframes pulseGlow { 0%, 100% { text-shadow: 0 0 20px rgba(232, 55, 42, 0.5); } 50% { text-shadow: 0 0 40px rgba(232, 55, 42, 0.8); } }
   @keyframes pulseRing { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes ribbonPulse { 0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(255,255,255,0.25); } 50% { transform: scale(1.06); text-shadow: 0 0 18px rgba(255,255,255,0.72); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   .fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -300,9 +301,11 @@
     color: var(--text);
   }
 
-  .pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
-  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; display: flex; flex-direction: column; min-height: 360px; box-shadow: 0 18px 42px rgba(0,0,0,0.28); }
-  .pricing-card-featured { border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 22px 55px rgba(56, 189, 248, 0.12); }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.75rem; align-items: stretch; }
+  .pricing-card { background: linear-gradient(180deg, rgba(19, 29, 53, 0.98), rgba(10, 15, 30, 0.98)); border: 1px solid var(--border); border-radius: 8px; padding: 2.25rem; display: flex; flex-direction: column; min-height: 360px; box-shadow: 0 18px 42px rgba(0,0,0,0.28); transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+  .pricing-card:hover { transform: translateY(-6px); border-color: rgba(255, 107, 53, 0.28); box-shadow: 0 24px 58px rgba(0,0,0,0.38); }
+  .pricing-card-featured { border-color: rgba(255, 107, 53, 0.55); box-shadow: 0 28px 70px rgba(232, 55, 42, 0.18), 0 0 0 1px rgba(255, 107, 53, 0.12); transform: translateY(-10px); }
+  .pricing-card-featured:hover { transform: translateY(-16px); box-shadow: 0 34px 80px rgba(232, 55, 42, 0.26), 0 0 0 1px rgba(255, 107, 53, 0.2); }
   .pricing-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--cyan); background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.18); margin-bottom: 1.25rem; }
   .pricing-icon svg { width: 24px; height: 24px; }
   .pricing-title { font-size: 1.55rem; font-weight: 700; margin-bottom: 0.65rem; color: var(--text); }
@@ -1059,18 +1062,47 @@
   }
   .pricing-card {
     position: relative;
+    overflow: hidden;
   }
   .pricing-ribbon {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    border-radius: 999px;
-    padding: 0.25rem 0.65rem;
-    color: var(--cyan);
-    background: rgba(56, 189, 248, 0.1);
-    font-size: 0.72rem;
-    font-weight: 800;
+    top: 1.15rem;
+    right: -2.75rem;
+    width: 12rem;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.22);
+    padding: 0.38rem 0.65rem;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--red), var(--ember));
+    box-shadow: 0 10px 24px rgba(232, 55, 42, 0.35);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    transform: rotate(38deg);
+    transform-origin: center;
+  }
+  .pricing-ribbon::before,
+  .pricing-ribbon::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    border-top: 7px solid #9F1E16;
+  }
+  .pricing-ribbon::before {
+    left: 0;
+    border-left: 7px solid transparent;
+  }
+  .pricing-ribbon::after {
+    right: 0;
+    border-right: 7px solid transparent;
+  }
+  .pricing-ribbon span {
+    display: inline-block;
+    animation: ribbonPulse 1.8s ease-in-out infinite;
   }
   .footer-social {
     color: var(--muted);
@@ -1225,10 +1257,18 @@
   .light .card-icon,
   .light .module-tag,
   .light .section-eyebrow,
-  .light .pricing-icon,
-  .light .pricing-ribbon {
+  .light .pricing-icon {
     background: rgba(56, 189, 248, 0.1);
     border-color: rgba(2, 132, 199, 0.22);
+  }
+  .light .pricing-card-featured {
+    border-color: rgba(232, 55, 42, 0.36) !important;
+    box-shadow: 0 28px 70px rgba(232, 55, 42, 0.14), 0 0 0 1px rgba(255, 107, 53, 0.12) !important;
+  }
+  .light .pricing-ribbon {
+    border-color: rgba(255,255,255,0.4);
+    background: linear-gradient(135deg, var(--red), var(--ember));
+    color: #FFFFFF;
   }
   .light .pricing-features span {
     background: rgba(15, 23, 42, 0.03);
@@ -1318,20 +1358,22 @@
   }
   .light .company-marquee,
   .light .company-marquee::before {
-    background: #0F172A;
+    background: #FFFFFF;
   }
   .light .company-marquee {
-    border-color: rgba(15, 23, 42, 0.14);
-    color: #FFFFFF;
+    border-top-color: rgba(15, 23, 42, 0.1);
+    border-bottom-color: rgba(15, 23, 42, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 34px rgba(15, 23, 42, 0.05);
+    color: #0F172A;
   }
   .light .company-marquee p {
-    color: rgba(255, 255, 255, 0.72);
+    color: #475569;
   }
   .light .company-logo {
-    color: rgba(255, 255, 255, 0.94);
+    color: #0F172A;
   }
   .light .company-logo svg {
-    color: rgba(226, 232, 240, 0.9);
+    color: #0284C7;
   }
   .light .cta-section {
     background: linear-gradient(to top, #E2E8F0, transparent);
