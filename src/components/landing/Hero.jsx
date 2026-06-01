@@ -29,8 +29,8 @@ function Hero() {
       className="hero landing-hero"
       style={{
         '--dock-progress': dockProgress,
-        '--title-opacity': Math.max(0, 1 - (dockProgress * 2.8)),
-        '--title-scale': 1 - (dockProgress * 0.72),
+        '--title-opacity': 1,
+        '--title-scale': 1 - (dockProgress * 0.7),
         '--title-lift': `${dockProgress * -108}px`,
         '--card-lift': `${dockProgress * -34}px`,
       }}

@@ -27,10 +27,6 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
           <a href="#plataforma" onClick={closeMenu}>Vista mini</a>
         </div>
 
-        <a href="#" className="nav-brand-word" onClick={closeMenu} aria-label="CuartelAmigo">
-          CuartelAmigo
-        </a>
-
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
           <a href="#solucion" onClick={closeMenu}>Módulos</a>
           <a href="#plataforma" onClick={closeMenu}>Vista mini</a>
