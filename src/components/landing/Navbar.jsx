@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { getAppUrl } from '../../utils/constants';
-import LogoCuartelAmigo from '../ui/LogoCuartelAmigo';
 
 function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
   const { theme, toggleTheme } = useTheme();
@@ -24,9 +23,6 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
     <nav className={`navbar landing-nav ${scrolled ? 'scrolled title-docked' : ''}`}>
       <div className="container nav-shell">
         <div className="nav-side nav-side-left">
-          <a href="#" className="nav-logo" onClick={closeMenu} aria-label="Ir al inicio">
-            <LogoCuartelAmigo size={72} />
-          </a>
           <a href="#solucion" onClick={closeMenu}>Módulos</a>
           <a href="#plataforma" onClick={closeMenu}>Vista mini</a>
         </div>
