@@ -9,7 +9,8 @@ function Hero() {
 
     const updateProgress = () => {
       frameId = 0;
-      setDockProgress(Math.min(window.scrollY / 170, 1));
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      setDockProgress(Math.min(scrollTop / 170, 1));
     };
 
     const handleScroll = () => {
@@ -18,30 +19,33 @@ function Hero() {
 
     updateProgress();
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
       if (frameId) window.cancelAnimationFrame(frameId);
     };
   }, []);
 
+  const titleScale = 1 - (dockProgress * 0.72);
+  const titleTop = 130 - (dockProgress * 98);
+  const titleTransform = `translateX(-50%) scale(${titleScale})`;
+  const cardTransform = `translateY(${-34 * dockProgress}px)`;
+
   return (
-    <section
-      className="hero landing-hero"
-      style={{
-        '--dock-progress': dockProgress,
-        '--title-opacity': 1,
-        '--title-scale': 1 - (dockProgress * 0.7),
-        '--title-lift': `${dockProgress * -108}px`,
-        '--card-lift': `${dockProgress * -34}px`,
-      }}
-    >
+    <section className="hero landing-hero">
       <video autoPlay loop muted playsInline className="hero-video-bg">
         <source src="/images/b_a_b_af_ec_e_e_b_c_d_b_e_b_mp_.mp4" type="video/mp4" />
       </video>
       <div className="hero-video-overlay"></div>
       <div className="container hero-layout">
-        <h1 className="hero-brand-title reveal is-visible">CuartelAmigo</h1>
-        <div className="hero-info-card reveal is-visible delay-100">
+        <h1
+          className="hero-brand-title reveal is-visible"
+          style={{ top: `${titleTop}px`, transform: titleTransform }}
+        >
+          CuartelAmigo
+        </h1>
+        <div className="hero-info-card reveal is-visible delay-100" style={{ transform: cardTransform }}>
           <h2>Orden operativo para cada guardia, bodega y compañía.</h2>
           <p>
             Controla inventario, EPP, vehículos, personal, donaciones y reportes desde una plataforma diseñada para el ritmo real del cuartel.

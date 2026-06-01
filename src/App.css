@@ -511,15 +511,11 @@
     text-align: center;
     text-shadow: 0 14px 38px rgba(0,0,0,0.46);
     max-width: 100%;
-    opacity: var(--title-opacity);
-    transform:
-      translateX(-50%)
-      translateY(var(--title-lift))
-      scale(var(--title-scale));
     transform-origin: top center;
-    will-change: transform, opacity;
+    will-change: transform, top;
     pointer-events: none;
     white-space: nowrap;
+    transition: none;
   }
   .hero-info-card {
     width: min(580px, 100%);
@@ -530,8 +526,7 @@
     backdrop-filter: blur(12px);
     padding: 1.45rem;
     box-shadow: 0 20px 55px rgba(0,0,0,0.32);
-    transform: translateY(var(--card-lift));
-    transition: transform 0.08s linear;
+    transition: none;
   }
   .hero-info-card h2 {
     margin: 0 0 0.8rem;
