@@ -526,10 +526,10 @@
     border-color: rgba(255,255,255,0.14);
   }
   .landing-hero {
-    min-height: 820px;
+    min-height: max(920px, calc(100vh + 80px));
     display: flex;
     align-items: center;
-    padding: 120px 0 72px;
+    padding: 120px 0 150px;
   }
   .hero-layout {
     display: flex;
@@ -1405,7 +1405,7 @@
     .landing-nav.title-docked .nav-logo { opacity: 1; pointer-events: auto; transform: none; }
     .navbar .nav-btn, .nav-cta { display: none; }
     .mobile-menu-btn { display: block; }
-    .landing-hero { min-height: 720px; padding: 112px 0 58px; }
+    .landing-hero { min-height: max(780px, calc(100vh + 48px)); padding: 112px 0 96px; }
     .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); }
     .hero-brand-title { top: 116px; font-size: clamp(3.9rem, 19vw, 6.9rem); text-align: center; }
     .hero-info-card { padding: 1rem; }
