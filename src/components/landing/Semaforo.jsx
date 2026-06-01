@@ -13,9 +13,9 @@ function Semaforo() {
       desc: 'Material inoperativo que requiere revisión técnica urgente o baja.',
     },
     {
-      tone: 'yellow worn',
-      title: 'En Mantención',
-      label: 'Amarillo desgastado',
+      tone: 'yellow',
+      title: 'En Mantención/Desgastado',
+      label: 'Amarillo',
       desc: 'Equipo en reparación, revisión preventiva o con desgaste visible controlado.',
     },
     {
@@ -27,8 +27,8 @@ function Semaforo() {
   ];
 
   return (
-    <section id="semaforo" className="section container reveal">
-      <div className="semaforo-wrap">
+    <section id="semaforo" className="section container">
+      <div className="semaforo-wrap reveal">
         <div className="grid-2 items-center">
           <div>
             <span className="section-eyebrow">Estados claros</span>
@@ -51,13 +51,9 @@ function Semaforo() {
           <div className="semaforo-visual" aria-hidden="true">
             <div className="traffic-device">
               <div className="traffic-dot green active"></div>
-              <div className="traffic-dot yellow worn"></div>
+              <div className="traffic-dot yellow"></div>
               <div className="traffic-dot orange"></div>
               <div className="traffic-dot red"></div>
-            </div>
-            <div className="traffic-note">
-              <strong>Lectura inmediata</strong>
-              <span>Estado visible por material, ubicación y responsable.</span>
             </div>
           </div>
         </div>
