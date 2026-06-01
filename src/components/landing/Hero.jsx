@@ -10,9 +10,9 @@ function Hero() {
       <div className="container hero-layout">
         <h1 className="hero-brand-title reveal is-visible">CuartelAmigo</h1>
         <div className="hero-info-card reveal is-visible delay-100">
-          <h2>Gestión logística para cuarteles que no pueden improvisar.</h2>
+          <h2>Orden operativo para cada guardia, bodega y compañía.</h2>
           <p>
-            Inventario, EPP, vehículos, personal, donaciones y reportes en una plataforma pensada para mando, bodega y administración.
+            Controla inventario, EPP, vehículos, personal, donaciones y reportes desde una plataforma diseñada para el ritmo real del cuartel.
           </p>
           <div className="hero-actions">
             <a href="#planes" className="btn btn-primary">Ver planes <Icons.ChevronRight /></a>

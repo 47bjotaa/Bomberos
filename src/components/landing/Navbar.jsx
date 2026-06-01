@@ -10,7 +10,7 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 120);
+      setScrolled(window.scrollY > 300);
     };
 
     handleScroll();
