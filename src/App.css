@@ -492,7 +492,6 @@
   .hero-layout {
     display: block;
     position: relative;
-    z-index: 1;
     padding-top: clamp(250px, 24vw, 315px);
   }
   .hero-brand-title {
