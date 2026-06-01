@@ -741,10 +741,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   return (
     <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
       <div className="mx-auto max-w-6xl">
-        <div className="mb-7">
-          <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Reportes</h3>
-        </div>
-
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
         {canViewAdvancedReports && (
         <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>

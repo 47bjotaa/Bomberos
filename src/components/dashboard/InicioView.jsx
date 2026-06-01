@@ -148,12 +148,6 @@ export default function InicioView({
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-white">Panel de Control</h2>
-        <p className="text-text-muted text-sm mt-1">Resumen operativo en tiempo real del cuartel.</p>
-      </div>
-
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}

@@ -3678,6 +3678,30 @@ function Dashboard({ setView }) {
                       ))}
                     </div>
                   </>
+                ) : activeTab === 'donaciones' ? (
+                  <>
+                    <h2 className="dashboard-mobile-inventory-title text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
+                      Donaciones y Campañas
+                    </h2>
+                    <div className="dashboard-desktop-inventory-tabs flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectDonacionesView('campanas')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${donacionesView === 'campanas' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                      >
+                        Campañas
+                      </button>
+                      {(canViewPaymentConfig || canManagePaymentConfig) && (
+                        <button
+                          type="button"
+                          onClick={() => selectDonacionesView('configuracion')}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${donacionesView === 'configuracion' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                        >
+                          Configuración de pago
+                        </button>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <h2 className="text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
                     {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? (personalView === 'importar' ? 'Importar personal' : 'Personal del Cuartel') : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
@@ -4634,24 +4658,6 @@ function Dashboard({ setView }) {
                 </div>
               )}
               <div className={hasProSubscription ? '' : 'pointer-events-none select-none opacity-25 blur-[1px]'} aria-hidden={!hasProSubscription || loadingSubscription}>
-              <div className="mb-6 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => selectDonacionesView('campanas')}
-                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'campanas' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
-                >
-                  Campañas
-                </button>
-                {(canViewPaymentConfig || canManagePaymentConfig) && (
-                  <button
-                    type="button"
-                    onClick={() => selectDonacionesView('configuracion')}
-                    className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${donacionesView === 'configuracion' ? 'border-brand-red/30 bg-brand-red/10 text-brand-red' : 'border-dark-border bg-dark-surface text-text-muted hover:bg-brand-red/10 hover:text-brand-red'}`}
-                  >
-                    Configuración de pago
-                  </button>
-                )}
-              </div>
 
               {donacionesView === 'campanas' && selectedCampanaDetalle ? (
                 <div>
@@ -4878,11 +4884,6 @@ function Dashboard({ setView }) {
                 </form>
               ) : (
                 <>
-              <div className="mb-8">
-                <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Donaciones y Campañas</h3>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona campañas de recaudación de fondos y genera enlaces de pago.</p>
-              </div>
-
               {loadingCampanas ? (
                 <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
                   Cargando campañas de donaciones...
@@ -5456,18 +5457,6 @@ function Dashboard({ setView }) {
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'personal' && personalView === 'listado' && (
             <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
               <div className="mx-auto max-w-6xl">
-                <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 p-2 text-brand-cyan">
-                      <Icons.User />
-                    </div>
-                    <div>
-                      <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Personal del Cuartel</h3>
-                      <p className="mt-2 text-sm" style={{ color: palette.muted }}>Gestiona los bomberos, sus cargos y datos de contacto.</p>
-                    </div>
-                  </div>
-                </div>
-
                 {loadingBomberosPersonal ? (
                   <div className="rounded-xl border px-5 py-16 text-center" style={{ borderColor: palette.border, background: palette.card, color: palette.muted }}>
                     Cargando personal...
