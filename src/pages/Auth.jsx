@@ -96,10 +96,11 @@ function AuthView({ initialMode = 'register' }) {
     return `${digits.slice(0, -1)}-${digits.slice(-1)}`;
   };
 
-  const navigateToMode = (nextMode) => {
+  const navigateToMode = (nextMode, options = {}) => {
     const nextPath = authPathByMode[nextMode] || '/login';
     const nextUrl = getAppUrl(nextPath);
     const nextUrlObject = nextUrl.startsWith('http') ? new URL(nextUrl) : null;
+    const nextSuccessMessage = options.successMessage || '';
 
     if (nextUrlObject && nextUrlObject.origin !== window.location.origin) {
       window.location.href = nextUrl;
@@ -113,7 +114,9 @@ function AuthView({ initialMode = 'register' }) {
     setMode(nextMode);
     setStep(1);
     setErrors({});
-    setSuccessMessage('');
+    setSuccessMessage(nextSuccessMessage);
+    setFlowRegistration(null);
+    setRegistrationComplete(false);
     setTurnstileToken('');
     setTurnstileKey(key => key + 1);
   };
@@ -309,6 +312,14 @@ function AuthView({ initialMode = 'register' }) {
           
           const registerResponse = await authService.register(userData);
           console.log("Registro exitoso en BD");
+
+          if (selectedPlan && selectedPlan.precioMensual <= 0) {
+            navigateToMode('login', {
+              successMessage: 'Cuenta creada con exito. Ya puedes iniciar sesion.',
+            });
+            return;
+          }
+
           const nextFlowRegistration = getFlowRegistrationData(registerResponse);
           if (nextFlowRegistration) {
             if (nextFlowRegistration.url) {
@@ -577,6 +588,7 @@ function AuthView({ initialMode = 'register' }) {
             <p className="text-text-muted text-sm">Ingresa tus credenciales para acceder</p>
           </div>
           {errors.api && <div className="p-3 mb-4 bg-brand-red/10 border border-brand-red/30 rounded text-brand-red text-sm text-center">{errors.api}</div>}
+          {successMessage && <div className="p-3 mb-4 bg-brand-green/10 border border-brand-green/30 rounded text-brand-green text-sm text-center">{successMessage}</div>}
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-main)] mb-1">RUT</label>

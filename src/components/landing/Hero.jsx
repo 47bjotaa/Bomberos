@@ -1,8 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 
+const getTitleMetrics = () => {
+  if (typeof window === 'undefined') {
+    return { initialTop: 170, dockedTop: -27 };
+  }
+
+  const width = window.innerWidth || 1440;
+  const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const minTitleSize = 4.9 * rootFontSize;
+  const maxTitleSize = 9.9 * rootFontSize;
+  const responsiveTitleSize = width * 0.108;
+  const titleSize = Math.min(Math.max(responsiveTitleSize, minTitleSize), maxTitleSize);
+  const titleHeight = titleSize * 0.82;
+  const navCenter = width <= 768 ? 40 : 38;
+  const dockedTop = navCenter - (titleHeight / 2);
+  const initialTop = width <= 768 ? 116 : Math.min(Math.max(width * 0.088, 132), 170);
+
+  return { initialTop, dockedTop };
+};
+
 function Hero() {
   const [isDocked, setIsDocked] = useState(false);
+  const [titleMetrics, setTitleMetrics] = useState(getTitleMetrics);
 
   useEffect(() => {
     const updateDockState = () => {
@@ -14,18 +34,25 @@ function Hero() {
       window.requestAnimationFrame(updateDockState);
     };
 
+    const handleResize = () => {
+      window.requestAnimationFrame(() => {
+        setTitleMetrics(getTitleMetrics());
+        updateDockState();
+      });
+    };
+
     updateDockState();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
   const dockProgress = isDocked ? 1 : 0;
   const titleScale = 1 - (dockProgress * 0.78);
-  const titleTop = 170 - (dockProgress * 210);
+  const titleTop = titleMetrics.initialTop - (dockProgress * (titleMetrics.initialTop - titleMetrics.dockedTop));
   const titleTransform = `translateX(-50%) scale(${titleScale})`;
   const cardTransform = `translateY(${-34 * dockProgress}px)`;
 

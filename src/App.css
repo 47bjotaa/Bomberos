@@ -641,8 +641,8 @@
     }
   }
   .hero-info-card {
-    width: min(580px, 100%);
-    margin-right: clamp(-4.5rem, -4vw, -1rem);
+    width: min(580px, calc(100% - 1rem));
+    margin-right: clamp(-3rem, -2.2vw, -0.75rem);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 8px;
     background: rgba(8, 12, 24, 0.78);
@@ -1598,6 +1598,19 @@
     color: #38BDF8;
   }
 
+  @media (max-width: 1280px) {
+    .hero-layout {
+      justify-content: center;
+      padding-inline: clamp(1rem, 4vw, 2rem);
+    }
+    .hero-info-card {
+      width: min(540px, 100%);
+      margin-right: 0;
+    }
+    .hero-info-card h2 {
+      font-size: clamp(1.4rem, 2.6vw, 2rem);
+    }
+  }
   @media (max-width: 1024px) {
     .hero-title { font-size: clamp(2.5rem, 5vw + 1rem, 3.5rem); }
     .nav-side > a:not(.nav-logo):not(.nav-cta) { display: none; }
@@ -1617,9 +1630,9 @@
     .navbar .nav-btn, .nav-cta { display: none; }
     .mobile-menu-btn { display: block; }
     .landing-hero { min-height: max(780px, calc(100vh + 48px)); padding: 112px 0 96px; }
-    .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); }
+    .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); padding-inline: 1rem; }
     .hero-brand-title { top: 116px; font-size: clamp(3.2rem, 16vw, 6rem); text-align: center; }
-    .hero-info-card { margin-right: 0; padding: 1rem; }
+    .hero-info-card { width: 100%; margin-right: 0; padding: 1rem; }
     .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); }
     .hero-subtitle { font-size: 1.1rem; }
     .grid-4, .grid-3, .grid-2, .pricing-grid { grid-template-columns: 1fr; }
