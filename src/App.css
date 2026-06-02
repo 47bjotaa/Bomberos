@@ -607,27 +607,31 @@
     background:
       linear-gradient(108deg,
         transparent 0%,
-        transparent 48.2%,
-        rgba(255, 228, 150, 0.42) 49.2%,
-        rgba(255, 255, 255, 0.92) 50%,
-        rgba(255, 142, 43, 0.38) 50.8%,
-        transparent 52%,
+        transparent 45.5%,
+        rgba(255, 152, 44, 0.16) 47%,
+        rgba(255, 228, 150, 0.62) 48.6%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(255, 196, 96, 0.72) 51.4%,
+        rgba(255, 112, 24, 0.22) 53%,
+        transparent 55.5%,
         transparent 100%);
-    background-size: 420% 100%;
+    background-size: 340% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     mix-blend-mode: normal;
-    filter: none;
-    animation: heroEdgeShine 4.2s cubic-bezier(0.42, 0, 0.18, 1) infinite;
+    filter:
+      drop-shadow(0 0 7px rgba(255,255,255,0.55))
+      drop-shadow(0 0 14px rgba(255,142,43,0.42));
+    animation: heroEdgeShine 6.6s cubic-bezier(0.42, 0, 0.18, 1) infinite;
     pointer-events: none;
   }
   @keyframes heroEdgeShine {
-    0%, 22% { background-position: 150% 0; opacity: 0; }
-    30% { opacity: 0.88; }
-    55% { background-position: 35% 0; opacity: 0.88; }
-    73% { background-position: -55% 0; opacity: 0.18; }
-    82%, 100% { background-position: -55% 0; opacity: 0; }
+    0%, 16% { background-position: 150% 0; opacity: 0; }
+    24% { opacity: 1; }
+    62% { background-position: 15% 0; opacity: 1; }
+    82% { background-position: -65% 0; opacity: 0.2; }
+    90%, 100% { background-position: -65% 0; opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     .hero-logo-metal::after {
