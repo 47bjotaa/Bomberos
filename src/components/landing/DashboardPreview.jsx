@@ -8,19 +8,20 @@ const dashboardViews = {
     subtitle: 'Resumen operativo en tiempo real del cuartel.',
     kpis: [
       { label: 'Alertas sin leer', value: '0', sub: 'Notificaciones pendientes', icon: <Icons.AlertTriangle /> },
-      { label: 'Personal activo', value: '24', sub: '24 bomberos en total', icon: <Icons.User /> },
+      { label: 'VehÃ­culos', value: '4', sub: '3 operativos / 1 mant. / 0 fuera', icon: <Icons.Truck /> },
       { label: 'Recaudación', value: '68%', sub: 'Campaña activa', icon: <Icons.Finance /> },
       { label: 'Stock crítico', value: '2', sub: 'Materiales bajo mínimo', icon: <Icons.Inventory /> },
     ],
     panels: [
       {
-        type: 'chart',
-        title: 'Estado de Flota',
+        type: 'pie',
+        title: 'Personal por Cargo',
         badge: '4 Vehículos',
         legend: [
-          ['green', 'Operativos', '3 (75%)'],
+          ['cyan', 'Capitan', '1 (4%)'],
           ['yellow', 'Mantención', '1 (25%)'],
-          ['red', 'Fuera de Serv.', '0 (0%)'],
+          ['orange', 'Voluntarios', '18 (75%)'],
+          ['yellow', 'Conductores', '2 (8%)'],
         ],
       },
       {
@@ -164,6 +165,37 @@ const dashboardViews = {
 };
 
 function MiniPanel({ panel }) {
+  if (panel.type === 'pie') {
+    const cargoRows = [
+      ['cyan', 'Capitan', '1 (4%)'],
+      ['green', 'Tenientes', '3 (13%)'],
+      ['orange', 'Voluntarios', '18 (75%)'],
+      ['yellow', 'Conductores', '2 (8%)'],
+    ];
+
+    return (
+      <div className="mini-chart mini-personal-chart">
+        <div className="mini-chart-head">
+          <strong>Personal por Cargo</strong>
+          <span>24 activos</span>
+        </div>
+        <div className="mini-pie-wrap">
+          <div className="mini-pie" aria-label="Personal activo separado por cargos">
+            <div>
+              <strong>24</strong>
+              <span>Activos</span>
+            </div>
+          </div>
+        </div>
+        <div className="mini-legend mini-legend-compact">
+          {cargoRows.map(([tone, label, value]) => (
+            <span key={label}><b className={tone}></b>{label}<em>{value}</em></span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (panel.type === 'chart') {
     return (
       <div className="mini-chart">

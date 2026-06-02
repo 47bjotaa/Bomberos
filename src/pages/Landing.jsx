@@ -26,7 +26,7 @@ function Landing() {
   }, []);
 
   return (
-    <div className="landing-page fade-in">
+    <div className="landing-page landing-dark-only fade-in">
       <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
       <Hero />
       <CompanyMarquee />

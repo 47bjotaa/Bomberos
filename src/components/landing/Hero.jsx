@@ -25,7 +25,7 @@ function Hero() {
 
   const dockProgress = isDocked ? 1 : 0;
   const titleScale = 1 - (dockProgress * 0.78);
-  const titleTop = 130 - (dockProgress * 170);
+  const titleTop = 170 - (dockProgress * 210);
   const titleTransform = `translateX(-50%) scale(${titleScale})`;
   const cardTransform = `translateY(${-34 * dockProgress}px)`;
 

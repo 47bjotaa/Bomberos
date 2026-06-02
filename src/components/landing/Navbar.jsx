@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
-import { useTheme } from '../../context/ThemeContext';
 import { getAppUrl } from '../../utils/constants';
 
 function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
-  const { theme, toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -37,13 +35,6 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
         <div className="nav-side nav-side-right">
           <a href="#planes" onClick={closeMenu}>Planes</a>
           <a href={getAppUrl('/login')} className="nav-cta">Ingresar</a>
-          <button
-            onClick={toggleTheme}
-            className="icon-btn theme-toggle"
-            title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
-          >
-            {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
-          </button>
           <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir menú">
             <Icons.Menu />
           </button>
