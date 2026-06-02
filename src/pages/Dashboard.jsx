@@ -725,18 +725,6 @@ function Dashboard({ setView }) {
   }, [activeTab, subscriptionChecked, hasProSubscription]);
 
   useEffect(() => {
-    if (
-      activeTab === 'donaciones'
-      && donacionesView === 'configuracion'
-      && subscriptionChecked
-      && hasProSubscription
-      && (canViewPaymentConfig || canManagePaymentConfig)
-    ) {
-      fetchPaymentConfig();
-    }
-  }, [activeTab, donacionesView, subscriptionChecked, hasProSubscription, canViewPaymentConfig, canManagePaymentConfig]);
-
-  useEffect(() => {
     if (activeTab === 'personal') {
       fetchBomberosPersonal();
     }
@@ -1054,6 +1042,19 @@ function Dashboard({ setView }) {
   const canManagePaymentConfig = can(PERMISSIONS.GESTIONAR_CONFIGURACION_PAGO);
   const canManageMaintenances = can(PERMISSIONS.GESTIONAR_MANTENCIONES);
   const canManageObservations = can(PERMISSIONS.GESTIONAR_OBSERVACIONES);
+
+  useEffect(() => {
+    if (
+      activeTab === 'donaciones'
+      && donacionesView === 'configuracion'
+      && subscriptionChecked
+      && hasProSubscription
+      && (canViewPaymentConfig || canManagePaymentConfig)
+    ) {
+      fetchPaymentConfig();
+    }
+  }, [activeTab, donacionesView, subscriptionChecked, hasProSubscription, canViewPaymentConfig, canManagePaymentConfig]);
+
   const headerProfileName = loadingBomberoProfile
     ? 'Cargando...'
     : formatProfileName(bomberoProfile?.nombre || sessionUser.email || 'Usuario');
