@@ -14,6 +14,18 @@ const authPathByMode = {
 };
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+const FREE_PLAN_SUCCESS_MESSAGE = 'Cuenta creada con exito. Ya puedes iniciar sesion.';
+
+const consumeStoredSuccessMessage = () => {
+  if (typeof window === 'undefined') return '';
+
+  const message = window.sessionStorage.getItem('authSuccessMessage') || '';
+  if (message) {
+    window.sessionStorage.removeItem('authSuccessMessage');
+  }
+
+  return message;
+};
 
 const getArrayPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -58,7 +70,9 @@ function AuthView({ initialMode = 'register' }) {
   const [mode, setMode] = useState(initialMode);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(() => (
+    initialMode === 'login' ? consumeStoredSuccessMessage() : ''
+  ));
   const [cuerpoSearch, setCuerpoSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -124,7 +138,7 @@ function AuthView({ initialMode = 'register' }) {
   useEffect(() => {
     setMode(initialMode);
     setErrors({});
-    setSuccessMessage('');
+    setSuccessMessage(initialMode === 'login' ? consumeStoredSuccessMessage() : '');
     setFlowRegistration(null);
     setRegistrationComplete(false);
     setTurnstileToken('');
@@ -314,9 +328,8 @@ function AuthView({ initialMode = 'register' }) {
           console.log("Registro exitoso en BD");
 
           if (selectedPlan && selectedPlan.precioMensual <= 0) {
-            navigateToMode('login', {
-              successMessage: 'Cuenta creada con exito. Ya puedes iniciar sesion.',
-            });
+            window.sessionStorage.setItem('authSuccessMessage', FREE_PLAN_SUCCESS_MESSAGE);
+            window.location.href = getAppUrl('/login');
             return;
           }
 
