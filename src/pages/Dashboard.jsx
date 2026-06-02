@@ -44,6 +44,36 @@ const DEFAULT_PAYMENT_CONFIG = {
   activo: true,
 };
 
+const readPaymentConfigValue = (source = {}, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null) return String(value);
+  }
+  return fallback;
+};
+
+const normalizePaymentConfig = (payload = {}) => {
+  const source = Array.isArray(payload)
+    ? payload[0] || {}
+    : payload?.data || payload?.result || payload?.value || payload?.configuracion || payload?.config || payload;
+
+  return {
+    idConfiguracionPago: readPaymentConfigValue(source, ['idConfiguracionPago', 'IdConfiguracionPago'], ''),
+    apiKey: readPaymentConfigValue(source, ['apiKey', 'ApiKey', 'apiKeyFlow', 'ApiKeyFlow', 'flowApiKey'], DEFAULT_PAYMENT_CONFIG.apiKey),
+    secretKey: readPaymentConfigValue(source, ['secretKey', 'SecretKey', 'secretKeyFlow', 'SecretKeyFlow', 'flowSecretKey'], DEFAULT_PAYMENT_CONFIG.secretKey),
+    secretKeyConfigurada: source?.secretKeyConfigurada ?? source?.SecretKeyConfigurada ?? false,
+    commerceId: readPaymentConfigValue(source, ['commerceId', 'CommerceId', 'idComercio', 'IdComercio'], DEFAULT_PAYMENT_CONFIG.commerceId),
+    ambiente: readPaymentConfigValue(source, ['ambiente', 'Ambiente', 'environment', 'Environment'], DEFAULT_PAYMENT_CONFIG.ambiente),
+    urlApi: readPaymentConfigValue(source, ['urlApi', 'UrlApi', 'apiUrl', 'ApiUrl'], DEFAULT_PAYMENT_CONFIG.urlApi),
+    urlConfirmacion: readPaymentConfigValue(source, ['urlConfirmacion', 'UrlConfirmacion', 'confirmationUrl', 'ConfirmationUrl'], DEFAULT_PAYMENT_CONFIG.urlConfirmacion),
+    urlRetorno: readPaymentConfigValue(source, ['urlRetorno', 'UrlRetorno', 'returnUrl', 'ReturnUrl'], DEFAULT_PAYMENT_CONFIG.urlRetorno),
+    paymentMethodDefault: readPaymentConfigValue(source, ['paymentMethodDefault', 'PaymentMethodDefault', 'metodoPagoDefault', 'MetodoPagoDefault'], DEFAULT_PAYMENT_CONFIG.paymentMethodDefault),
+    monedaDefault: readPaymentConfigValue(source, ['monedaDefault', 'MonedaDefault', 'currency', 'Currency'], DEFAULT_PAYMENT_CONFIG.monedaDefault),
+    timeoutSegundos: readPaymentConfigValue(source, ['timeoutSegundos', 'TimeoutSegundos', 'timeoutSeconds', 'TimeoutSeconds'], DEFAULT_PAYMENT_CONFIG.timeoutSegundos),
+    activo: source?.activo ?? source?.Activo ?? source?.active ?? source?.Active ?? DEFAULT_PAYMENT_CONFIG.activo,
+  };
+};
+
 const normalizeSubscriptionCode = (value) => String(value || '').trim().toLowerCase();
 
 const getSubscriptionCodeFromObject = (source = {}) => {
@@ -553,6 +583,8 @@ function Dashboard({ setView }) {
   const [filtroFechaInicioCampana, setFiltroFechaInicioCampana] = useState('');
   const [filtroFechaFinCampana, setFiltroFechaFinCampana] = useState('');
   const [paymentConfigData, setPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
+  const [savedPaymentConfigData, setSavedPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
+  const [loadingPaymentConfig, setLoadingPaymentConfig] = useState(false);
   const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
   const [paymentConfigError, setPaymentConfigError] = useState('');
   const [paymentConfigSuccess, setPaymentConfigSuccess] = useState('');
@@ -690,6 +722,18 @@ function Dashboard({ setView }) {
       fetchCampanasDonaciones();
     }
   }, [activeTab, subscriptionChecked, hasProSubscription]);
+
+  useEffect(() => {
+    if (
+      activeTab === 'donaciones'
+      && donacionesView === 'configuracion'
+      && subscriptionChecked
+      && hasProSubscription
+      && (canViewPaymentConfig || canManagePaymentConfig)
+    ) {
+      fetchPaymentConfig();
+    }
+  }, [activeTab, donacionesView, subscriptionChecked, hasProSubscription, canViewPaymentConfig, canManagePaymentConfig]);
 
   useEffect(() => {
     if (activeTab === 'personal') {
@@ -2076,6 +2120,34 @@ function Dashboard({ setView }) {
     }
   };
 
+  const fetchPaymentConfig = async () => {
+    if (!hasProSubscription || (!canViewPaymentConfig && !canManagePaymentConfig)) return;
+
+    setLoadingPaymentConfig(true);
+    setPaymentConfigError('');
+    setPaymentConfigSuccess('');
+
+    try {
+      const data = await apiFetch('/api/configuracionespagos');
+      const baseConfig = normalizePaymentConfig(data);
+      const configWithSecret = baseConfig.idConfiguracionPago
+        ? normalizePaymentConfig(await apiFetch(`/api/configuracionespagos/${baseConfig.idConfiguracionPago}`))
+        : baseConfig;
+      const normalizedConfig = {
+        ...baseConfig,
+        ...configWithSecret,
+      };
+      setPaymentConfigData(normalizedConfig);
+      setSavedPaymentConfigData(normalizedConfig);
+    } catch (error) {
+      setPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
+      setSavedPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
+      setPaymentConfigError(error.message || 'No se pudo recuperar la configuración de pago.');
+    } finally {
+      setLoadingPaymentConfig(false);
+    }
+  };
+
   const handlePaymentConfigChange = (field, value) => {
     setPaymentConfigData(prev => ({
       ...prev,
@@ -2086,7 +2158,7 @@ function Dashboard({ setView }) {
   };
 
   const resetPaymentConfigData = () => {
-    setPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
+    setPaymentConfigData(savedPaymentConfigData);
     setPaymentConfigError('');
     setPaymentConfigSuccess('');
   };
@@ -2134,6 +2206,7 @@ function Dashboard({ setView }) {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      setSavedPaymentConfigData(paymentConfigData);
       setPaymentConfigSuccess('Configuración de pago guardada correctamente.');
     } catch (error) {
       setPaymentConfigError(error.message || 'No se pudo guardar la configuración de pago.');
@@ -4835,10 +4908,10 @@ function Dashboard({ setView }) {
                         type="password"
                         value={paymentConfigData.apiKey}
                         onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
-                        disabled={!canManagePaymentConfig || savingPaymentConfig}
+                        disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
                         autoComplete="new-password"
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-                        placeholder="TU_API_KEY_FLOW"
+                        placeholder={loadingPaymentConfig ? 'Recuperando API Key guardada...' : 'Sin API Key guardada'}
                       />
                     </label>
 
@@ -4848,10 +4921,10 @@ function Dashboard({ setView }) {
                         type="password"
                         value={paymentConfigData.secretKey}
                         onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
-                        disabled={!canManagePaymentConfig || savingPaymentConfig}
+                        disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
                         autoComplete="new-password"
                         className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-                        placeholder="TU_SECRET_KEY_FLOW"
+                        placeholder={loadingPaymentConfig ? 'Recuperando Secret Key guardada...' : 'Sin Secret Key guardada'}
                       />
                     </label>
                   </div>
@@ -4867,14 +4940,14 @@ function Dashboard({ setView }) {
                       <button
                         type="button"
                         onClick={resetPaymentConfigData}
-                        disabled={savingPaymentConfig}
+                        disabled={loadingPaymentConfig || savingPaymentConfig}
                         className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Restaurar valores
                       </button>
                       <button
                         type="submit"
-                        disabled={savingPaymentConfig}
+                        disabled={loadingPaymentConfig || savingPaymentConfig}
                         className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_4px_15px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {savingPaymentConfig ? 'Guardando...' : 'Guardar configuración'}
