@@ -565,7 +565,6 @@
     display: inline-flex;
     align-items: baseline;
     justify-content: center;
-    gap: 0.015em;
     font-family: 'Saira Semi Condensed', 'Rajdhani', sans-serif;
     font-size: clamp(4.9rem, 10.8vw, 9.9rem);
     font-style: italic;
@@ -584,33 +583,67 @@
       top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
       transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .hero-logo-word {
+  .hero-logo-metal {
+    position: relative;
     display: inline-block;
     transform: skewX(-7deg);
-    -webkit-text-stroke: 1px rgba(0,0,0,0.54);
-    -webkit-text-fill-color: transparent;
-  }
-  .hero-logo-word-light {
-    color: #F7F7F4;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 36%, #E6E6E0 66%, #FFFFFF 100%);
+    color: #F8F8F3;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F2F2EC 28%, #AFAFAA 56%, #FFFFFF 78%, #D6D6D0 100%);
     -webkit-background-clip: text;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(0,0,0,0.58);
     text-shadow:
       0 1px 0 rgba(255,255,255,0.72),
       0 2px 0 rgba(0,0,0,0.42),
       0 8px 16px rgba(0,0,0,0.62),
       0 0 20px rgba(255,255,255,0.22);
   }
-  .hero-logo-word-red {
-    color: #FF1F1F;
-    background: linear-gradient(180deg, #FF4A4A 0%, #FF1111 46%, #C90000 76%, #FF3030 100%);
+  .hero-logo-metal::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: transparent;
+    background:
+      linear-gradient(112deg,
+        transparent 0%,
+        transparent 36%,
+        rgba(255, 255, 255, 0.15) 42%,
+        rgba(255, 222, 138, 0.95) 47%,
+        rgba(255, 102, 24, 0.88) 51%,
+        rgba(255, 255, 255, 0.80) 55%,
+        transparent 62%,
+        transparent 100%);
+    background-size: 230% 100%;
     -webkit-background-clip: text;
     background-clip: text;
-    text-shadow:
-      0 1px 0 rgba(255,225,225,0.62),
-      0 2px 0 rgba(0,0,0,0.52),
-      0 10px 20px rgba(0,0,0,0.72),
-      0 0 36px rgba(255,25,25,0.76);
+    -webkit-text-fill-color: transparent;
+    mix-blend-mode: screen;
+    filter: drop-shadow(0 0 14px rgba(255,122,24,0.42));
+    animation: heroFireShine 4.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .hero-logo-metal::before {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.22);
+    text-shadow: 0 0 26px rgba(255,255,255,0.16);
+    pointer-events: none;
+  }
+  @keyframes heroFireShine {
+    0%, 22% { background-position: 145% 0; opacity: 0; }
+    34% { opacity: 1; }
+    58% { background-position: -45% 0; opacity: 1; }
+    72%, 100% { background-position: -45% 0; opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-logo-metal::after {
+      animation: none;
+      opacity: 0.65;
+      background-position: 48% 0;
+    }
   }
   .hero-info-card {
     width: min(580px, 100%);
