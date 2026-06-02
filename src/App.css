@@ -597,7 +597,7 @@
       0 1px 0 rgba(255,255,255,0.72),
       0 2px 0 rgba(0,0,0,0.42),
       0 8px 16px rgba(0,0,0,0.62),
-      0 0 16px rgba(255,255,255,0.18);
+      0 0 8px rgba(255,255,255,0.10);
   }
   .hero-logo-metal::after {
     content: attr(data-text);
@@ -607,40 +607,27 @@
     background:
       linear-gradient(108deg,
         transparent 0%,
-        transparent 43%,
-        rgba(255, 255, 255, 0.00) 46%,
-        rgba(255, 232, 164, 0.70) 48.5%,
-        rgba(255, 255, 255, 0.95) 50%,
-        rgba(255, 128, 35, 0.66) 51.7%,
-        rgba(255, 255, 255, 0.00) 54%,
-        transparent 58%,
+        transparent 48.2%,
+        rgba(255, 228, 150, 0.42) 49.2%,
+        rgba(255, 255, 255, 0.92) 50%,
+        rgba(255, 142, 43, 0.38) 50.8%,
+        transparent 52%,
         transparent 100%);
-    background-size: 260% 100%;
+    background-size: 420% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    mix-blend-mode: screen;
-    filter:
-      drop-shadow(0 0 6px rgba(255,255,255,0.58))
-      drop-shadow(0 0 10px rgba(255,126,30,0.38));
+    mix-blend-mode: normal;
+    filter: none;
     animation: heroEdgeShine 4.2s cubic-bezier(0.42, 0, 0.18, 1) infinite;
     pointer-events: none;
   }
-  .hero-logo-metal::before {
-    content: attr(data-text);
-    position: absolute;
-    inset: 0;
-    color: transparent;
-    -webkit-text-stroke: 1px rgba(255,255,255,0.22);
-    text-shadow: 0 0 26px rgba(255,255,255,0.16);
-    pointer-events: none;
-  }
   @keyframes heroEdgeShine {
-    0%, 20% { background-position: 145% 0; opacity: 0; }
-    28% { opacity: 0.95; }
-    50% { background-position: 50% 0; opacity: 1; }
-    70% { background-position: -45% 0; opacity: 0.9; }
-    82%, 100% { background-position: -45% 0; opacity: 0; }
+    0%, 22% { background-position: 150% 0; opacity: 0; }
+    30% { opacity: 0.88; }
+    55% { background-position: 35% 0; opacity: 0.88; }
+    73% { background-position: -55% 0; opacity: 0.18; }
+    82%, 100% { background-position: -55% 0; opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     .hero-logo-metal::after {
