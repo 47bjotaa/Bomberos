@@ -588,6 +588,7 @@
     display: inline-block;
     transform: skewX(-7deg);
     -webkit-text-stroke: 1.5px rgba(0,0,0,0.62);
+    -webkit-text-fill-color: transparent;
   }
   .hero-logo-word-light {
     color: #F7F7F4;
@@ -596,8 +597,8 @@
     background-clip: text;
     text-shadow:
       0 2px 0 rgba(255,255,255,0.48),
-      0 4px 0 rgba(0,0,0,0.78),
-      0 9px 18px rgba(0,0,0,0.82);
+      0 3px 0 rgba(0,0,0,0.62),
+      0 9px 16px rgba(0,0,0,0.72);
   }
   .hero-logo-word-red {
     color: #FF1515;
@@ -606,9 +607,9 @@
     background-clip: text;
     text-shadow:
       0 1px 0 rgba(255,205,205,0.42),
-      0 4px 0 rgba(0,0,0,0.82),
-      0 11px 24px rgba(0,0,0,0.86),
-      0 0 34px rgba(232,55,42,0.56);
+      0 3px 0 rgba(0,0,0,0.72),
+      0 11px 22px rgba(0,0,0,0.82),
+      0 0 30px rgba(232,55,42,0.62);
   }
   .hero-info-card {
     width: min(580px, 100%);
