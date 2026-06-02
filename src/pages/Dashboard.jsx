@@ -586,6 +586,7 @@ function Dashboard({ setView }) {
   const [savedPaymentConfigData, setSavedPaymentConfigData] = useState(DEFAULT_PAYMENT_CONFIG);
   const [loadingPaymentConfig, setLoadingPaymentConfig] = useState(false);
   const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
+  const [revealedPaymentFields, setRevealedPaymentFields] = useState({ apiKey: false, secretKey: false });
   const [paymentConfigError, setPaymentConfigError] = useState('');
   const [paymentConfigSuccess, setPaymentConfigSuccess] = useState('');
   const [librosGuardia, setLibrosGuardia] = useState([]);
@@ -2161,6 +2162,13 @@ function Dashboard({ setView }) {
     setPaymentConfigData(savedPaymentConfigData);
     setPaymentConfigError('');
     setPaymentConfigSuccess('');
+  };
+
+  const setPaymentFieldRevealed = (field, visible) => {
+    setRevealedPaymentFields(prev => ({
+      ...prev,
+      [field]: visible,
+    }));
   };
 
   const handleSavePaymentConfig = async (event) => {
@@ -4904,28 +4912,58 @@ function Dashboard({ setView }) {
                   <div className="grid gap-5 p-6 md:grid-cols-2">
                     <label className="block">
                       <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">API Key Flow</span>
-                      <input
-                        type="password"
-                        value={paymentConfigData.apiKey}
-                        onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
-                        disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
-                        autoComplete="new-password"
-                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-                        placeholder={loadingPaymentConfig ? 'Recuperando API Key guardada...' : 'Sin API Key guardada'}
-                      />
+                      <div className="relative">
+                        <input
+                          type={revealedPaymentFields.apiKey ? 'text' : 'password'}
+                          value={paymentConfigData.apiKey}
+                          onChange={(event) => handlePaymentConfigChange('apiKey', event.target.value)}
+                          disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
+                          autoComplete="new-password"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 pr-12 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                          placeholder={loadingPaymentConfig ? 'Recuperando API Key guardada...' : 'Sin API Key guardada'}
+                        />
+                        <button
+                          type="button"
+                          aria-label="Mantener presionado para ver API Key"
+                          title="Mantener presionado para ver"
+                          disabled={loadingPaymentConfig || savingPaymentConfig || !paymentConfigData.apiKey}
+                          onPointerDown={() => setPaymentFieldRevealed('apiKey', true)}
+                          onPointerUp={() => setPaymentFieldRevealed('apiKey', false)}
+                          onPointerLeave={() => setPaymentFieldRevealed('apiKey', false)}
+                          onPointerCancel={() => setPaymentFieldRevealed('apiKey', false)}
+                          className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-dark-bg3 hover:text-text-main disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          <Icons.Eye className="h-4 w-4" />
+                        </button>
+                      </div>
                     </label>
 
                     <label className="block">
                       <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-muted">Secret Key Flow</span>
-                      <input
-                        type="password"
-                        value={paymentConfigData.secretKey}
-                        onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
-                        disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
-                        autoComplete="new-password"
-                        className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-                        placeholder={loadingPaymentConfig ? 'Recuperando Secret Key guardada...' : 'Sin Secret Key guardada'}
-                      />
+                      <div className="relative">
+                        <input
+                          type={revealedPaymentFields.secretKey ? 'text' : 'password'}
+                          value={paymentConfigData.secretKey}
+                          onChange={(event) => handlePaymentConfigChange('secretKey', event.target.value)}
+                          disabled={!canManagePaymentConfig || loadingPaymentConfig || savingPaymentConfig}
+                          autoComplete="new-password"
+                          className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 pr-12 text-sm text-text-main outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                          placeholder={loadingPaymentConfig ? 'Recuperando Secret Key guardada...' : 'Sin Secret Key guardada'}
+                        />
+                        <button
+                          type="button"
+                          aria-label="Mantener presionado para ver Secret Key"
+                          title="Mantener presionado para ver"
+                          disabled={loadingPaymentConfig || savingPaymentConfig || !paymentConfigData.secretKey}
+                          onPointerDown={() => setPaymentFieldRevealed('secretKey', true)}
+                          onPointerUp={() => setPaymentFieldRevealed('secretKey', false)}
+                          onPointerLeave={() => setPaymentFieldRevealed('secretKey', false)}
+                          onPointerCancel={() => setPaymentFieldRevealed('secretKey', false)}
+                          className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-dark-bg3 hover:text-text-main disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          <Icons.Eye className="h-4 w-4" />
+                        </button>
+                      </div>
                     </label>
                   </div>
 
