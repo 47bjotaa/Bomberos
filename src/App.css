@@ -1,4 +1,4 @@
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&family=Saira+Semi+Condensed:wght@700;800;900&display=swap');
 
   .landing-page {
     --bg: #05080F;
@@ -563,17 +563,20 @@
     z-index: 1010;
     margin: 0;
     color: #FFFFFF !important;
-    font-family: 'Barlow Condensed', 'Rajdhani', sans-serif;
-    font-size: clamp(5.4rem, 12.5vw, 11rem);
-    font-weight: 900;
-    line-height: 0.78;
-    letter-spacing: 0.035em;
-    text-transform: uppercase;
+    font-family: 'Saira Semi Condensed', 'Rajdhani', sans-serif;
+    font-size: clamp(5.3rem, 11.6vw, 10.2rem);
+    font-weight: 800;
+    line-height: 0.82;
+    letter-spacing: -0.018em;
+    text-transform: none;
     text-align: center;
     text-shadow:
-      0 4px 18px rgba(0,0,0,0.78),
-      0 0 18px rgba(255,255,255,0.12);
-    filter: drop-shadow(0 0 7px rgba(255,255,255,0.07));
+      0 2px 0 rgba(255,255,255,0.08),
+      0 5px 16px rgba(0,0,0,0.88),
+      0 16px 38px rgba(0,0,0,0.62),
+      0 0 24px rgba(255,255,255,0.10);
+    -webkit-text-stroke: 1px rgba(255,255,255,0.16);
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.06));
     max-width: 100%;
     transform-origin: center center;
     will-change: transform, top;
