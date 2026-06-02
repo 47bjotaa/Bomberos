@@ -562,21 +562,19 @@
     top: 118px;
     z-index: 1010;
     margin: 0;
-    color: #FFFFFF !important;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.015em;
     font-family: 'Saira Semi Condensed', 'Rajdhani', sans-serif;
-    font-size: clamp(5.3rem, 11.6vw, 10.2rem);
-    font-weight: 800;
+    font-size: clamp(4.9rem, 10.8vw, 9.9rem);
+    font-style: italic;
+    font-weight: 900;
     line-height: 0.82;
-    letter-spacing: -0.018em;
+    letter-spacing: -0.04em;
     text-transform: none;
     text-align: center;
-    text-shadow:
-      0 2px 0 rgba(255,255,255,0.08),
-      0 5px 16px rgba(0,0,0,0.88),
-      0 16px 38px rgba(0,0,0,0.62),
-      0 0 24px rgba(255,255,255,0.10);
-    -webkit-text-stroke: 1px rgba(255,255,255,0.16);
-    filter: drop-shadow(0 0 8px rgba(255,255,255,0.06));
+    filter: drop-shadow(0 12px 18px rgba(0,0,0,0.72)) drop-shadow(0 0 22px rgba(255,255,255,0.08));
     max-width: 100%;
     transform-origin: center center;
     will-change: transform, top;
@@ -585,6 +583,32 @@
     transition:
       top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
       transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .hero-logo-word {
+    display: inline-block;
+    transform: skewX(-7deg);
+    -webkit-text-stroke: 1.5px rgba(0,0,0,0.62);
+  }
+  .hero-logo-word-light {
+    color: #F7F7F4;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F4F3EE 42%, #C7C7C2 63%, #FFFFFF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow:
+      0 2px 0 rgba(255,255,255,0.48),
+      0 4px 0 rgba(0,0,0,0.78),
+      0 9px 18px rgba(0,0,0,0.82);
+  }
+  .hero-logo-word-red {
+    color: #FF1515;
+    background: linear-gradient(180deg, #FF2A2A 0%, #E20707 48%, #9B0000 78%, #FF2525 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow:
+      0 1px 0 rgba(255,205,205,0.42),
+      0 4px 0 rgba(0,0,0,0.82),
+      0 11px 24px rgba(0,0,0,0.86),
+      0 0 34px rgba(232,55,42,0.56);
   }
   .hero-info-card {
     width: min(580px, 100%);
@@ -1564,7 +1588,7 @@
     .mobile-menu-btn { display: block; }
     .landing-hero { min-height: max(780px, calc(100vh + 48px)); padding: 112px 0 96px; }
     .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); }
-    .hero-brand-title { top: 116px; font-size: clamp(3.9rem, 19vw, 6.9rem); text-align: center; }
+    .hero-brand-title { top: 116px; font-size: clamp(3.2rem, 16vw, 6rem); text-align: center; }
     .hero-info-card { margin-right: 0; padding: 1rem; }
     .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); }
     .hero-subtitle { font-size: 1.1rem; }

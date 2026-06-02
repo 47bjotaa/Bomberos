@@ -39,7 +39,8 @@ function Hero() {
         className="hero-brand-title"
         style={{ top: `${titleTop}px`, transform: titleTransform }}
       >
-        CuartelAmigo
+        <span className="hero-logo-word hero-logo-word-light">Cuartel</span>
+        <span className="hero-logo-word hero-logo-word-red">Amigo</span>
       </h1>
       <div className="container hero-layout">
         <div className="hero-info-card reveal is-visible delay-100" style={{ transform: cardTransform }}>
