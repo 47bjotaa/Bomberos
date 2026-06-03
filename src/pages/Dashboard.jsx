@@ -1602,7 +1602,7 @@ function Dashboard({ setView }) {
       case 'libro-guardia':
         return canViewLibroGuardia;
       case 'donaciones':
-        return canViewDonaciones;
+        return canViewDonaciones && (!subscriptionChecked || hasProSubscription || userCanRegisterSubscriptionCard);
       case 'personal':
         return canViewBomberos;
       case 'reportes':
@@ -1720,7 +1720,19 @@ function Dashboard({ setView }) {
     if (activeTab === 'bodegas' && !canAccessInventoryView(inventoryView)) {
       setInventoryView(canAccessInventoryView('ubicaciones') ? 'ubicaciones' : 'catalogo');
     }
-  }, [activeTab, inventoryView, materialDetailRoute, stockMinimoDetailId]);
+  }, [
+    activeTab,
+    inventoryView,
+    materialDetailRoute,
+    stockMinimoDetailId,
+    subscriptionChecked,
+    hasProSubscription,
+    userCanRegisterSubscriptionCard,
+    canViewDonaciones,
+    canViewInventory,
+    canViewEpp,
+    canViewOwnEpp,
+  ]);
 
 
   const fetchCatalogo = async (page = catalogPage, pageSize = catalogPageSize) => {
