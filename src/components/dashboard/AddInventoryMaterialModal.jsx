@@ -17,6 +17,10 @@ const toBoolean = (value) => (
   value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true'
 );
 
+const getTodayDateInputValue = () => (
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+);
+
 const mapMaterial = (material) => ({
   id: material.idMaterial || material.id,
   idTipoProducto: material.idTipoProducto,
@@ -82,6 +86,11 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const canSubmit = selectedMaterial && idUbicacion &&
     (usesItemEndpoint ? formData.codigoUnico.trim() : Number(formData.cantidad) > 0) &&
     (!isEpp || (formData.talla.trim() && formData.fechaVencimiento));
+  const todayDateInputValue = useMemo(() => getTodayDateInputValue(), []);
+
+  const openDatePicker = (event) => {
+    event.currentTarget.showPicker?.();
+  };
 
   const getCreatedItemId = (payload) => {
     if (typeof payload === 'number' || typeof payload === 'string') return payload;
@@ -306,6 +315,16 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                         <input
                           type="date"
                           value={formData.fechaVencimiento}
+                          min={todayDateInputValue}
+                          inputMode="none"
+                          onFocus={openDatePicker}
+                          onClick={openDatePicker}
+                          onKeyDown={(event) => {
+                            if (!['Tab', 'Enter', 'Escape'].includes(event.key)) {
+                              event.preventDefault();
+                            }
+                          }}
+                          onPaste={(event) => event.preventDefault()}
                           onChange={(e) => setFormData(prev => ({ ...prev, fechaVencimiento: e.target.value }))}
                           className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan"
                         />

@@ -15,6 +15,16 @@ const getInitial = (name) => (name?.trim()?.charAt(0) || '?').toUpperCase();
 
 const isAssigned = (item) => Boolean(item.idBomberoAsignado || item.nombreBomberoAsignado);
 
+const isActiveBombero = (bombero = {}) => {
+  const estado = String(bombero.estadoUsuario || bombero.estado || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  return estado === 'activo';
+};
+
 const getChileIsoString = (date = new Date()) => {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Santiago',
@@ -87,6 +97,7 @@ function AssignEppModal({ onClose, onAssign }) {
           .filter(item => item.id && item.idItem);
 
         const mappedBomberos = getArrayPayload(bomberosData)
+          .filter(isActiveBombero)
           .map(bombero => ({
             id: bombero.idBombero || bombero.id,
             nombre: bombero.nombre || 'Bombero sin nombre',
@@ -201,7 +212,7 @@ function AssignEppModal({ onClose, onAssign }) {
                 disabled={loading || saving || bomberos.length === 0}
                 className="w-full pl-12 pr-10 py-3 bg-dark-bg border border-dark-border text-text-main rounded-lg outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan appearance-none transition-all disabled:opacity-50"
               >
-                <option value="">{loading ? 'Cargando bomberos...' : 'Seleccionar bombero...'}</option>
+                <option value="">{loading ? 'Cargando bomberos...' : bomberos.length > 0 ? 'Seleccionar bombero...' : 'No hay bomberos activos disponibles'}</option>
                 {bomberos.map(bombero => (
                   <option key={bombero.id} value={bombero.id}>{bombero.nombre}</option>
                 ))}

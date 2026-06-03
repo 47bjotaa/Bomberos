@@ -458,6 +458,7 @@ function Dashboard({ setView }) {
   const [loadingBomberosPersonal, setLoadingBomberosPersonal] = useState(false);
   const [bomberosPersonalError, setBomberosPersonalError] = useState('');
   const [inactivatingUsuarioId, setInactivatingUsuarioId] = useState(null);
+  const [activatingUsuarioId, setActivatingUsuarioId] = useState(null);
   const [personalActionError, setPersonalActionError] = useState('');
   const [bomberoPendingInactivation, setBomberoPendingInactivation] = useState(null);
   const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
@@ -1965,6 +1966,34 @@ function Dashboard({ setView }) {
     }
   };
 
+  const handleActivateUsuario = async (bombero) => {
+    if (!canManageUsers) return;
+
+    if (!bombero?.idUsuario || activatingUsuarioId) {
+      if (!bombero?.idUsuario) setPersonalActionError('No se pudo identificar el usuario que deseas activar.');
+      return;
+    }
+
+    setActivatingUsuarioId(bombero.idUsuario);
+    setPersonalActionError('');
+
+    try {
+      await apiFetch(`/api/Usuarios/${bombero.idUsuario}/activar`, {
+        method: 'PATCH',
+      });
+      setBomberosPersonal(current => current.map(item => (
+        String(item.idUsuario) === String(bombero.idUsuario)
+          ? { ...item, estado: 'Activo' }
+          : item
+      )));
+      setActivePersonalTab('activos');
+    } catch (error) {
+      setPersonalActionError(error.message || 'No se pudo activar al usuario.');
+    } finally {
+      setActivatingUsuarioId(null);
+    }
+  };
+
   const openEditContactModal = () => {
     if (!canManageOwnUser) return;
 
@@ -2248,7 +2277,7 @@ function Dashboard({ setView }) {
     } catch (error) {
       setPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
       setSavedPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
-      setPaymentConfigError(error.message || 'No se pudo recuperar la configuración de pago.');
+      setPaymentConfigError('No esta configurada la configuracion de pago.');
     } finally {
       setLoadingPaymentConfig(false);
     }
@@ -2669,6 +2698,15 @@ function Dashboard({ setView }) {
                     className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {String(inactivatingUsuarioId) === String(bombero.idUsuario) ? 'Procesando...' : 'Dar Baja'}
+                  </button>
+                ) : canManageUsers && bombero.idUsuario ? (
+                  <button
+                    type="button"
+                    onClick={() => handleActivateUsuario(bombero)}
+                    disabled={String(activatingUsuarioId) === String(bombero.idUsuario)}
+                    className="rounded-lg border border-brand-green/30 bg-brand-green/10 px-3 py-2 text-xs font-semibold text-brand-green transition-colors hover:bg-brand-green/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {String(activatingUsuarioId) === String(bombero.idUsuario) ? 'Procesando...' : 'Activar'}
                   </button>
                 ) : (
                   <span className="text-xs" style={{ color: palette.muted }}>Sin acciones</span>
@@ -3903,7 +3941,6 @@ function Dashboard({ setView }) {
                 )}
                 {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
                 {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignación y estado del equipamiento de los voluntarios</span>}
-                {activeTab === 'donaciones' && <span className="text-xs text-text-muted mt-0.5">Gestiona campañas de recaudación y enlaces de pago</span>}
                 {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
                 {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Información del bombero asociado a tu sesión</span>}
               </div>

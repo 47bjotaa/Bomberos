@@ -880,7 +880,10 @@ function VehiculosView({
                   </div>
                   <div className="w-full border-t border-dark-border bg-dark-bg2/60 px-4 py-3 text-center">
                     <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
-                    <div className="text-xs text-text-muted">{v.modelo} - {v.patente}</div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 font-semibold text-brand-cyan">{v.tipo}</span>
+                      <span className="rounded-full border border-dark-border bg-dark-bg px-2 py-0.5 font-semibold text-text-muted">{v.estado}</span>
+                    </div>
                   </div>
                 </div>
               ))
