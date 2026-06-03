@@ -42,7 +42,13 @@ const TIPOS_AFECTACION_ITEM = [
   { value: 'Retenido', estado: 'Retenido', label: 'Retenido' },
 ];
 
-const getTodayDateValue = () => new Date().toISOString().slice(0, 10);
+const getTodayDateValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 const getCurrentTimeValue = () => new Date().toTimeString().slice(0, 8);
 
 const getArrayPayload = (payload) => {
@@ -500,11 +506,16 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   };
 
   const continueEmergencyBase = () => {
-    if (!emergencyForm.fecha || !emergencyForm.hora || !emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim()) {
-      setEmergencyError('Completa fecha, hora, tipo de emergencia y direccion/sector.');
+    if (!emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim()) {
+      setEmergencyError('Completa tipo de emergencia y direccion/sector.');
       return;
     }
 
+    setEmergencyForm(current => ({
+      ...current,
+      fecha: getTodayDateValue(),
+      hora: getCurrentTimeValue(),
+    }));
     setEmergencyError('');
     setEmergencyModalStep('materials');
   };
@@ -543,8 +554,8 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   };
 
   const createEmergencyReport = async () => {
-    if (!emergencyForm.fecha || !emergencyForm.hora || !emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim() || !emergencyForm.idUbicacion) {
-      setEmergencyError('Completa fecha, hora, tipo de emergencia, direccion/sector y vehiculo.');
+    if (!emergencyForm.tipoEmergencia.trim() || !emergencyForm.direccionSector.trim() || !emergencyForm.idUbicacion) {
+      setEmergencyError('Completa tipo de emergencia, direccion/sector y vehiculo.');
       return;
     }
 
@@ -579,8 +590,8 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     }
 
     const payload = {
-      fecha: emergencyForm.fecha,
-      hora: emergencyForm.hora,
+      fecha: getTodayDateValue(),
+      hora: getCurrentTimeValue(),
       tipoEmergencia: emergencyForm.tipoEmergencia.trim(),
       direccionSector: emergencyForm.direccionSector.trim(),
       idUbicacion: Number(emergencyForm.idUbicacion),
@@ -996,14 +1007,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               </div>
 
               <div className="grid max-h-[calc(90vh-140px)] gap-4 overflow-y-auto p-6 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Fecha</span>
-                  <input name="fecha" type="date" value={emergencyForm.fecha} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Hora</span>
-                  <input name="hora" type="time" step="1" value={emergencyForm.hora} onChange={handleEmergencyFormChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan" />
-                </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase text-text-muted">Tipo</span>
                   <input name="tipoEmergencia" value={emergencyForm.tipoEmergencia} onChange={handleEmergencyFormChange} placeholder="Rescate vehicular" className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder-text-muted focus:border-brand-cyan" />

@@ -283,20 +283,6 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                     />
                   </label>
 
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Estado</span>
-                    <select
-                      value={formData.estado}
-                      disabled={!usesItemEndpoint}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all disabled:cursor-not-allowed disabled:opacity-45 focus:border-brand-cyan"
-                    >
-                      <option value="Operativo">Operativo</option>
-                      <option value="De baja">De baja</option>
-                      <option value="Mantenimiento">Mantenimiento</option>
-                    </select>
-                  </label>
-
                   {isEpp && (
                     <>
                       <label className="block">
