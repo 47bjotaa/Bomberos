@@ -653,6 +653,10 @@ function Dashboard({ setView }) {
   const pendingCardRegistration = isPendingCardRegistrationStatus(subscriptionStatus);
   const flowRegisterUrl = getFlowRegisterUrlFromObject(currentCompany || {});
   const subscriptionPaymentError = getLastPaymentErrorFromObject(currentCompany || {});
+  const hasCompletePaymentConfig = Boolean(
+    String(paymentConfigData.apiKey || '').trim()
+    && (String(paymentConfigData.secretKey || '').trim() || paymentConfigData.secretKeyConfigurada)
+  );
 
   useEffect(() => {
     if (activeTab === 'bodegas') {
@@ -992,12 +996,12 @@ function Dashboard({ setView }) {
         || currentCompany?.SuscripcionActual?.IdTipoSuscripcion;
       const plans = getArrayPayload(data, ['planes', 'items', 'data', 'result', 'value'])
         .map(normalizeSubscriptionPlan)
-        .filter(plan => plan.id && plan.precioMensual > 0 && String(plan.id) !== String(currentPlanId))
+        .filter(plan => plan.id && plan.precioMensual > 0 && plan.donaciones && String(plan.id) !== String(currentPlanId))
         .slice(0, 2);
 
       setPaidSubscriptionPlans(plans);
       if (plans.length === 0) {
-        setUpgradePlanError('No hay planes pagados disponibles para actualizar.');
+        setUpgradePlanError('No hay planes pagados con donaciones disponibles para actualizar.');
       }
     } catch (error) {
       setUpgradePlanError(error.message || 'No se pudieron cargar los planes pagados.');
@@ -1049,7 +1053,7 @@ function Dashboard({ setView }) {
       }
 
       setUpgradeFlowUrl('');
-      setUpgradePlanError('Plan actualizado, pero no se recibio la URL de Flow para registrar la tarjeta. Cierra sesion e ingresa nuevamente para revisar el estado.');
+      setUpgradePlanError('No se pudo iniciar el cambio de plan porque no se recibio la URL de Flow para registrar la tarjeta. El cambio no debe considerarse confirmado hasta completar Flow.');
     } catch (error) {
       setUpgradePlanError(error.message || 'No se pudo actualizar el plan.');
     } finally {
@@ -1146,14 +1150,14 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (
       activeTab === 'donaciones'
-      && donacionesView === 'configuracion'
+      && (donacionesView === 'configuracion' || canManageDonaciones)
       && subscriptionChecked
       && hasProSubscription
-      && (canViewPaymentConfig || canManagePaymentConfig)
+      && (canViewPaymentConfig || canManagePaymentConfig || canManageDonaciones)
     ) {
       fetchPaymentConfig();
     }
-  }, [activeTab, donacionesView, subscriptionChecked, hasProSubscription, canViewPaymentConfig, canManagePaymentConfig]);
+  }, [activeTab, donacionesView, subscriptionChecked, hasProSubscription, canViewPaymentConfig, canManagePaymentConfig, canManageDonaciones]);
 
   const headerProfileName = loadingBomberoProfile
     ? 'Cargando...'
@@ -2223,7 +2227,7 @@ function Dashboard({ setView }) {
   };
 
   const fetchPaymentConfig = async () => {
-    if (!hasProSubscription || (!canViewPaymentConfig && !canManagePaymentConfig)) return;
+    if (!hasProSubscription || (!canViewPaymentConfig && !canManagePaymentConfig && !canManageDonaciones)) return;
 
     setLoadingPaymentConfig(true);
     setPaymentConfigError('');
@@ -2338,6 +2342,10 @@ function Dashboard({ setView }) {
 
   const openCreateCampanaModal = () => {
     if (!hasProSubscription || !canManageDonaciones) return;
+    if (!hasCompletePaymentConfig) {
+      setCampanasError('Configura API Key y Secret Key de Flow antes de crear campanas.');
+      return;
+    }
 
     resetNewCampanaData();
     setShowCreateCampanaModal(true);
@@ -2352,6 +2360,10 @@ function Dashboard({ setView }) {
   const handleCreateCampana = async (event) => {
     event.preventDefault();
     if (!hasProSubscription || !canManageDonaciones) return;
+    if (!hasCompletePaymentConfig) {
+      setCreateCampanaError('Configura API Key y Secret Key de Flow antes de crear campanas.');
+      return;
+    }
 
     setCreateCampanaError('');
 
@@ -3932,9 +3944,14 @@ function Dashboard({ setView }) {
                 </button>
               )}
               {activeTab === 'donaciones' && hasProSubscription && donacionesView === 'campanas' && !selectedCampanaDetalle && canManageDonaciones && (
-                <button onClick={openCreateCampanaModal} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)]">
+                <button
+                  onClick={openCreateCampanaModal}
+                  disabled={loadingPaymentConfig || !hasCompletePaymentConfig}
+                  title={!hasCompletePaymentConfig ? 'Configura API Key y Secret Key de Flow antes de crear campanas.' : undefined}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   <span className="text-base leading-none">+</span>
-                  Crear campaña
+                  {loadingPaymentConfig ? 'Verificando Flow...' : 'Crear campaña'}
                 </button>
               )}
               {activeTab === 'personal' && personalView === 'listado' && (
@@ -5096,6 +5113,21 @@ function Dashboard({ setView }) {
                 </form>
               ) : (
                 <>
+              {canManageDonaciones && !loadingPaymentConfig && !hasCompletePaymentConfig && (
+                <div className="mb-5 rounded-xl border border-brand-red/30 bg-brand-red/10 px-5 py-4 text-sm text-brand-red">
+                  <p className="font-semibold">Falta configurar Flow para crear campanas.</p>
+                  <p className="mt-1 text-text-muted">Agrega API Key y Secret Key en Configuracion de pago antes de crear campanas de donaciones.</p>
+                  {(canViewPaymentConfig || canManagePaymentConfig) && (
+                    <button
+                      type="button"
+                      onClick={() => selectDonacionesView('configuracion')}
+                      className="mt-3 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-red/20"
+                    >
+                      Ir a configuracion de pago
+                    </button>
+                  )}
+                </div>
+              )}
               {loadingCampanas ? (
                 <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-16 text-center text-text-muted">
                   Cargando campañas de donaciones...
@@ -5892,7 +5924,7 @@ function Dashboard({ setView }) {
                   <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Actualizar plan</p>
                   <h3 className="rajdhani mt-1 text-2xl font-bold text-white">Elige un plan con donaciones</h3>
                   <p className="mt-1 max-w-2xl text-sm text-text-muted">
-                    Al confirmar, se cambiara la suscripcion y se abrira Flow para registrar la tarjeta. Cuando termines, ingresa nuevamente para cargar los permisos del nuevo plan.
+                    Al confirmar, se solicitara el cambio y se abrira Flow para registrar la tarjeta. El plan solo debe activarse cuando Flow confirme el pago.
                   </p>
                 </div>
                 <button
@@ -5934,7 +5966,7 @@ function Dashboard({ setView }) {
                           </p>
                           <div className="mt-4 space-y-2 text-sm text-text-muted">
                             <p>{plan.duracionDias ? `${plan.duracionDias} dias de prueba` : 'Uso mensual'}</p>
-                            <p>{plan.donaciones ? 'Incluye modulo de donaciones' : 'Sin modulo de donaciones'}</p>
+                            <p>Incluye modulo de donaciones</p>
                             <p>Registro de tarjeta mediante Flow</p>
                           </div>
                           <button
@@ -5956,17 +5988,18 @@ function Dashboard({ setView }) {
                     {upgradePlanError}
                     <button
                       type="button"
-                      onClick={finishUpgradeSession}
-                      className="mt-3 block rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-red/20"
+                      onClick={loadPaidSubscriptionPlans}
+                      disabled={loadingPaidPlans || Boolean(changingPlanId)}
+                      className="mt-3 block rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Cerrar sesion e ingresar de nuevo
+                      Reintentar
                     </button>
                   </div>
                 )}
 
                 {upgradeFlowUrl && (
                   <div className="mt-5 rounded-lg border border-brand-green/30 bg-brand-green/10 px-4 py-3 text-sm text-brand-green">
-                    Plan actualizado. Abre Flow para registrar la tarjeta y luego inicia sesion nuevamente.
+                    Solicitud creada. Abre Flow para registrar la tarjeta y luego inicia sesion nuevamente.
                     <a href={upgradeFlowUrl} className="mt-3 inline-flex rounded-lg bg-brand-green px-4 py-2 text-sm font-bold text-dark-bg">
                       Abrir Flow
                     </a>
