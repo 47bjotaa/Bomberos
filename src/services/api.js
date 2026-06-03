@@ -212,6 +212,12 @@ export const authService = {
       skipAuth: true,
     });
   },
+  changeMySubscriptionPlan: async (idTipoSuscripcion) => (
+    apiFetch('/api/Suscripciones/mi-suscripcion/cambiar-plan', {
+      method: 'PUT',
+      body: JSON.stringify({ idTipoSuscripcion: Number(idTipoSuscripcion) }),
+    })
+  ),
   login: async (rut, password, turnstileToken) => {
     const data = await apiFetch('/api/Auth/login', {
       method: 'POST',

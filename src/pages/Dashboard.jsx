@@ -343,6 +343,21 @@ const getFlowRegisterUrlFromObject = (source = {}) => {
   return '';
 };
 
+const normalizeSubscriptionPlan = (plan = {}) => {
+  const precioMensual = Number(plan.precioMensual ?? plan.PrecioMensual ?? plan.precio ?? plan.Precio ?? 0) || 0;
+
+  return {
+    ...plan,
+    id: plan.idTipoSuscripcion ?? plan.IdTipoSuscripcion ?? plan.id ?? plan.Id,
+    codigo: plan.codigo ?? plan.Codigo ?? '',
+    nombre: plan.nombre ?? plan.Nombre ?? plan.titulo ?? plan.Titulo ?? 'Plan',
+    descripcion: plan.descripcion ?? plan.Descripcion ?? '',
+    precioMensual,
+    duracionDias: plan.duracionDias ?? plan.DuracionDias ?? null,
+    donaciones: Boolean(plan.donaciones ?? plan.Donaciones ?? plan.incluyeDonaciones ?? plan.IncluyeDonaciones ?? false),
+  };
+};
+
 const getLastPaymentErrorFromObject = (source = {}) => {
   const subscriptionSources = [
     source.suscripcionActual,
@@ -626,6 +641,12 @@ function Dashboard({ setView }) {
   const [currentCompany, setCurrentCompany] = useState(null);
   const [currentSubscriptionStatus, setCurrentSubscriptionStatus] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
+  const [showUpgradePlanModal, setShowUpgradePlanModal] = useState(false);
+  const [paidSubscriptionPlans, setPaidSubscriptionPlans] = useState([]);
+  const [loadingPaidPlans, setLoadingPaidPlans] = useState(false);
+  const [upgradePlanError, setUpgradePlanError] = useState('');
+  const [changingPlanId, setChangingPlanId] = useState(null);
+  const [upgradeFlowUrl, setUpgradeFlowUrl] = useState('');
   const hasProSubscription = hasDonationFeature;
   const subscriptionChecked = !loadingSubscription;
   const subscriptionStatus = currentSubscriptionStatus || getSubscriptionStatusFromObject(currentCompany || {});
@@ -947,13 +968,92 @@ function Dashboard({ setView }) {
         flowRegisterUrl: getFlowRegisterUrlFromObject(data) || currentUser.flowRegisterUrl,
         ultimoErrorPago: getLastPaymentErrorFromObject(data) || currentUser.ultimoErrorPago,
       }));
+      return data;
     } catch (error) {
       console.error('No se pudo cargar la suscripcion de la compania:', error);
       setHasDonationFeature(getCurrentDonationFeature());
       setCurrentSubscriptionStatus('');
       setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compania.');
+      return null;
     } finally {
       setLoadingSubscription(false);
+    }
+  };
+
+  const loadPaidSubscriptionPlans = async () => {
+    setLoadingPaidPlans(true);
+    setUpgradePlanError('');
+
+    try {
+      const data = await authService.getSubscriptionPlans({ soloActivos: true });
+      const currentPlanId = currentCompany?.idTipoSuscripcion
+        || currentCompany?.IdTipoSuscripcion
+        || currentCompany?.suscripcionActual?.idTipoSuscripcion
+        || currentCompany?.SuscripcionActual?.IdTipoSuscripcion;
+      const plans = getArrayPayload(data, ['planes', 'items', 'data', 'result', 'value'])
+        .map(normalizeSubscriptionPlan)
+        .filter(plan => plan.id && plan.precioMensual > 0 && String(plan.id) !== String(currentPlanId))
+        .slice(0, 2);
+
+      setPaidSubscriptionPlans(plans);
+      if (plans.length === 0) {
+        setUpgradePlanError('No hay planes pagados disponibles para actualizar.');
+      }
+    } catch (error) {
+      setUpgradePlanError(error.message || 'No se pudieron cargar los planes pagados.');
+      setPaidSubscriptionPlans([]);
+    } finally {
+      setLoadingPaidPlans(false);
+    }
+  };
+
+  const openUpgradePlanModal = () => {
+    setShowUpgradePlanModal(true);
+    setUpgradePlanError('');
+    setUpgradeFlowUrl('');
+    loadPaidSubscriptionPlans();
+  };
+
+  const closeUpgradePlanModal = () => {
+    if (changingPlanId) return;
+    setShowUpgradePlanModal(false);
+    setUpgradePlanError('');
+    setUpgradeFlowUrl('');
+  };
+
+  const finishUpgradeSession = () => {
+    authService.logout();
+    window.location.href = '/login';
+  };
+
+  const handleChangeSubscriptionPlan = async (plan) => {
+    if (!plan?.id || changingPlanId) return;
+
+    setChangingPlanId(plan.id);
+    setUpgradePlanError('');
+    setUpgradeFlowUrl('');
+
+    try {
+      const response = await authService.changeMySubscriptionPlan(plan.id);
+      let nextFlowUrl = getFlowRegisterUrlFromObject(response || {});
+
+      if (!nextFlowUrl) {
+        const refreshedCompany = await fetchCurrentCompanySubscription();
+        nextFlowUrl = getFlowRegisterUrlFromObject(response || {}) || getFlowRegisterUrlFromObject(refreshedCompany || {});
+      }
+
+      if (nextFlowUrl) {
+        authService.logout();
+        window.location.href = nextFlowUrl;
+        return;
+      }
+
+      setUpgradeFlowUrl('');
+      setUpgradePlanError('Plan actualizado, pero no se recibio la URL de Flow para registrar la tarjeta. Cierra sesion e ingresa nuevamente para revisar el estado.');
+    } catch (error) {
+      setUpgradePlanError(error.message || 'No se pudo actualizar el plan.');
+    } finally {
+      setChangingPlanId(null);
     }
   };
 
@@ -4730,7 +4830,7 @@ function Dashboard({ setView }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => { window.location.href = 'mailto:contacto@cuartelamigo.cl?subject=Actualizar%20plan%20Pro'; }}
+                        onClick={openUpgradePlanModal}
                         className="mt-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-bold text-white shadow-[0_4px_18px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90"
                       >
                         Actualizar plan
@@ -5781,6 +5881,99 @@ function Dashboard({ setView }) {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {showUpgradePlanModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-3xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface text-text-main shadow-2xl fade-in">
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Actualizar plan</p>
+                  <h3 className="rajdhani mt-1 text-2xl font-bold text-white">Elige un plan con donaciones</h3>
+                  <p className="mt-1 max-w-2xl text-sm text-text-muted">
+                    Al confirmar, se cambiara la suscripcion y se abrira Flow para registrar la tarjeta. Cuando termines, ingresa nuevamente para cargar los permisos del nuevo plan.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeUpgradePlanModal}
+                  disabled={Boolean(changingPlanId)}
+                  className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-text-main disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <div className="p-6">
+                {loadingPaidPlans ? (
+                  <div className="flex min-h-56 flex-col items-center justify-center rounded-xl border border-dark-border bg-dark-bg">
+                    <div className="h-9 w-9 animate-spin rounded-full border-2 border-brand-cyan/20 border-t-brand-cyan"></div>
+                    <p className="mt-4 text-sm text-text-muted">Cargando planes disponibles...</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {paidSubscriptionPlans.map((plan) => (
+                      <article key={plan.id} className="flex min-h-72 flex-col rounded-xl border border-dark-border bg-dark-bg p-5 shadow-lg">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="rajdhani text-2xl font-bold text-white">{plan.nombre}</h4>
+                            <p className="mt-2 text-sm leading-6 text-text-muted">{plan.descripcion || 'Plan pagado para habilitar modulos avanzados.'}</p>
+                          </div>
+                          {plan.donaciones && (
+                            <span className="whitespace-nowrap rounded-full border border-brand-green/25 bg-brand-green/10 px-2.5 py-1 text-xs font-bold text-brand-green">
+                              Donaciones
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-auto">
+                          <p className="text-3xl font-bold text-white">
+                            {formatCurrency(plan.precioMensual)}
+                            <span className="ml-1 text-sm font-semibold text-text-muted">/mes</span>
+                          </p>
+                          <div className="mt-4 space-y-2 text-sm text-text-muted">
+                            <p>{plan.duracionDias ? `${plan.duracionDias} dias de prueba` : 'Uso mensual'}</p>
+                            <p>{plan.donaciones ? 'Incluye modulo de donaciones' : 'Sin modulo de donaciones'}</p>
+                            <p>Registro de tarjeta mediante Flow</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleChangeSubscriptionPlan(plan)}
+                            disabled={Boolean(changingPlanId)}
+                            className="mt-5 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_18px_rgba(59,130,246,0.35)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {changingPlanId === plan.id ? 'Preparando Flow...' : 'Elegir plan'}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                {upgradePlanError && (
+                  <div className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                    {upgradePlanError}
+                    <button
+                      type="button"
+                      onClick={finishUpgradeSession}
+                      className="mt-3 block rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-red/20"
+                    >
+                      Cerrar sesion e ingresar de nuevo
+                    </button>
+                  </div>
+                )}
+
+                {upgradeFlowUrl && (
+                  <div className="mt-5 rounded-lg border border-brand-green/30 bg-brand-green/10 px-4 py-3 text-sm text-brand-green">
+                    Plan actualizado. Abre Flow para registrar la tarjeta y luego inicia sesion nuevamente.
+                    <a href={upgradeFlowUrl} className="mt-3 inline-flex rounded-lg bg-brand-green px-4 py-2 text-sm font-bold text-dark-bg">
+                      Abrir Flow
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
