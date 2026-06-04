@@ -8,6 +8,20 @@ const VEHICLE_TYPES = [
   'Rescate',
 ];
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
+const MAX_DATE_INPUT_VALUE = '9999-12-31';
+const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
+const getChileDateValue = () => (
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+);
 
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -78,7 +92,7 @@ const isMaintenancePending = (maintenance) => (
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
 
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString('es-CL', {
@@ -636,7 +650,7 @@ function VehiculosView({
 
     setMaintenanceModalMode(mode);
     setNewMant({
-      fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
+      fecha: mode === 'programada' ? getChileDateValue() : '',
       tipo: 'Preventiva',
       descripcion: '',
     });
@@ -654,6 +668,12 @@ function VehiculosView({
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
     setMaintenanceError('');
+  };
+
+  const handleMaintenanceDateChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setNewMant(current => ({ ...current, fecha: value }));
   };
 
   const handleCreateObservation = async (event) => {
@@ -737,6 +757,11 @@ function VehiculosView({
     const tipo = newMant.tipo.trim();
     const isProgramada = maintenanceModalMode === 'programada';
     if (!descripcion || !tipo || !selectedId || maintenanceSaving || (isProgramada && !newMant.fecha)) return;
+
+    if (isProgramada && !hasFourDigitDateYear(newMant.fecha)) {
+      setMaintenanceError('La fecha debe tener un año de 4 digitos.');
+      return;
+    }
 
     const payload = {
       idVehiculo: Number(selectedId),
@@ -1503,7 +1528,7 @@ function VehiculosView({
               <div className="max-h-[calc(90vh-140px)] space-y-4 overflow-y-auto p-6">
                 <div className={`grid gap-3 ${maintenanceModalMode === 'programada' ? 'md:grid-cols-2' : ''}`}>
                   {maintenanceModalMode === 'programada' && (
-                    <input required type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                    <input required type="date" value={newMant.fecha} max={MAX_DATE_INPUT_VALUE} onChange={handleMaintenanceDateChange} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                   )}
                   <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60">
                     <option value="Preventiva">Preventiva</option>

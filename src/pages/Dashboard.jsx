@@ -76,6 +76,41 @@ const normalizePaymentConfig = (payload = {}) => {
 
 const normalizeSubscriptionCode = (value) => String(value || '').trim().toLowerCase();
 
+const formatChileanMobilePhone = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  let localNumber = digits;
+
+  if (localNumber.startsWith('569')) {
+    localNumber = localNumber.slice(3);
+  } else if (localNumber.startsWith('56')) {
+    localNumber = localNumber.slice(2);
+    if (localNumber.startsWith('9')) localNumber = localNumber.slice(1);
+  } else if (localNumber.startsWith('9') && localNumber.length > 8) {
+    localNumber = localNumber.slice(1);
+  }
+
+  localNumber = localNumber.slice(0, 8);
+  return `+569${localNumber}`;
+};
+
+const getChileanMobileLocalNumber = (value) => (
+  formatChileanMobilePhone(value).replace('+569', '')
+);
+
+const isValidChileanMobilePhone = (value) => /^\+569\d{8}$/.test(value);
+
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(value);
+};
+
 const getSubscriptionCodeFromObject = (source = {}) => {
   const nestedSources = [
     source.suscripcion,
@@ -611,7 +646,7 @@ function Dashboard({ setView }) {
   const [showCreateLibroGuardiaModal, setShowCreateLibroGuardiaModal] = useState(false);
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
-  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario' });
   const [activeLibrosGuardiaTab, setActiveLibrosGuardiaTab] = useState('abiertos');
   const [librosGuardiaMonthFilter, setLibrosGuardiaMonthFilter] = useState('');
   const [librosGuardiaYearFilter, setLibrosGuardiaYearFilter] = useState('');
@@ -637,6 +672,8 @@ function Dashboard({ setView }) {
     fechaFin: '',
     imagenUrl: '',
   });
+  const [newCampanaImage, setNewCampanaImage] = useState(null);
+  const [newCampanaImagePreview, setNewCampanaImagePreview] = useState('');
   const [hasDonationFeature, setHasDonationFeature] = useState(() => getCurrentDonationFeature());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [currentCompany, setCurrentCompany] = useState(null);
@@ -862,6 +899,11 @@ function Dashboard({ setView }) {
   };
 
   const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
+  const MAX_MATERIAL_PRICE = 100000000;
+  const formatLimitedMaterialPrice = (value) => {
+    const numericValue = Math.min(parseCurrencyValue(value), MAX_MATERIAL_PRICE);
+    return numericValue > 0 ? formatCurrency(numericValue) : '';
+  };
 
   const parseJwtPayload = (token) => {
     if (!token) return {};
@@ -1234,7 +1276,7 @@ function Dashboard({ setView }) {
 
   const formatDateChile = (value) => {
     if (!value) return '';
-    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+    const date = parseDateValue(value);
     if (Number.isNaN(date.getTime())) return value;
 
     return new Intl.DateTimeFormat('es-CL', {
@@ -1313,6 +1355,8 @@ function Dashboard({ setView }) {
   const getChileDateValue = () => (
     new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
   );
+  const MAX_DATE_INPUT_VALUE = '9999-12-31';
+  const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   const getCurrentTimeValue = () => (
     new Intl.DateTimeFormat('es-CL', {
@@ -1342,7 +1386,7 @@ function Dashboard({ setView }) {
   const openCreateLibroGuardiaModal = () => {
     if (!canCreateLibroGuardia) return;
 
-    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario' });
     setCreateLibroGuardiaError('');
     setShowCreateLibroGuardiaModal(true);
   };
@@ -1360,12 +1404,12 @@ function Dashboard({ setView }) {
     const payload = {
       nombre: newLibroGuardiaData.nombre.trim(),
       duracion: newLibroGuardiaData.duracion.trim(),
-      estado: newLibroGuardiaData.estado,
+      estado: 'Abierto',
       fechaCreacion: new Date().toISOString(),
     };
 
-    if (!payload.nombre || !payload.duracion || !payload.estado) {
-      setCreateLibroGuardiaError('Completa nombre, duracion y estado.');
+    if (!payload.nombre || !payload.duracion) {
+      setCreateLibroGuardiaError('Completa nombre y duracion.');
       return;
     }
 
@@ -1380,7 +1424,7 @@ function Dashboard({ setView }) {
       const mappedLibro = mapLibroGuardia({ ...payload, ...(createdLibro || {}) });
       setLibrosGuardia(current => (mappedLibro.id ? [mappedLibro, ...current] : current));
       setShowCreateLibroGuardiaModal(false);
-      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario' });
       await fetchLibrosGuardia();
     } catch (error) {
       setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
@@ -2011,7 +2055,7 @@ function Dashboard({ setView }) {
 
     setContactProfileData({
       email: bomberoProfile?.email || '',
-      telefono: bomberoProfile?.telefono || '',
+      telefono: getChileanMobileLocalNumber(bomberoProfile?.telefono || ''),
       genero: bomberoProfile?.genero || '',
     });
     setContactProfileError('');
@@ -2030,12 +2074,17 @@ function Dashboard({ setView }) {
 
     const payload = {
       email: contactProfileData.email.trim(),
-      telefono: contactProfileData.telefono.trim(),
+      telefono: formatChileanMobilePhone(contactProfileData.telefono),
       genero: contactProfileData.genero,
     };
 
     if (!payload.email || !payload.telefono || !payload.genero) {
       setContactProfileError('Completa email, telefono y genero.');
+      return;
+    }
+
+    if (!isValidChileanMobilePhone(payload.telefono)) {
+      setContactProfileError('El telefono debe tener el formato +56912345678.');
       return;
     }
 
@@ -2229,6 +2278,12 @@ function Dashboard({ setView }) {
     setCreateRegistroError('');
   };
 
+  const handleRegistroFechaChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setNewRegistroData(current => ({ ...current, fecha: value }));
+  };
+
   const handleCreateRegistroLibroGuardia = async (event) => {
     event.preventDefault();
     if (!canRegisterLibroGuardia || !selectedLibroGuardia?.id) return;
@@ -2241,6 +2296,11 @@ function Dashboard({ setView }) {
 
     if (!payload.fecha || !newRegistroData.hora || !payload.detalle) {
       setCreateRegistroError('Completa fecha, hora y detalle del registro.');
+      return;
+    }
+
+    if (!hasFourDigitDateYear(payload.fecha)) {
+      setCreateRegistroError('La fecha debe tener un año de 4 digitos.');
       return;
     }
 
@@ -2370,15 +2430,52 @@ function Dashboard({ setView }) {
   };
 
   const resetNewCampanaData = () => {
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
     setNewCampanaData({
       nombre: '',
       descripcion: '',
       metaMonto: '',
-      fechaInicio: '',
+      fechaInicio: getChileDateValue(),
       fechaFin: '',
       imagenUrl: '',
     });
+    setNewCampanaImage(null);
+    setNewCampanaImagePreview('');
     setCreateCampanaError('');
+  };
+
+  const handleNewCampanaImageChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setCreateCampanaError('Selecciona un archivo de imagen valido.');
+      event.target.value = '';
+      return;
+    }
+
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
+    setNewCampanaImage(selectedFile);
+    setNewCampanaImagePreview(URL.createObjectURL(selectedFile));
+    setCreateCampanaError('');
+    event.target.value = '';
+  };
+
+  const removeNewCampanaImage = () => {
+    if (savingCampana) return;
+
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
+    setNewCampanaImage(null);
+    setNewCampanaImagePreview('');
   };
 
   const openCreateCampanaModal = () => {
@@ -2423,12 +2520,26 @@ function Dashboard({ setView }) {
       return;
     }
 
+    const requestBody = newCampanaImage
+      ? (() => {
+          const formData = new FormData();
+          formData.append('nombre', payload.nombre);
+          formData.append('descripcion', payload.descripcion);
+          formData.append('metaMonto', String(payload.metaMonto));
+          formData.append('fechaInicio', payload.fechaInicio);
+          formData.append('fechaFin', payload.fechaFin);
+          formData.append('estado', payload.estado);
+          formData.append('imagen', newCampanaImage);
+          return formData;
+        })()
+      : JSON.stringify(payload);
+
     setSavingCampana(true);
 
     try {
       await apiFetch('/api/campanasdonaciones', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: requestBody,
       });
       setShowCreateCampanaModal(false);
       resetNewCampanaData();
@@ -2475,14 +2586,7 @@ function Dashboard({ setView }) {
   };
 
   const handleValueUpdateChange = (event) => {
-    const rawValue = event.target.value.replace(/\D/g, '');
-
-    if (rawValue === '') {
-      setValueUpdateInput('');
-      return;
-    }
-
-    setValueUpdateInput(formatCurrency(rawValue));
+    setValueUpdateInput(formatLimitedMaterialPrice(event.target.value));
   };
 
   const handleUpdateMaterialValue = async (event) => {
@@ -2490,6 +2594,11 @@ function Dashboard({ setView }) {
     if (!canEditMaterial || !valueUpdateMaterial?.id) return;
 
     const nextValue = parseCurrencyValue(valueUpdateInput);
+    if (nextValue > MAX_MATERIAL_PRICE) {
+      setValueUpdateError('El valor unitario no puede superar $100.000.000.');
+      return;
+    }
+
     setSavingValueUpdate(true);
     setValueUpdateError('');
 
@@ -2532,6 +2641,11 @@ function Dashboard({ setView }) {
 
     if (!payload.idTipoProducto || !payload.nombre || !payload.descripcion) {
       setAddMaterialError('Completa tipo, nombre y descripción para crear el material.');
+      return;
+    }
+
+    if (payload.valorUnitario > MAX_MATERIAL_PRICE) {
+      setAddMaterialError('El valor unitario no puede superar $100.000.000.');
       return;
     }
 
@@ -3425,7 +3539,7 @@ function Dashboard({ setView }) {
   const filtroCampanaNormalizado = filtroNombreCampana.trim().toLowerCase();
   const getDateOnlyTime = (value, endOfDay = false) => {
     if (!value) return null;
-    const date = value instanceof Date ? value : new Date(value);
+    const date = parseDateValue(value);
     if (Number.isNaN(date.getTime())) return null;
     date.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
     return date.getTime();
@@ -3489,7 +3603,7 @@ function Dashboard({ setView }) {
   ];
   const getLibroGuardiaDate = (value) => {
     if (!value) return null;
-    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+    const date = parseDateValue(value);
     return Number.isNaN(date.getTime()) ? null : date;
   };
   const getLibroGuardiaDates = (libro) => (
@@ -5923,14 +6037,21 @@ function Dashboard({ setView }) {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
-                  <input
-                    type="tel"
-                    value={contactProfileData.telefono}
-                    onChange={(event) => setContactProfileData(current => ({ ...current, telefono: event.target.value }))}
-                    disabled={savingContactProfile}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                    placeholder="+56912345678"
-                  />
+                  <div className="flex overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
+                    <span className="flex items-center border-r border-dark-border bg-dark-bg2 px-4 text-sm font-semibold text-text-muted">
+                      +569
+                    </span>
+                    <input
+                      type="tel"
+                      value={contactProfileData.telefono}
+                      inputMode="numeric"
+                      maxLength={8}
+                      onChange={(event) => setContactProfileData(current => ({ ...current, telefono: event.target.value.replace(/\D/g, '').slice(0, 8) }))}
+                      disabled={savingContactProfile}
+                      className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-sm text-white outline-none placeholder-text-muted disabled:opacity-50"
+                      placeholder="12345678"
+                    />
+                  </div>
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-text-muted">Genero</span>
@@ -6137,15 +6258,36 @@ function Dashboard({ setView }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Imagen URL</label>
-                  <input
-                    type="text"
-                    value={newCampanaData.imagenUrl}
-                    onChange={(e) => setNewCampanaData({ ...newCampanaData, imagenUrl: e.target.value })}
-                    disabled={savingCampana}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="Opcional"
-                  />
+                  <span className="block text-sm font-medium text-text-muted mb-2">Imagen</span>
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-6 text-center transition-colors hover:border-brand-cyan/60">
+                    <span className="mb-2 text-2xl">&#128247;</span>
+                    <span className="text-sm font-semibold text-text-main">Seleccionar imagen</span>
+                    <span className="mt-1 text-xs text-text-muted">PNG, JPG, JPEG o WEBP</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={handleNewCampanaImageChange}
+                      disabled={savingCampana}
+                    />
+                  </label>
+
+                  {newCampanaImagePreview && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
+                      <div className="relative">
+                        <img src={newCampanaImagePreview} alt={newCampanaImage?.name || 'Vista previa'} className="h-40 w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={removeNewCampanaImage}
+                          disabled={savingCampana}
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                        >
+                          x
+                        </button>
+                      </div>
+                      <p className="truncate px-3 py-2 text-xs text-text-muted">{newCampanaImage?.name}</p>
+                    </div>
+                  )}
                 </div>
 
                 {createCampanaError && (
@@ -6573,7 +6715,7 @@ function Dashboard({ setView }) {
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
                   <h3 className="rajdhani text-lg font-semibold text-text-main">Crear libro de guardia</h3>
-                  <p className="mt-1 text-xs text-text-muted">Define el periodo y estado inicial del libro.</p>
+                  <p className="mt-1 text-xs text-text-muted">Define el periodo del libro.</p>
                 </div>
                 <button type="button" onClick={closeCreateLibroGuardiaModal} disabled={savingLibroGuardia} className="text-text-muted transition-colors hover:text-text-main disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -6603,18 +6745,6 @@ function Dashboard({ setView }) {
                     <option value="Diario" className="bg-dark-surface text-text-main">Diario</option>
                     <option value="Semanal" className="bg-dark-surface text-text-main">Semanal</option>
                     <option value="Mensual" className="bg-dark-surface text-text-main">Mensual</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-text-muted">Estado</label>
-                  <select
-                    value={newLibroGuardiaData.estado}
-                    onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, estado: event.target.value }))}
-                    disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                  >
-                    <option value="Abierto" className="bg-dark-surface text-text-main">Abierto</option>
-                    <option value="Cerrado" className="bg-dark-surface text-text-main">Cerrado</option>
                   </select>
                 </div>
                 {createLibroGuardiaError && (
@@ -6663,7 +6793,8 @@ function Dashboard({ setView }) {
                     <input
                       type="date"
                       value={newRegistroData.fecha}
-                      onChange={(event) => setNewRegistroData(current => ({ ...current, fecha: event.target.value }))}
+                      max={MAX_DATE_INPUT_VALUE}
+                      onChange={handleRegistroFechaChange}
                       disabled={savingRegistroLibroGuardia}
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     />
@@ -7072,17 +7203,11 @@ function Dashboard({ setView }) {
                   <input
                     type="text"
                     className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
-                    placeholder="Ej. $15.000"
+                    placeholder="Max. $100.000.000"
                     value={newMaterialData.valorUnitario}
                     disabled={savingMaterial}
                     onChange={(e) => {
-                      let rawValue = e.target.value.replace(/\D/g, '');
-                      if (rawValue === '') {
-                        setNewMaterialData({...newMaterialData, valorUnitario: ''});
-                      } else {
-                        const numValue = parseInt(rawValue, 10);
-                        setNewMaterialData({...newMaterialData, valorUnitario: '$' + numValue.toLocaleString('es-CL')});
-                      }
+                      setNewMaterialData({...newMaterialData, valorUnitario: formatLimitedMaterialPrice(e.target.value)});
                     }}
                   />
                 </div>

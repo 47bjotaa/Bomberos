@@ -3,9 +3,18 @@ import { apiFetch } from '../services/api';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 
 const getSlugFromPath = () => decodeURIComponent(window.location.pathname.replace(/^\/donacion-gracias\/?/, '').split('/')[0] || '');
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 const formatDateChile = (value = new Date()) => {
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return '';
 
   return new Intl.DateTimeFormat('es-CL', {

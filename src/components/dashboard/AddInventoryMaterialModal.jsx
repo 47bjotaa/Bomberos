@@ -20,6 +20,13 @@ const toBoolean = (value) => (
 const getTodayDateInputValue = () => (
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
 );
+const MAX_DATE_INPUT_VALUE = '9999-12-31';
+const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const getDateInputLocalNoonIso = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12).toISOString();
+};
 
 const mapMaterial = (material) => ({
   id: material.idMaterial || material.id,
@@ -85,11 +92,17 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const usesItemEndpoint = Boolean(selectedMaterial?.serializado || isEpp);
   const canSubmit = selectedMaterial && idUbicacion &&
     (usesItemEndpoint ? formData.codigoUnico.trim() : Number(formData.cantidad) > 0) &&
-    (!isEpp || (formData.talla.trim() && formData.fechaVencimiento));
+    (!isEpp || (formData.talla.trim() && formData.fechaVencimiento && hasFourDigitDateYear(formData.fechaVencimiento)));
   const todayDateInputValue = useMemo(() => getTodayDateInputValue(), []);
 
   const openDatePicker = (event) => {
     event.currentTarget.showPicker?.();
+  };
+
+  const handleFechaVencimientoChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setFormData(prev => ({ ...prev, fechaVencimiento: value }));
   };
 
   const getCreatedItemId = (payload) => {
@@ -127,6 +140,11 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!canSubmit || saving) return;
+
+    if (isEpp && !hasFourDigitDateYear(formData.fechaVencimiento)) {
+      setError('La fecha de vencimiento debe tener un año de 4 digitos.');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -171,7 +189,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
           body: JSON.stringify({
             talla: formData.talla.trim(),
             estadoEpp: formData.estado,
-            fechaVencimiento: new Date(formData.fechaVencimiento).toISOString()
+            fechaVencimiento: getDateInputLocalNoonIso(formData.fechaVencimiento)
           })
         });
       }
@@ -302,6 +320,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                           type="date"
                           value={formData.fechaVencimiento}
                           min={todayDateInputValue}
+                          max={MAX_DATE_INPUT_VALUE}
                           inputMode="none"
                           onFocus={openDatePicker}
                           onClick={openDatePicker}
@@ -311,7 +330,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                             }
                           }}
                           onPaste={(event) => event.preventDefault()}
-                          onChange={(e) => setFormData(prev => ({ ...prev, fechaVencimiento: e.target.value }))}
+                          onChange={handleFechaVencimientoChange}
                           className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan"
                         />
                       </label>

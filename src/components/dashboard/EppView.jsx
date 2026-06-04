@@ -5,6 +5,15 @@ import EppDetailView from './EppDetailView';
 
 const EPP_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 const getArrayPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -18,7 +27,7 @@ const getArrayPayload = (payload) => {
 
 const formatDate = (value) => {
   if (!value) return '-';
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return new Intl.DateTimeFormat('es-CL', {

@@ -4,12 +4,29 @@ import { Icons } from '../ui/Icons';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => `$${Number(n || 0).toLocaleString('es-CL')}`;
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 function daysUntil(dateStr) {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
+  const date = parseDateValue(dateStr);
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const diff = date - new Date();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
+
+const formatDate = (value) => {
+  const date = parseDateValue(value);
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
 // ─── Spinner ────────────────────────────────────────────────────────────────
 function Spinner() {
@@ -481,7 +498,7 @@ export default function InicioView({
                   <p className="text-xs text-text-muted">Cierre</p>
                   <p className="mt-1 font-bold text-white">
                     {campanaActiva.fechaFin
-                      ? new Date(campanaActiva.fechaFin).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+                      ? formatDate(campanaActiva.fechaFin)
                       : '—'}
                   </p>
                 </div>

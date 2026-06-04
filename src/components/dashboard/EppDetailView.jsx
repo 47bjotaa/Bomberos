@@ -3,10 +3,21 @@ import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
 
 const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
+const MAX_DATE_INPUT_VALUE = '9999-12-31';
+const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return new Intl.DateTimeFormat('es-CL', {
@@ -48,9 +59,18 @@ const normalizeEstado = (estadoRaw) => {
 
 const getDateInputValue = (value) => {
   if (!value) return '';
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getDateInputLocalNoonIso = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12).toISOString();
 };
 
 const getArrayPayload = (payload, keys = []) => {
@@ -117,7 +137,7 @@ const sortMaintenances = (maintenances = []) => (
     const aPending = isMaintenancePending(a);
     const bPending = isMaintenancePending(b);
     if (aPending !== bPending) return aPending ? -1 : 1;
-    return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
+    return (parseDateValue(b.fecha)?.getTime() || 0) - (parseDateValue(a.fecha)?.getTime() || 0);
   })
 );
 
@@ -646,6 +666,12 @@ function EppDetailView({
     });
   };
 
+  const handleMaintenanceDateChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setMaintenanceForm((current) => ({ ...current, fecha: value }));
+  };
+
   const handleCreateMaintenance = async (event) => {
     event.preventDefault();
     if (!canManageMaintenances) return;
@@ -654,6 +680,11 @@ function EppDetailView({
     const tipo = maintenanceForm.tipo.trim();
     const isProgramada = maintenanceModalMode === 'programada';
     if (!descripcion || !tipo || (isProgramada && !maintenanceForm.fecha)) return;
+
+    if (isProgramada && !hasFourDigitDateYear(maintenanceForm.fecha)) {
+      setMaintenanceError('La fecha debe tener un año de 4 digitos.');
+      return;
+    }
 
     const payload = {
       ...targetIds,
@@ -756,7 +787,7 @@ function EppDetailView({
     const payload = {
       talla: editForm.talla.trim(),
       estadoEpp: editForm.estadoEpp,
-      fechaVencimiento: editForm.fechaVencimiento ? new Date(editForm.fechaVencimiento).toISOString() : null,
+      fechaVencimiento: getDateInputLocalNoonIso(editForm.fechaVencimiento),
     };
 
     if (!payload.talla || !payload.estadoEpp || !payload.fechaVencimiento) {
@@ -1248,7 +1279,7 @@ function EppDetailView({
             {maintenanceModalMode === 'programada' && (
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-white">Fecha</span>
-                <input type="date" value={maintenanceForm.fecha} onChange={(event) => setMaintenanceForm((current) => ({ ...current, fecha: event.target.value }))} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan" disabled={maintenanceSaving} />
+                <input type="date" value={maintenanceForm.fecha} max={MAX_DATE_INPUT_VALUE} onChange={handleMaintenanceDateChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-white outline-none transition-colors focus:border-brand-cyan" disabled={maintenanceSaving} />
               </label>
             )}
             <label className="block">
