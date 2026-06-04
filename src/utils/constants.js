@@ -49,7 +49,6 @@ export const cuerposBomberos = [
   { "idCuerpoBomberos": 181, "nombre": "Cuerpo de Bomberos de Antuco", "region": "Region del Biobio" },
   { "idCuerpoBomberos": 182, "nombre": "Cuerpo de Bomberos de Arauco", "region": "Region del Biobio" },
   { "idCuerpoBomberos": 1, "nombre": "Cuerpo de Bomberos de Arica", "region": "Region de Arica y Parinacota" },
-  { "idCuerpoBomberos": 2, "nombre": "Cuerpo de Bomberos de Arica", "region": "Region de Arica y Parinacota" },
   { "idCuerpoBomberos": 75, "nombre": "Cuerpo de Bomberos de Buin", "region": "Region de Metropolitana" },
   { "idCuerpoBomberos": 162, "nombre": "Cuerpo de Bomberos de Bulnes", "region": "Region del Nuble" },
   { "idCuerpoBomberos": 43, "nombre": "Cuerpo de Bomberos de Cabildo", "region": "Region de Valparaiso" },

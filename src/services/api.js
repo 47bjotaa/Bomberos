@@ -206,6 +206,9 @@ export const apiFetch = async (endpoint, options = {}) => {
 
 // --- AUTHENTICATION ---
 export const authService = {
+  getCuerposBomberos: async () => {
+    return apiFetch('/api/CuerposBomberos', { skipAuth: true });
+  },
   getSubscriptionPlans: async ({ soloActivos = true } = {}) => {
     const params = new URLSearchParams({ soloActivos: String(soloActivos) });
     return apiFetch(`/api/Suscripciones/planes?${params.toString()}`, {

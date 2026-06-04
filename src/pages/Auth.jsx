@@ -49,6 +49,18 @@ const normalizePlan = (plan = {}) => ({
   flowPlanId: plan.flowPlanId ?? plan.FlowPlanId ?? '',
 });
 
+const normalizeCuerpoBomberos = (cuerpo = {}) => ({
+  idCuerpoBomberos: cuerpo.idCuerpoBomberos
+    ?? cuerpo.IdCuerpoBomberos
+    ?? cuerpo.id_Cuerpo_Bomberos
+    ?? cuerpo.Id_Cuerpo_Bomberos
+    ?? cuerpo.id_cuerpo_bomberos
+    ?? cuerpo.id
+    ?? cuerpo.Id,
+  nombre: cuerpo.nombre ?? cuerpo.Nombre ?? '',
+  region: cuerpo.region ?? cuerpo.Region ?? '',
+});
+
 const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
 
 const getFlowRegistrationData = (response = {}) => {
@@ -98,6 +110,9 @@ function AuthView({ initialMode = 'register' }) {
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [plansError, setPlansError] = useState('');
+  const [availableCuerpos, setAvailableCuerpos] = useState(cuerposBomberos);
+  const [loadingCuerpos, setLoadingCuerpos] = useState(false);
+  const [cuerposError, setCuerposError] = useState('');
   const [flowRegistration, setFlowRegistration] = useState(null);
   const [registrationComplete, setRegistrationComplete] = useState(false);
 
@@ -145,6 +160,44 @@ function AuthView({ initialMode = 'register' }) {
     setTurnstileToken('');
     setTurnstileKey(key => key + 1);
   }, [initialMode]);
+
+  useEffect(() => {
+    if (mode !== 'register') return;
+
+    let alive = true;
+
+    const loadCuerposBomberos = async () => {
+      setLoadingCuerpos(true);
+      setCuerposError('');
+
+      try {
+        const data = await authService.getCuerposBomberos();
+        const nextCuerpos = getArrayPayload(data)
+          .map(normalizeCuerpoBomberos)
+          .filter(cuerpo => cuerpo.idCuerpoBomberos && cuerpo.nombre && cuerpo.region);
+
+        if (!alive) return;
+
+        if (nextCuerpos.length > 0) {
+          setAvailableCuerpos(nextCuerpos);
+        } else {
+          setAvailableCuerpos(cuerposBomberos);
+          setCuerposError('No se encontraron cuerpos en la API. Se usara la lista local.');
+        }
+      } catch (error) {
+        if (!alive) return;
+        setAvailableCuerpos(cuerposBomberos);
+        setCuerposError(error.message || 'No se pudieron cargar los cuerpos desde la API. Se usara la lista local.');
+      } finally {
+        if (alive) setLoadingCuerpos(false);
+      }
+    };
+
+    loadCuerposBomberos();
+    return () => {
+      alive = false;
+    };
+  }, [mode]);
 
   useEffect(() => {
     if (mode !== 'register') return;
@@ -389,7 +442,7 @@ function AuthView({ initialMode = 'register' }) {
     }
   };
 
-  const filteredCuerpos = cuerposBomberos.filter(c => 
+  const filteredCuerpos = availableCuerpos.filter(c =>
     c.nombre.toLowerCase().includes(cuerpoSearch.toLowerCase()) || 
     c.region.toLowerCase().includes(cuerpoSearch.toLowerCase())
   );
@@ -869,10 +922,13 @@ function AuthView({ initialMode = 'register' }) {
                       />
                     </div>
                     {errors.cuerpoBomberos && <p className="text-brand-red text-sm mt-1">{errors.cuerpoBomberos}</p>}
+                    {cuerposError && <p className="text-text-muted text-xs mt-1">{cuerposError}</p>}
 
                     {isDropdownOpen && (
                       <div className="absolute z-50 w-full mt-2 bg-dark-bg3 border border-dark-border rounded-lg shadow-xl max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-thumb]:bg-text-muted/50 [&::-webkit-scrollbar-thumb]:rounded-full">
-                        {Object.keys(groupedCuerpos).length === 0 ? (
+                        {loadingCuerpos ? (
+                          <div className="p-5 text-base text-text-muted italic text-center">Cargando cuerpos de bomberos...</div>
+                        ) : Object.keys(groupedCuerpos).length === 0 ? (
                           <div className="p-5 text-base text-text-muted italic text-center">No se encontraron resultados...</div>
                         ) : (
                           Object.entries(groupedCuerpos).map(([region, cuerpos]) => (
