@@ -78,6 +78,17 @@ const getFlowRegistrationData = (response = {}) => {
   };
 };
 
+const getLoginErrorMessage = (error) => {
+  const message = error?.message?.trim() || '';
+  const isGenericServerError = !message || /^error interno$/i.test(message) || /^error api: 500$/i.test(message);
+
+  if (isGenericServerError) {
+    return 'No se pudo iniciar sesion. Revisa que la verificacion este completa e intenta nuevamente. Si el problema continua, revisa la configuracion de Turnstile en el servidor.';
+  }
+
+  return message;
+};
+
 function AuthView({ initialMode = 'register' }) {
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState(initialMode);
@@ -359,7 +370,7 @@ function AuthView({ initialMode = 'register' }) {
           console.log("Login exitoso", res);
           window.location.href = getAppUrl('/dashboard');
         } catch (error) {
-          setErrors(prev => ({ ...prev, api: error.message || "Error al iniciar sesión." }));
+          setErrors(prev => ({ ...prev, api: getLoginErrorMessage(error) }));
           console.error("Error API Login:", error);
           setTurnstileToken('');
           setTurnstileKey(key => key + 1);
