@@ -15,6 +15,7 @@ const authPathByMode = {
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 const FREE_PLAN_SUCCESS_MESSAGE = 'Cuenta creada con exito. Ya puedes iniciar sesion.';
+const CHILE_MOBILE_PREFIX = '+569';
 
 const consumeStoredSuccessMessage = () => {
   if (typeof window === 'undefined') return '';
@@ -205,12 +206,15 @@ function AuthView({ initialMode = 'register' }) {
   const validate = () => {
     const newErrors = {};
     const rutRegex = /^[0-9]+-[0-9K]{1}$/i;
+    const phoneDigits = formData.telefono.replace(/\D/g, '');
 
     if (mode === 'register') {
       if (step === 1) {
         if (!formData.nombre) newErrors.nombre = "Obligatorio";
         if (!formData.rut) newErrors.rut = "Obligatorio";
         else if (!rutRegex.test(formData.rut)) newErrors.rut = "Inválido";
+        if (!phoneDigits) newErrors.telefono = "Obligatorio";
+        else if (phoneDigits.length !== 8) newErrors.telefono = "Ingresa 8 digitos";
         if (!formData.correo) newErrors.correo = "Obligatorio";
         else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.correo.trim())) newErrors.correo = "Inválido";
       } else if (step === 2) {
@@ -322,7 +326,7 @@ function AuthView({ initialMode = 'register' }) {
             emailUsuario: formData.correo,
             password: formData.password,
             nombreBombero: formData.nombre,
-            telefonoBombero: formData.telefono || "N/A",
+            telefonoBombero: formData.telefono ? `${CHILE_MOBILE_PREFIX}${formData.telefono}` : "N/A",
             IdTipoSuscripcion: Number(formData.idTipoSuscripcion),
             rol: "Administrador" // Rol por defecto al crear una compañía
           };
@@ -370,7 +374,11 @@ function AuthView({ initialMode = 'register' }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const nextValue = name === 'rut' ? formatRut(value) : value;
+    const nextValue = name === 'rut'
+      ? formatRut(value)
+      : name === 'telefono'
+        ? value.replace(/\D/g, '').slice(0, 8)
+        : value;
 
     setFormData({ ...formData, [name]: nextValue });
     if (successMessage) {
@@ -688,6 +696,14 @@ function AuthView({ initialMode = 'register' }) {
 
       {/* Right Panel */}
       <div className="w-full lg:w-[60%] xl:w-[65%] flex flex-col justify-center items-center p-8 bg-dark-bg relative overflow-x-hidden">
+        <button
+          type="button"
+          onClick={() => { window.location.href = getAppUrl('/'); }}
+          className="absolute top-8 left-8 z-50 rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-text-main"
+        >
+          Volver al home
+        </button>
+
         {/* Theme Toggle */}
         <div className="absolute top-8 right-8 z-50">
           <button 
@@ -774,25 +790,41 @@ function AuthView({ initialMode = 'register' }) {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Nombre completo</label>
-                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} placeholder="Ej: Nicolas Alexander Perez" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     {errors.nombre && <p className="text-brand-red text-sm mt-1">{errors.nombre}</p>}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
                       <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">RUT</label>
-                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                      <input type="text" name="rut" value={formData.rut} onChange={handleChange} inputMode="text" autoComplete="username" placeholder="Ej: 12345678-9" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                       {errors.rut && <p className="text-brand-red text-sm mt-1">{errors.rut}</p>}
                     </div>
                     <div>
                       <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Teléfono</label>
-                      <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                      <div className="flex rounded-lg border border-dark-border bg-dark-bg2 transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
+                        <span className="flex items-center border-r border-dark-border px-4 text-base font-semibold text-text-muted">
+                          {CHILE_MOBILE_PREFIX}
+                        </span>
+                        <input
+                          type="tel"
+                          name="telefono"
+                          value={formData.telefono}
+                          onChange={handleChange}
+                          inputMode="numeric"
+                          autoComplete="tel-national"
+                          maxLength={8}
+                          placeholder="12345678"
+                          className="min-w-0 flex-1 px-4 py-3 rounded-r-lg bg-transparent text-inherit placeholder:text-text-muted text-base outline-none"
+                        />
+                      </div>
+                      {errors.telefono && <p className="text-brand-red text-sm mt-1">{errors.telefono}</p>}
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-base font-medium text-[var(--color-text-main)] mb-2">Email</label>
-                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} placeholder="Ej: nombre@correo.cl" className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     {errors.correo && <p className="text-brand-red text-sm mt-1">{errors.correo}</p>}
                   </div>
 
@@ -813,7 +845,7 @@ function AuthView({ initialMode = 'register' }) {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                       </div>
-                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} placeholder="Ej: 1ra Compania" className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     </div>
                     {errors.cuartel && <p className="text-brand-red text-sm mt-1">{errors.cuartel}</p>}
                   </div>
@@ -832,6 +864,7 @@ function AuthView({ initialMode = 'register' }) {
                           setCuerpoSearch(e.target.value);
                           setIsDropdownOpen(true);
                         }}
+                        placeholder="Busca por cuerpo o region"
                         className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all cursor-pointer"
                       />
                     </div>
@@ -927,6 +960,7 @@ function AuthView({ initialMode = 'register' }) {
                         name="password" 
                         value={formData.password} 
                         onChange={handleChange} 
+                        placeholder="Crea una contrasena segura"
                         className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12"                       />
                       <button
                         type="button"
@@ -947,6 +981,7 @@ function AuthView({ initialMode = 'register' }) {
                         name="confirmPassword" 
                         value={formData.confirmPassword} 
                         onChange={handleChange} 
+                        placeholder="Repite tu contrasena"
                         className="w-full px-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all pr-12"                       />
                       <button
                         type="button"
