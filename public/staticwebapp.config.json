@@ -24,18 +24,6 @@
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
       }
-    },
-    {
-      "route": "/assets/*.css",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "route": "/assets/*.js",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
     }
   ],
   "navigationFallback": {
