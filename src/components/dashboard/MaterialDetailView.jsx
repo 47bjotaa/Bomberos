@@ -192,6 +192,7 @@ const sortMaintenances = (maintenances = []) => (
 
 const isMaintenancePending = (maintenance) => (
   String(maintenance?.estadoMantencion || '').toLowerCase().includes('pendiente')
+  || String(maintenance?.estadoMantencion || '').toLowerCase().includes('programada')
 );
 
 function EmptyState({ children, palette }) {

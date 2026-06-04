@@ -742,7 +742,7 @@ function Dashboard({ setView }) {
   useEffect(() => {
     fetchNotifications();
 
-    const intervalId = window.setInterval(fetchNotifications, 60000);
+    const intervalId = window.setInterval(fetchNotifications, 300000);
     return () => window.clearInterval(intervalId);
   }, []);
 
