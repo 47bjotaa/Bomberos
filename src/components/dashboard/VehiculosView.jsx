@@ -8,7 +8,7 @@ const VEHICLE_TYPES = [
   'Rescate',
 ];
 const VEHICLE_STATUS_OPTIONS = [
-  { value: 'Operativo', label: 'Operativo' },
+  { value: 'Activo', label: 'Operativo' },
   { value: 'En Mantencion', label: 'En Mantención' },
   { value: 'Fuera de Servicio', label: 'Fuera de Servicio' },
 ];
@@ -16,7 +16,7 @@ const normalizeVehicleStatusValue = (value) => {
   const normalized = String(value || '').toLowerCase();
   if (normalized.includes('mantenc')) return 'En Mantencion';
   if (normalized.includes('fuera')) return 'Fuera de Servicio';
-  return 'Operativo';
+  return 'Activo';
 };
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
 const MAX_DATE_INPUT_VALUE = '9999-12-31';
@@ -190,7 +190,7 @@ function VehiculosView({
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const maintenanceFilesRef = useRef([]);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusChangeValue, setStatusChangeValue] = useState('Operativo');
+  const [statusChangeValue, setStatusChangeValue] = useState('Activo');
   const [statusChangeSaving, setStatusChangeSaving] = useState(false);
   const [statusChangeError, setStatusChangeError] = useState('');
 
@@ -1110,10 +1110,19 @@ function VehiculosView({
             <h3 className="rajdhani text-xl font-bold text-text-main">Detalle del Vehiculo</h3>
           </div>
           {canManageVehicles && (
-            <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-              Editar
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={openStatusModal}
+                className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:text-brand-cyan"
+              >
+                Cambiar estado
+              </button>
+              <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                Editar
+              </button>
+            </div>
           )}
         </div>
 
@@ -1183,21 +1192,12 @@ function VehiculosView({
           <div className="flex min-w-0 flex-col justify-center">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
-                (v.estado || '').toLowerCase().includes('operativ')
+                (v.estado || '').toLowerCase().includes('operativ') || (v.estado || '').toLowerCase().includes('activo')
                   ? 'border-brand-green/20 bg-brand-green/10 text-brand-green'
                   : (v.estado || '').toLowerCase().includes('mantenc')
                   ? 'border-brand-gold/20 bg-brand-gold/10 text-brand-gold'
                   : 'border-brand-red/20 bg-brand-red/10 text-brand-red'
               }`}>Estado: {v.estado}</span>
-              {canManageVehicles && (
-                <button
-                  type="button"
-                  onClick={openStatusModal}
-                  className="rounded-full border border-dark-border bg-dark-bg px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-brand-cyan/50 hover:text-brand-cyan"
-                >
-                  Cambiar estado
-                </button>
-              )}
               <span className="text-xs font-medium text-brand-cyan">{v.tipo}</span>
             </div>
             <h2 className="rajdhani mb-3 text-3xl font-bold text-text-main">{v.nombre}</h2>
