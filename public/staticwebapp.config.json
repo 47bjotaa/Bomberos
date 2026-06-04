@@ -24,6 +24,18 @@
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
       }
+    },
+    {
+      "route": "/assets/*.css",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/assets/*.js",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     }
   ],
   "navigationFallback": {
@@ -31,6 +43,16 @@
     "exclude": [
       "/api/*",
       "/assets/*",
+      "/assets/*.css",
+      "/assets/*.js",
+      "/assets/*.map",
+      "/assets/*.svg",
+      "/assets/*.png",
+      "/assets/*.jpg",
+      "/assets/*.jpeg",
+      "/assets/*.webp",
+      "/assets/*.woff",
+      "/assets/*.woff2",
       "/images/*",
       "/favicon.svg",
       "/icons.svg"
