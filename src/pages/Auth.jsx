@@ -164,7 +164,10 @@ function AuthView({ initialMode = 'register' }) {
         setFormData(current => {
           if (current.idTipoSuscripcion) return current;
 
-          const selectedPlan = plans.find(plan => String(plan.id) === String(selectedPlanFromUrl));
+          const selectedPlan = plans.find(plan => (
+            String(plan.id) === String(selectedPlanFromUrl)
+            || String(plan.codigo).toLowerCase() === String(selectedPlanFromUrl).toLowerCase()
+          ));
           return {
             ...current,
             idTipoSuscripcion: String((selectedPlan || plans[0])?.id || ''),
