@@ -7,7 +7,7 @@ const STATIC_SUBSCRIPTION_PLANS = [
     nombre: 'Prueba',
     descripcion: 'Plan de prueba inicial para nuevas companias.',
     precioMensual: 0,
-    duracionDias: 30,
+    duracionDias: 7,
     donaciones: false,
   },
   {
