@@ -22,10 +22,10 @@ import ReportsView from '../components/dashboard/ReportsView';
 const GENERAL_INVENTORY_ID = 'general-inventory';
 const TIPOS_PRODUCTO = [
   { id: 1, nombre: 'EPP' },
-  { id: 2, nombre: 'Material de agua' },
+  { id: 2, nombre: 'Material de Agua' },
   { id: 3, nombre: 'Material de rescate' },
-  { id: 4, nombre: 'Acceso y ventilacion' },
-  { id: 5, nombre: 'Material especifico' },
+  { id: 4, nombre: 'Apoyo bomberil' },
+  { id: 5, nombre: 'Material forestal' },
 ];
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const DONATION_PAGE_SIZE_OPTIONS = [8, 16, 32, 64];
