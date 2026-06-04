@@ -647,6 +647,8 @@ function Dashboard({ setView }) {
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
   const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario' });
+  const [closingLibroGuardiaId, setClosingLibroGuardiaId] = useState(null);
+  const [closeLibroGuardiaError, setCloseLibroGuardiaError] = useState('');
   const [activeLibrosGuardiaTab, setActiveLibrosGuardiaTab] = useState('abiertos');
   const [librosGuardiaMonthFilter, setLibrosGuardiaMonthFilter] = useState('');
   const [librosGuardiaYearFilter, setLibrosGuardiaYearFilter] = useState('');
@@ -1430,6 +1432,32 @@ function Dashboard({ setView }) {
       setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
     } finally {
       setSavingLibroGuardia(false);
+    }
+  };
+
+  const handleCloseLibroGuardia = async (event, libro) => {
+    event.stopPropagation();
+    if (!canCreateLibroGuardia || !libro?.id || closingLibroGuardiaId) return;
+
+    setClosingLibroGuardiaId(libro.id);
+    setCloseLibroGuardiaError('');
+
+    try {
+      const closedLibro = await apiFetch(`/api/librosguardia/${libro.id}/cerrar`, {
+        method: 'PATCH',
+      });
+      const mappedLibro = mapLibroGuardia({ ...libro, estado: 'Cerrado', ...(closedLibro || {}) });
+      setLibrosGuardia(current => current.map(item => (
+        String(item.id) === String(libro.id) ? { ...item, ...mappedLibro } : item
+      )));
+      if (selectedLibroGuardia && String(selectedLibroGuardia.id) === String(libro.id)) {
+        setSelectedLibroGuardia(current => ({ ...current, ...mappedLibro }));
+      }
+      setActiveLibrosGuardiaTab('cerrados');
+    } catch (error) {
+      setCloseLibroGuardiaError(error.message || 'No se pudo cerrar el libro de guardia.');
+    } finally {
+      setClosingLibroGuardiaId(null);
     }
   };
 
@@ -5682,6 +5710,12 @@ function Dashboard({ setView }) {
                       </div>
                     </div>
 
+                    {closeLibroGuardiaError && (
+                      <p className="mb-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                        {closeLibroGuardiaError}
+                      </p>
+                    )}
+
                     {currentLibrosGuardia.length > 0 ? (
                       <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                       {currentLibrosGuardia.map((libro) => {
@@ -5722,6 +5756,16 @@ function Dashboard({ setView }) {
                               <button type="button" onClick={() => openRegistrosLibroGuardia(libro)} className="flex w-full items-center justify-between rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-3 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15">
                                 Ver registros →
                               </button>
+                              {isActive && canCreateLibroGuardia && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleCloseLibroGuardia(event, libro)}
+                                  disabled={String(closingLibroGuardiaId) === String(libro.id)}
+                                  className="mt-3 flex w-full items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm font-semibold text-brand-red transition-colors hover:bg-brand-red/15 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {String(closingLibroGuardiaId) === String(libro.id) ? 'Cerrando...' : 'Cerrar libro'}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </article>

@@ -7,6 +7,17 @@ const VEHICLE_TYPES = [
   'Ambulancia',
   'Rescate',
 ];
+const VEHICLE_STATUS_OPTIONS = [
+  { value: 'Operativo', label: 'Operativo' },
+  { value: 'En Mantencion', label: 'En Mantención' },
+  { value: 'Fuera de Servicio', label: 'Fuera de Servicio' },
+];
+const normalizeVehicleStatusValue = (value) => {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('mantenc')) return 'En Mantencion';
+  if (normalized.includes('fuera')) return 'Fuera de Servicio';
+  return 'Operativo';
+};
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
 const MAX_DATE_INPUT_VALUE = '9999-12-31';
 const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -178,6 +189,10 @@ function VehiculosView({
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const maintenanceFilesRef = useRef([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusChangeValue, setStatusChangeValue] = useState('Operativo');
+  const [statusChangeSaving, setStatusChangeSaving] = useState(false);
+  const [statusChangeError, setStatusChangeError] = useState('');
 
   const fetchVehiculos = async () => {
     setLoading(true);
@@ -230,7 +245,11 @@ function VehiculosView({
   const vehicleImageSlotsAvailable = Math.max(0, 3 - vehicleImages.length);
 
   const updateVehiculo = (updatedV) => {
-    setVehiculos((current) => current.map((v) => v.id === updatedV.id ? updatedV : v));
+    setVehiculos((current) => current.map((v) => (
+      String(v.id) === String(updatedV.id) || String(v.idVehiculo) === String(updatedV.idVehiculo || updatedV.id)
+        ? updatedV
+        : v
+    )));
     setSelectedVehiculo(updatedV);
   };
 
@@ -471,6 +490,8 @@ function VehiculosView({
     setMaintenanceError('');
     setMaintenanceNotice('');
     setSelectedMaintenance(null);
+    setShowStatusModal(false);
+    setStatusChangeError('');
     setImageUploadError('');
   };
 
@@ -668,6 +689,53 @@ function VehiculosView({
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
     setMaintenanceError('');
+  };
+
+  const openStatusModal = () => {
+    if (!canManageVehicles) return;
+    setStatusChangeValue(normalizeVehicleStatusValue(selectedVehiculo?.estado || selectedVehiculo?.estadoVehiculo));
+    setStatusChangeError('');
+    setShowStatusModal(true);
+  };
+
+  const closeStatusModal = () => {
+    if (statusChangeSaving) return;
+    setShowStatusModal(false);
+    setStatusChangeError('');
+  };
+
+  const handleUpdateVehicleStatus = async (event) => {
+    event.preventDefault();
+    if (!canManageVehicles || !selectedId || statusChangeSaving) return;
+
+    const payload = { estadoVehiculo: statusChangeValue };
+    if (!payload.estadoVehiculo) {
+      setStatusChangeError('Selecciona un estado para el vehiculo.');
+      return;
+    }
+
+    setStatusChangeSaving(true);
+    setStatusChangeError('');
+
+    try {
+      const updatedVehicle = await apiFetch(`/api/vehiculos/${selectedId}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      const nextVehicle = {
+        ...selectedVehiculo,
+        ...(updatedVehicle || {}),
+        estado: updatedVehicle?.estadoVehiculo || updatedVehicle?.estado || payload.estadoVehiculo,
+        estadoVehiculo: updatedVehicle?.estadoVehiculo || updatedVehicle?.estado || payload.estadoVehiculo,
+      };
+
+      updateVehiculo(nextVehicle);
+      setShowStatusModal(false);
+    } catch (err) {
+      setStatusChangeError(err.message || 'No se pudo cambiar el estado del vehiculo.');
+    } finally {
+      setStatusChangeSaving(false);
+    }
   };
 
   const handleMaintenanceDateChange = (event) => {
@@ -999,14 +1067,6 @@ function VehiculosView({
                     </select>
                   </label>
 
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
-                    <select value={formData.estadoVehiculo} onChange={(e) => setFormData({ ...formData, estadoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan">
-                      <option value="Operativo" className="bg-dark-surface text-text-main">Operativo</option>
-                      <option value="En Mantencion" className="bg-dark-surface text-text-main">En Mantención</option>
-                      <option value="Fuera de Servicio" className="bg-dark-surface text-text-main">Fuera de Servicio</option>
-                    </select>
-                  </label>
 
                   <label className="block md:col-span-2">
                     <span className="mb-2 block text-sm font-medium text-text-main">Descripción</span>
@@ -1129,6 +1189,15 @@ function VehiculosView({
                   ? 'border-brand-gold/20 bg-brand-gold/10 text-brand-gold'
                   : 'border-brand-red/20 bg-brand-red/10 text-brand-red'
               }`}>Estado: {v.estado}</span>
+              {canManageVehicles && (
+                <button
+                  type="button"
+                  onClick={openStatusModal}
+                  className="rounded-full border border-dark-border bg-dark-bg px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-brand-cyan/50 hover:text-brand-cyan"
+                >
+                  Cambiar estado
+                </button>
+              )}
               <span className="text-xs font-medium text-brand-cyan">{v.tipo}</span>
             </div>
             <h2 className="rajdhani mb-3 text-3xl font-bold text-text-main">{v.nombre}</h2>
@@ -1506,6 +1575,54 @@ function VehiculosView({
                 </button>
                 <button type="submit" disabled={!newObs.observacion.trim() || observationSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                   {observationSaving ? 'Guardando...' : 'Guardar observacion'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showStatusModal && canManageVehicles && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeStatusModal}>
+            <form onSubmit={handleUpdateVehicleStatus} className="w-full max-w-sm overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-text-main">Cambiar estado</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
+                  <select
+                    value={statusChangeValue}
+                    onChange={(event) => setStatusChangeValue(event.target.value)}
+                    disabled={statusChangeSaving}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan disabled:opacity-60"
+                  >
+                    {VEHICLE_STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value} className="bg-dark-surface text-text-main">
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {statusChangeError && (
+                  <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {statusChangeError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={statusChangeSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {statusChangeSaving ? 'Guardando...' : 'Guardar estado'}
                 </button>
               </div>
             </form>
