@@ -671,7 +671,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         : `${filters.periodo.toLowerCase()}-${filters.anio}${filters.periodo === 'MES' ? `-${filters.mes.padStart(2, '0')}` : ''}`;
       triggerPdfDownload(pdf, `reporte-bajas-${filters.motivo.toLowerCase()}-${suffix}.pdf`);
     } catch (downloadError) {
-      setError(downloadError.message || 'No se pudo generar el reporte. Verifica el permiso VER_REPORTES.');
+      setError(downloadError.message || 'No se pudo generar el reporte. Verifica tus permisos e intenta nuevamente.');
     } finally {
       setDownloading(false);
     }
@@ -688,7 +688,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       });
       triggerPdfDownload(pdf, `reporte-stock-cantidad-${rootLocationId ? `ubicacion-${rootLocationId}` : 'compania'}.pdf`);
     } catch (downloadError) {
-      setStockError(downloadError.message || 'No se pudo generar el reporte. Verifica el permiso VER_REPORTES.');
+      setStockError(downloadError.message || 'No se pudo generar el reporte. Verifica tus permisos e intenta nuevamente.');
     } finally {
       setStockDownloading(false);
     }
@@ -742,7 +742,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         `reporte-donaciones-campania-${donationFilters.idCampaniaDonacion}-${donationFilters.estadoPago.toLowerCase()}-${periodSuffix}.pdf`
       );
     } catch (downloadError) {
-      setDonationError(downloadError.message || 'No se pudo generar el reporte de donaciones. Verifica el permiso VER_REPORTES.');
+      setDonationError(downloadError.message || 'No se pudo generar el reporte de donaciones. Verifica tus permisos e intenta nuevamente.');
     } finally {
       setDonationDownloading(false);
     }
@@ -751,18 +751,18 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   return (
     <div className="h-full overflow-auto p-4 sm:p-6 lg:p-8" style={{ background: palette.bg, color: palette.text }}>
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6 rounded-xl border border-dark-border bg-dark-surface p-5 shadow-lg">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
+        <div className="mb-6 overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-lg">
+          <div className="flex items-start gap-4 border-b border-dark-border/70 bg-dark-bg2/55 p-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan">
+              <Icons.Report className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">Centro de reportes</p>
-              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">Genera documentos operativos sin perder el flujo</h3>
+              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">Documentos operativos listos para generar</h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">
-                Post emergencia abre un asistente de tres pasos. Los reportes PDF se descargan directamente con los filtros seleccionados.
+                Usa el asistente para post emergencia o descarga reportes PDF con filtros por periodo, campaña, motivo y ubicación.
               </p>
             </div>
-            <span className="rounded-lg border border-brand-cyan/25 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan">
-              VER_REPORTES
-            </span>
           </div>
         </div>
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
@@ -779,9 +779,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Asistente guiado para documentar salida, materiales usados y observaciones.</p>
               </div>
             </div>
-            <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-              VER_REPORTES
-            </span>
           </div>
 
           <div className="mt-5 rounded-lg border border-dark-border bg-dark-bg/60 p-4">
@@ -826,9 +823,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Filtra bajas o perdidas por motivo y periodo antes de descargar.</p>
               </div>
             </div>
-            <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-              VER_REPORTES
-            </span>
           </div>
 
           <div className="mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 sm:grid-cols-2">
@@ -887,9 +881,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Resume pagos por campaña, estado de pago y periodo seleccionado.</p>
               </div>
             </div>
-            <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-              VER_REPORTES
-            </span>
           </div>
 
           <div className="mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 sm:grid-cols-2">
@@ -966,9 +957,6 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Genera inventario valorizado de toda la compania o una ubicacion raiz.</p>
               </div>
             </div>
-            <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
-              VER_REPORTES
-            </span>
           </div>
 
           <div className="mt-5 rounded-lg border border-dark-border bg-dark-bg/60 p-4">

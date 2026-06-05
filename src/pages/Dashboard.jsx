@@ -4702,21 +4702,21 @@ function Dashboard({ setView }) {
                         className="group rounded-xl border p-5 transition-all hover:border-brand-cyan/40 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                         style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div>
                           <div>
                             <p className="rajdhani text-lg font-bold transition-colors group-hover:text-brand-cyan" style={{ color: palette.text }}>{stock.nombre}</p>
                             <p className="mt-1 text-sm" style={{ color: palette.muted }}>{stock.nombreUbicacion}</p>
                           </div>
+                        </div>
+                        <div className="mt-5 flex flex-wrap justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => openStockMinimoDetail(stock)}
-                            className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/20"
+                            className="flex-shrink-0 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
                           >
                             Ver detalle
                           </button>
-                        </div>
-                        {canAddStock && (
-                          <div className="mt-5 flex justify-end">
+                          {canAddStock && (
                             <button
                               type="button"
                               onClick={(event) => openDeleteStockMinimoModal(event, stock)}
@@ -4727,8 +4727,8 @@ function Dashboard({ setView }) {
                             >
                               {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -979,7 +979,6 @@ function VehiculosView({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-base font-bold text-text-main">{v.nombre}</div>
-                        <p className="mt-0.5 truncate text-xs text-text-muted">{v.patente} · {v.modelo}</p>
                       </div>
                       <span className="rounded-lg border border-dark-border bg-dark-bg px-2 py-1 text-[11px] font-bold text-text-muted">{v.tipo}</span>
                     </div>
