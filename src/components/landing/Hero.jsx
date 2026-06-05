@@ -76,7 +76,7 @@ function Hero() {
           </p>
           <div className="hero-actions">
             <a href="#planes" className="btn btn-primary">Ver planes <Icons.ChevronRight /></a>
-            <a href="#plataforma" className="btn btn-secondary">Vista mini</a>
+            <a href="#plataforma" className="btn btn-secondary">Ver plataforma</a>
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ const dashboardViews = {
     subtitle: 'Resumen operativo en tiempo real del cuartel.',
     kpis: [
       { label: 'Alertas sin leer', value: '0', sub: 'Notificaciones pendientes', icon: <Icons.AlertTriangle /> },
-      { label: 'VehÃ­culos', value: '4', sub: '3 operativos / 1 mant. / 0 fuera', icon: <Icons.Truck /> },
+      { label: 'Vehículos', value: '4', sub: '3 operativos / 1 mant. / 0 fuera', icon: <Icons.Truck /> },
       { label: 'Recaudación', value: '68%', sub: 'Campaña activa', icon: <Icons.Finance /> },
       { label: 'Stock crítico', value: '2', sub: 'Materiales bajo mínimo', icon: <Icons.Inventory /> },
     ],
@@ -18,7 +18,7 @@ const dashboardViews = {
         title: 'Personal por Cargo',
         badge: '4 Vehículos',
         legend: [
-          ['cyan', 'Capitan', '1 (4%)'],
+          ['cyan', 'Capitán', '1 (4%)'],
           ['yellow', 'Mantención', '1 (25%)'],
           ['orange', 'Voluntarios', '18 (75%)'],
           ['yellow', 'Conductores', '2 (8%)'],
@@ -142,7 +142,7 @@ const dashboardViews = {
       {
         type: 'reportCards',
         title: 'Módulos de reportes',
-        badge: 'VER_REPORTES',
+        badge: 'PDF listos',
         rows: [
           ['Post emergencia', 'Vehículo + materiales + PDF', 'Registro + PDF'],
           ['Bajas de inventario', 'Motivo y periodo', 'PDF'],
@@ -313,9 +313,9 @@ function DashboardPreview() {
   return (
     <section id="plataforma" className="section container">
       <div className="section-header reveal">
-        <span className="section-eyebrow">Vista mini</span>
-        <h2 className="section-title">Un dashboard parecido al que usarás todos los días</h2>
-        <p className="section-subtitle">Una versión compacta de las pantallas reales: indicadores, inventario, vehículos, EPP y reportes.</p>
+        <span className="section-eyebrow">Vista de plataforma</span>
+        <h2 className="section-title">Una muestra del panel que usarás todos los días</h2>
+        <p className="section-subtitle">Pantallas compactas basadas en el sistema real: indicadores, inventario, vehículos, EPP y reportes.</p>
       </div>
       <div className="mini-dashboard reveal delay-100">
         <div className="mini-topbar">

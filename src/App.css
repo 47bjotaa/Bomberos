@@ -197,7 +197,7 @@
   .hero-title .highlight { color: var(--red); animation: pulseGlow 3s infinite; }
   .hero-subtitle { font-size: clamp(1rem, 2vw + 0.5rem, 1.25rem); color: var(--muted); max-width: 650px; margin: 0 auto 2.5rem; line-height: 1.6; text-shadow: 0 1px 5px rgba(0,0,0,0.2); }
 
-  .section { padding: 100px 0; }
+  .section { padding: clamp(72px, 7vw, 96px) 0; }
   .landing-page .section {
     position: relative;
     z-index: 1;
@@ -214,7 +214,7 @@
     z-index: -1;
     pointer-events: none;
   }
-  .section-header { text-align: center; margin-bottom: 4rem; }
+  .section-header { text-align: center; margin-bottom: clamp(2.5rem, 5vw, 3.5rem); }
   .section-title { font-size: clamp(1.8rem, 4vw + 1rem, 2.5rem); font-weight: 700; margin-bottom: 1rem; }
   .section-subtitle { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
@@ -544,17 +544,17 @@
     border-color: rgba(255,255,255,0.14);
   }
   .landing-hero {
-    min-height: max(920px, calc(100vh + 80px));
+    min-height: clamp(700px, 82vh, 780px);
     display: flex;
     align-items: center;
-    padding: 140px 0 150px;
+    padding: 118px 0 108px;
   }
   .hero-layout {
     display: flex;
     justify-content: flex-end;
     position: relative;
     max-width: 1500px;
-    padding-top: clamp(250px, 24vw, 315px);
+    padding-top: clamp(154px, 16vw, 218px);
   }
   .hero-brand-title {
     position: fixed;
@@ -643,13 +643,13 @@
   .hero-info-card {
     width: min(580px, calc(100% - 1rem));
     margin-right: clamp(-3rem, -2.2vw, -0.75rem);
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(56,189,248,0.2);
     border-radius: 8px;
-    background: rgba(8, 12, 24, 0.78);
+    background: linear-gradient(180deg, rgba(10, 16, 30, 0.88), rgba(6, 10, 20, 0.82));
     color: #FFFFFF;
     backdrop-filter: blur(16px);
     padding: 1.45rem;
-    box-shadow: 0 20px 55px rgba(0,0,0,0.42);
+    box-shadow: 0 22px 60px rgba(0,0,0,0.48), 0 0 0 1px rgba(255,255,255,0.04) inset;
     transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .hero-info-card h2 {
@@ -1629,13 +1629,15 @@
     .landing-nav.title-docked .nav-logo { opacity: 1; pointer-events: auto; transform: none; }
     .navbar .nav-btn, .nav-cta { display: none; }
     .mobile-menu-btn { display: block; }
-    .landing-hero { min-height: max(780px, calc(100vh + 48px)); padding: 112px 0 96px; }
-    .hero-layout { justify-content: flex-start; padding-top: clamp(170px, 38vw, 235px); padding-inline: 1rem; }
-    .hero-brand-title { top: 116px; font-size: clamp(3.2rem, 16vw, 6rem); text-align: center; }
-    .hero-info-card { width: 100%; margin-right: 0; padding: 1rem; }
+    .landing-hero { min-height: clamp(610px, 78vh, 680px); padding: 92px 0 64px; }
+    .hero-layout { justify-content: flex-start; padding-top: clamp(148px, 34vw, 205px); padding-inline: 1rem; }
+    .hero-brand-title { top: 104px; font-size: clamp(3rem, 15vw, 5.4rem); text-align: center; }
+    .hero-info-card { width: 100%; margin-right: 0; padding: 1.15rem; }
     .hero-title { font-size: clamp(2rem, 8vw, 2.5rem); }
     .hero-subtitle { font-size: 1.1rem; }
     .grid-4, .grid-3, .grid-2, .pricing-grid { grid-template-columns: 1fr; }
+    .section { padding: 64px 0; }
+    .section-header { margin-bottom: 2.25rem; }
     .semaforo-visual { min-height: 340px; border-radius: 8px; }
     .mini-kpis { grid-template-columns: 1fr; }
     .mini-topbar, .mini-nav, .mini-kpis, .mini-content { padding: 0.9rem; }
