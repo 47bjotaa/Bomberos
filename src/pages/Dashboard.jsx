@@ -13,7 +13,7 @@ import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
-import { APP_ORIGIN, goToPublicHome } from '../utils/constants';
+import { APP_ORIGIN, cuerposBomberos, goToPublicHome } from '../utils/constants';
 import { getThemePalette } from '../utils/themePalette';
 import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
@@ -423,6 +423,76 @@ const getLastPaymentErrorFromObject = (source = {}) => {
   return '';
 };
 
+const DEFAULT_COMPANY_FORM = {
+  nombreCompania: '',
+  idCuerpoBomberos: '',
+  direccion: '',
+  telefono: '',
+  email: '',
+};
+
+const readFirstValue = (source = {}, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+
+  return fallback;
+};
+
+const readCompanyText = (company = {}, keys = [], fallback = '') => {
+  const value = readFirstValue(company, keys, fallback);
+  return value === undefined || value === null ? '' : String(value);
+};
+
+const getCompanyName = (company = {}) => readCompanyText(company, [
+  'nombreCompania',
+  'NombreCompania',
+  'nombre',
+  'Nombre',
+]);
+
+const getCompanyFireDepartmentId = (company = {}) => {
+  const nestedCuerpo = readFirstValue(company, ['cuerpoBomberos', 'CuerpoBomberos'], null);
+  const nestedId = typeof nestedCuerpo === 'object'
+    ? readFirstValue(nestedCuerpo, ['idCuerpoBomberos', 'IdCuerpoBomberos', 'id', 'Id'], '')
+    : '';
+
+  return nestedId || readFirstValue(company, [
+    'idCuerpoBomberos',
+    'IdCuerpoBomberos',
+    'cuerpoBomberosId',
+    'CuerpoBomberosId',
+    'idCuerpo',
+    'IdCuerpo',
+  ], '');
+};
+
+const getCompanyFireDepartmentName = (company = {}) => {
+  const nestedCuerpo = readFirstValue(company, ['cuerpoBomberos', 'CuerpoBomberos'], null);
+  const nestedName = typeof nestedCuerpo === 'object'
+    ? readCompanyText(nestedCuerpo, ['nombre', 'Nombre'])
+    : '';
+  const directName = readCompanyText(company, [
+    'nombreCuerpoBomberos',
+    'NombreCuerpoBomberos',
+    'cuerpoBomberosNombre',
+    'CuerpoBomberosNombre',
+  ]);
+  const id = getCompanyFireDepartmentId(company);
+  const catalogMatch = cuerposBomberos.find(cuerpo => String(cuerpo.idCuerpoBomberos) === String(id));
+
+  return nestedName || directName || catalogMatch?.nombre || '';
+};
+
+const getCompanyFormData = (company = {}) => ({
+  nombreCompania: getCompanyName(company),
+  idCuerpoBomberos: String(getCompanyFireDepartmentId(company) || ''),
+  direccion: readCompanyText(company, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania']),
+  telefono: readCompanyText(company, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania']),
+  email: readCompanyText(company, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo']),
+});
+
 const getMaterialDetailRoute = (pathname) => {
   const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
   if (eppItemMatch) {
@@ -679,6 +749,10 @@ function Dashboard({ setView }) {
   const [hasDonationFeature, setHasDonationFeature] = useState(() => getCurrentDonationFeature());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [currentCompany, setCurrentCompany] = useState(null);
+  const [showEditCompanyModal, setShowEditCompanyModal] = useState(false);
+  const [companyFormData, setCompanyFormData] = useState(DEFAULT_COMPANY_FORM);
+  const [savingCompanyData, setSavingCompanyData] = useState(false);
+  const [companyFormError, setCompanyFormError] = useState('');
   const [currentSubscriptionStatus, setCurrentSubscriptionStatus] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
   const [showUpgradePlanModal, setShowUpgradePlanModal] = useState(false);
@@ -2131,6 +2205,72 @@ function Dashboard({ setView }) {
       setContactProfileError(error.message || 'No se pudieron actualizar los datos de contacto.');
     } finally {
       setSavingContactProfile(false);
+    }
+  };
+
+  const openEditCompanyModal = () => {
+    if (!userCanRegisterSubscriptionCard) return;
+
+    setCompanyFormData(getCompanyFormData(currentCompany || {}));
+    setCompanyFormError('');
+    setShowEditCompanyModal(true);
+  };
+
+  const closeEditCompanyModal = () => {
+    if (savingCompanyData) return;
+    setShowEditCompanyModal(false);
+    setCompanyFormError('');
+  };
+
+  const handleUpdateCompanyData = async (event) => {
+    event.preventDefault();
+    if (!userCanRegisterSubscriptionCard) return;
+
+    const payload = {
+      nombreCompania: companyFormData.nombreCompania.trim(),
+      direccion: companyFormData.direccion.trim(),
+      telefono: companyFormData.telefono.trim(),
+      email: companyFormData.email.trim(),
+    };
+
+    if (companyFormData.idCuerpoBomberos) {
+      payload.idCuerpoBomberos = Number(companyFormData.idCuerpoBomberos);
+    }
+
+    if (!payload.nombreCompania) {
+      setCompanyFormError('Completa el nombre de la compania.');
+      return;
+    }
+
+    if (companyFormData.idCuerpoBomberos && Number.isNaN(payload.idCuerpoBomberos)) {
+      setCompanyFormError('Selecciona un cuerpo de bomberos valido.');
+      return;
+    }
+
+    setSavingCompanyData(true);
+    setCompanyFormError('');
+
+    try {
+      const response = await apiFetch('/api/Companias/mi-compania', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      const updatedCompany = response && typeof response === 'object'
+        ? { ...currentCompany, ...response }
+        : { ...currentCompany, ...payload };
+      const currentUser = getSessionUser();
+
+      setCurrentCompany(updatedCompany);
+      localStorage.setItem('user', JSON.stringify({
+        ...currentUser,
+        compania: updatedCompany,
+        Compania: updatedCompany,
+      }));
+      setShowEditCompanyModal(false);
+    } catch (error) {
+      setCompanyFormError(error.message || 'No se pudieron actualizar los datos de la compania.');
+    } finally {
+      setSavingCompanyData(false);
     }
   };
 
@@ -6041,6 +6181,54 @@ function Dashboard({ setView }) {
                         </div>
                       ))}
                     </section>
+
+                    {userCanRegisterSubscriptionCard && (
+                      <section className="rounded-xl border border-dark-border bg-dark-surface p-6">
+                        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Datos de la compania</p>
+                            <h3 className="rajdhani mt-1 text-2xl font-bold text-white">
+                              {getCompanyName(currentCompany || {}) || 'Compania sin nombre registrado'}
+                            </h3>
+                            <p className="mt-1 text-sm text-text-muted">
+                              Visible para Capitanes y Directores.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openEditCompanyModal}
+                            disabled={loadingSubscription || !currentCompany}
+                            className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Editar compania
+                          </button>
+                        </div>
+
+                        {loadingSubscription ? (
+                          <div className="rounded-xl border border-dark-border bg-dark-bg px-5 py-8 text-center text-sm text-text-muted">
+                            Cargando datos de la compania...
+                          </div>
+                        ) : !currentCompany ? (
+                          <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-sm text-brand-red">
+                            No se pudieron cargar los datos de la compania.
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {[
+                              ['Cuerpo de Bomberos', getCompanyFireDepartmentName(currentCompany) || getCompanyFireDepartmentId(currentCompany)],
+                              ['Direccion', readCompanyText(currentCompany, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania'])],
+                              ['Telefono', readCompanyText(currentCompany, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])],
+                              ['Email', readCompanyText(currentCompany, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo'])],
+                            ].map(([label, value]) => (
+                              <div key={label} className="rounded-xl border border-dark-border bg-dark-bg p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{label}</p>
+                                <p className="mt-2 break-words text-base font-semibold text-white">{value || '-'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    )}
                   </div>
                 )}
               </div>
@@ -6124,6 +6312,104 @@ function Dashboard({ setView }) {
                 </button>
                 <button type="submit" disabled={savingContactProfile} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                   {savingContactProfile ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showEditCompanyModal && userCanRegisterSubscriptionCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <form onSubmit={handleUpdateCompanyData} className="w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de la compania</h3>
+                  <p className="mt-1 text-xs text-text-muted">Actualiza la informacion general del cuartel.</p>
+                </div>
+                <button type="button" onClick={closeEditCompanyModal} disabled={savingCompanyData} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="max-h-[72vh] space-y-4 overflow-y-auto p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Nombre de la compania</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={companyFormData.nombreCompania}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, nombreCompania: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Ej. Primera Compania"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Cuerpo de Bomberos</span>
+                  <select
+                    value={companyFormData.idCuerpoBomberos}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, idCuerpoBomberos: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                  >
+                    <option value="">Selecciona un cuerpo</option>
+                    {cuerposBomberos.map(cuerpo => (
+                      <option key={cuerpo.idCuerpoBomberos} value={cuerpo.idCuerpoBomberos}>
+                        {cuerpo.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
+                    <input
+                      type="tel"
+                      value={companyFormData.telefono}
+                      onChange={(event) => setCompanyFormData(current => ({ ...current, telefono: event.target.value }))}
+                      disabled={savingCompanyData}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      placeholder="+56912345678"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Email</span>
+                    <input
+                      type="email"
+                      value={companyFormData.email}
+                      onChange={(event) => setCompanyFormData(current => ({ ...current, email: event.target.value }))}
+                      disabled={savingCompanyData}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      placeholder="contacto@compania.cl"
+                    />
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Direccion</span>
+                  <textarea
+                    rows="3"
+                    value={companyFormData.direccion}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, direccion: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Direccion del cuartel"
+                  />
+                </label>
+
+                {companyFormError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {companyFormError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeEditCompanyModal} disabled={savingCompanyData} className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={savingCompanyData} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {savingCompanyData ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
