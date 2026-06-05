@@ -489,7 +489,7 @@ const getCompanyFormData = (company = {}) => ({
   nombreCompania: getCompanyName(company),
   idCuerpoBomberos: String(getCompanyFireDepartmentId(company) || ''),
   direccion: readCompanyText(company, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania']),
-  telefono: readCompanyText(company, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania']),
+  telefono: getChileanMobileLocalNumber(readCompanyText(company, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])),
   email: readCompanyText(company, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo']),
 });
 
@@ -2229,7 +2229,7 @@ function Dashboard({ setView }) {
     const payload = {
       nombreCompania: companyFormData.nombreCompania.trim(),
       direccion: companyFormData.direccion.trim(),
-      telefono: companyFormData.telefono.trim(),
+      telefono: companyFormData.telefono ? formatChileanMobilePhone(companyFormData.telefono) : '',
       email: companyFormData.email.trim(),
     };
 
@@ -2244,6 +2244,11 @@ function Dashboard({ setView }) {
 
     if (companyFormData.idCuerpoBomberos && Number.isNaN(payload.idCuerpoBomberos)) {
       setCompanyFormError('Selecciona un cuerpo de bomberos valido.');
+      return;
+    }
+
+    if (companyFormData.telefono && !isValidChileanMobilePhone(payload.telefono)) {
+      setCompanyFormError('El telefono debe tener 8 numeros despues de +569.');
       return;
     }
 
@@ -6364,14 +6369,21 @@ function Dashboard({ setView }) {
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
-                    <input
-                      type="tel"
-                      value={companyFormData.telefono}
-                      onChange={(event) => setCompanyFormData(current => ({ ...current, telefono: event.target.value }))}
-                      disabled={savingCompanyData}
-                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                      placeholder="+56912345678"
-                    />
+                    <div className="flex overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
+                      <span className="flex items-center border-r border-dark-border bg-dark-bg2 px-4 text-sm font-semibold text-text-muted">
+                        +569
+                      </span>
+                      <input
+                        type="tel"
+                        value={companyFormData.telefono}
+                        inputMode="numeric"
+                        maxLength={8}
+                        onChange={(event) => setCompanyFormData(current => ({ ...current, telefono: event.target.value.replace(/\D/g, '').slice(0, 8) }))}
+                        disabled={savingCompanyData}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-sm text-white outline-none placeholder-text-muted disabled:opacity-50"
+                        placeholder="12345678"
+                      />
+                    </div>
                   </label>
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium text-text-muted">Email</span>
