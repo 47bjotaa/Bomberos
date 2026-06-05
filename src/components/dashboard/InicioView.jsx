@@ -40,16 +40,16 @@ function Spinner() {
 // ─── KPI Card ───────────────────────────────────────────────────────────────
 function KpiCard({ title, value, sub, icon, color, loading }) {
   return (
-    <div className="bg-dark-surface border border-dark-border rounded-xl p-5 flex items-center gap-4 hover:border-dark-border/80 transition-colors">
-      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center [&>svg]:h-10 [&>svg]:w-10">
+    <div className="bg-dark-surface border border-dark-border rounded-xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-dark-border/80 transition-colors">
+      <div className="w-11 h-11 sm:w-14 sm:h-14 flex-shrink-0 flex items-center justify-center [&>svg]:h-8 [&>svg]:w-8 sm:[&>svg]:h-10 sm:[&>svg]:w-10">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-text-muted text-xs font-semibold uppercase tracking-wide truncate">{title}</p>
+        <p className="text-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wide truncate">{title}</p>
         {loading ? (
           <div className="h-7 w-16 mt-1 bg-dark-bg3 rounded animate-pulse" />
         ) : (
-          <p className="text-2xl font-bold text-white mt-0.5 leading-none">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold text-white mt-0.5 leading-none">{value}</p>
         )}
         {sub && !loading && <p className="text-xs text-text-muted mt-1 truncate">{sub}</p>}
       </div>
@@ -164,9 +164,9 @@ export default function InicioView({
   const alertasPanel = notificaciones.slice(0, 5);
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-5 sm:space-y-6 pb-10">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}
           sub="Notificaciones pendientes"
           icon={<Icons.AlertTriangle />} color="#ef4444" />

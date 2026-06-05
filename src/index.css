@@ -140,6 +140,17 @@ body::before {
   }
 }
 
+@media (max-width: 767px) {
+  html {
+    font-size: 108%;
+  }
+
+  .dashboard-subheader {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

@@ -3795,30 +3795,30 @@ function Dashboard({ setView }) {
         </div>
 
         {/* Center: Navigation Icons */}
-        <nav className="dashboard-desktop-nav flex-1 items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
+        <nav className="dashboard-desktop-nav flex-1 items-center justify-start xl:justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <button title="Inicio" onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Dashboard /> <span className="hidden 2xl:inline">Inicio</span>
           </button>
-          <button style={{ display: canAccessTab('bodegas') ? undefined : 'none' }} onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Inventory /> <span className="hidden lg:inline">Inventario</span>
+          <button title="Inventario" style={{ display: canAccessTab('bodegas') ? undefined : 'none' }} onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Inventory /> <span className="hidden 2xl:inline">Inventario</span>
           </button>
-          <button style={{ display: canAccessTab('vehiculos') ? undefined : 'none' }} onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
+          <button title="Vehículos" style={{ display: canAccessTab('vehiculos') ? undefined : 'none' }} onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Truck /> <span className="hidden 2xl:inline">Vehículos</span>
           </button>
-          <button style={{ display: canAccessTab('epp') ? undefined : 'none' }} onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
+          <button title="EPP" style={{ display: canAccessTab('epp') ? undefined : 'none' }} onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Shield /> <span className="hidden 2xl:inline">EPP</span>
           </button>
-          <button style={{ display: canAccessTab('libro-guardia') ? undefined : 'none' }} onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Traceability /> <span className="hidden lg:inline">Libro Guardia</span>
+          <button title="Libro Guardia" style={{ display: canAccessTab('libro-guardia') ? undefined : 'none' }} onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Traceability /> <span className="hidden 2xl:inline">Libro Guardia</span>
           </button>
-          <button style={{ display: canAccessTab('donaciones') ? undefined : 'none' }} onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
+          <button title="Donaciones" style={{ display: canAccessTab('donaciones') ? undefined : 'none' }} onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Finance /> <span className="hidden 2xl:inline">Donaciones</span>
           </button>
-          <button style={{ display: canAccessTab('personal') ? undefined : 'none' }} onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.User /> <span className="hidden lg:inline">Personal</span>
+          <button title="Personal" style={{ display: canAccessTab('personal') ? undefined : 'none' }} onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.User /> <span className="hidden 2xl:inline">Personal</span>
           </button>
-          <button style={{ display: canAccessTab('reportes') ? undefined : 'none' }} onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Report /> <span className="hidden lg:inline">Reportes</span>
+          <button title="Reportes" style={{ display: canAccessTab('reportes') ? undefined : 'none' }} onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Report /> <span className="hidden 2xl:inline">Reportes</span>
           </button>
         </nav>
 
@@ -3955,7 +3955,7 @@ function Dashboard({ setView }) {
         onClick={() => setMobileSidebarOpen(false)}
       />
       <aside
-        className={`dashboard-mobile-drawer fixed left-0 top-0 z-50 h-full w-[min(84vw,320px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`dashboard-mobile-drawer fixed left-0 top-0 z-50 h-full w-[min(88vw,340px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         aria-label="Menu lateral movil"
       >
         <div className="flex items-center justify-between border-b border-dark-border px-4 py-4">
@@ -3973,7 +3973,7 @@ function Dashboard({ setView }) {
           <p className="text-sm font-bold text-white">{headerProfileName}</p>
           <p className="text-xs text-brand-cyan">{headerProfileCargo}</p>
         </div>
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <nav className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-4">
           <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted">Navegacion</p>
           <div className="space-y-1">
             {dashboardNavItems.map((item) => {
@@ -3984,7 +3984,7 @@ function Dashboard({ setView }) {
                   <button
                     type="button"
                     onClick={() => handleMobileTabSelect(item.id)}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${isActive ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${isActive ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
                   >
                     <Icon />
                     <span>{item.label}</span>
@@ -3996,7 +3996,7 @@ function Dashboard({ setView }) {
                           key={view.id}
                           type="button"
                           onClick={() => handleMobileInventoryViewSelect(view.id)}
-                          className={`block w-full rounded-md px-3 py-2 text-left text-xs font-bold transition-colors ${activeTab === 'bodegas' && inventoryView === view.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                          className={`block w-full rounded-md px-3 py-1.5 text-left text-xs font-bold transition-colors ${activeTab === 'bodegas' && inventoryView === view.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
                         >
                           {view.label}
                         </button>
@@ -4010,7 +4010,7 @@ function Dashboard({ setView }) {
               <button
                 type="button"
                 onClick={() => handleMobileTabSelect('mis-datos')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${activeTab === 'mis-datos' ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${activeTab === 'mis-datos' ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
               >
                 <Icons.User />
                 <span>Mis Datos</span>

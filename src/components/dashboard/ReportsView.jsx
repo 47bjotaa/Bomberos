@@ -749,11 +749,25 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   };
 
   return (
-    <div className="h-full overflow-auto p-8" style={{ background: palette.bg, color: palette.text }}>
+    <div className="h-full overflow-auto p-4 sm:p-6 lg:p-8" style={{ background: palette.bg, color: palette.text }}>
       <div className="mx-auto max-w-6xl">
+        <div className="mb-6 rounded-xl border border-dark-border bg-dark-surface p-5 shadow-lg">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">Centro de reportes</p>
+              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">Genera documentos operativos sin perder el flujo</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">
+                Post emergencia abre un asistente de tres pasos. Los reportes PDF se descargan directamente con los filtros seleccionados.
+              </p>
+            </div>
+            <span className="rounded-lg border border-brand-cyan/25 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan">
+              VER_REPORTES
+            </span>
+          </div>
+        </div>
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
         {canViewAdvancedReports && (
-        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-ember/30 bg-brand-ember/10 text-brand-ember">
@@ -762,6 +776,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Post emergencia</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>Registro + PDF</span>
+                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Asistente guiado para documentar salida, materiales usados y observaciones.</p>
               </div>
             </div>
             <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
@@ -769,7 +784,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-5 rounded-lg border border-dark-border bg-dark-bg/60 p-4">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Vehiculo</span>
               <select name="idUbicacion" value={emergencyForm.idUbicacion} onChange={handleEmergencyFormChange} disabled={loadingEmergencyCatalogs || emergencySaving} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
@@ -799,7 +814,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </section>
         )}
         {canViewAdvancedReports && (
-        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 text-brand-red">
@@ -808,6 +823,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Bajas de inventario</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
+                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Filtra bajas o perdidas por motivo y periodo antes de descargar.</p>
               </div>
             </div>
             <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
@@ -815,7 +831,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Motivo</span>
               <select name="motivo" value={filters.motivo} onChange={handleFilterChange} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan">
@@ -859,7 +875,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </section>
         )}
         {canViewAdvancedReports && (
-        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-green/30 bg-brand-green/10 text-brand-green">
@@ -868,6 +884,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Donaciones por campaña</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
+                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Resume pagos por campaña, estado de pago y periodo seleccionado.</p>
               </div>
             </div>
             <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
@@ -875,7 +892,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 sm:grid-cols-2">
             <label className="block sm:col-span-2">
               <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Campaña</span>
               <select
@@ -937,7 +954,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
         </section>
         )}
         {canViewBasicReports && (
-        <section className="h-fit rounded-lg border p-5" style={{ borderColor: palette.borderStrong, background: palette.card }}>
+        <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan">
@@ -946,6 +963,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Stock por cantidad valorizado</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
+                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Genera inventario valorizado de toda la compania o una ubicacion raiz.</p>
               </div>
             </div>
             <span className="rounded border border-brand-cyan/25 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan">
@@ -953,7 +971,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
             </span>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-5 rounded-lg border border-dark-border bg-dark-bg/60 p-4">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Ubicación raíz</span>
               <select

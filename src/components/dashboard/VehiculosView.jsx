@@ -691,9 +691,10 @@ function VehiculosView({
     setMaintenanceError('');
   };
 
-  const openStatusModal = () => {
+  const openStatusModal = (vehicle = selectedVehiculo) => {
     if (!canManageVehicles) return;
-    setStatusChangeValue(normalizeVehicleStatusValue(selectedVehiculo?.estado || selectedVehiculo?.estadoVehiculo));
+    if (vehicle) setSelectedVehiculo(vehicle);
+    setStatusChangeValue(normalizeVehicleStatusValue(vehicle?.estado || vehicle?.estadoVehiculo));
     setStatusChangeError('');
     setShowStatusModal(true);
   };
@@ -962,21 +963,42 @@ function VehiculosView({
                   onClick={() => openDetail(v)}
                   className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-dark-border bg-dark-bg transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
                 >
-                  <div className="flex h-48 w-full items-center justify-center overflow-hidden text-text-muted">
+                  <div className="relative flex h-44 w-full items-center justify-center overflow-hidden text-text-muted">
                     {vehiclePreviewImages[v.id] ? (
                       <img src={vehiclePreviewImages[v.id]} alt={v.nombre} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
-                      <div className="flex h-20 w-20 items-center justify-center transition-transform group-hover:scale-110">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-dark-border bg-dark-surface/70 transition-transform group-hover:scale-110">
                         <Icons.Truck />
                       </div>
                     )}
+                    <span className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${normalizeVehicleStatusValue(v.estado) === 'Activo' ? 'border-brand-green/30 bg-brand-green/15 text-brand-green' : normalizeVehicleStatusValue(v.estado) === 'En Mantencion' ? 'border-brand-gold/30 bg-brand-gold/15 text-brand-gold' : 'border-brand-red/30 bg-brand-red/15 text-brand-red'}`}>
+                      {v.estado}
+                    </span>
                   </div>
-                  <div className="w-full border-t border-dark-border bg-dark-bg2/60 px-4 py-3 text-center">
-                    <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 font-semibold text-brand-cyan">{v.tipo}</span>
-                      <span className="rounded-full border border-dark-border bg-dark-bg px-2 py-0.5 font-semibold text-text-muted">{v.estado}</span>
+                  <div className="w-full border-t border-dark-border bg-dark-bg2/70 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-base font-bold text-text-main">{v.nombre}</div>
+                        <p className="mt-0.5 truncate text-xs text-text-muted">{v.patente} · {v.modelo}</p>
+                      </div>
+                      <span className="rounded-lg border border-dark-border bg-dark-bg px-2 py-1 text-[11px] font-bold text-text-muted">{v.tipo}</span>
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 font-semibold text-brand-cyan">{v.tipo}</span>
+                      <span className="rounded-full border border-dark-border bg-dark-bg px-2 py-0.5 font-semibold text-text-muted">{v.patente}</span>
+                    </div>
+                    {canManageVehicles && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openStatusModal(v);
+                        }}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-cyan/25 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan hover:text-dark-bg"
+                      >
+                        Cambiar estado
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -1092,6 +1114,54 @@ function VehiculosView({
             </div>
           </div>
         )}
+
+        {showStatusModal && canManageVehicles && selectedVehiculo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeStatusModal}>
+            <form onSubmit={handleUpdateVehicleStatus} className="w-full max-w-sm overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-text-main">Cambiar estado</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{selectedVehiculo.nombre}</p>
+                </div>
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
+                  <select
+                    value={statusChangeValue}
+                    onChange={(event) => setStatusChangeValue(event.target.value)}
+                    disabled={statusChangeSaving}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan disabled:opacity-60"
+                  >
+                    {VEHICLE_STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value} className="bg-dark-surface text-text-main">
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {statusChangeError && (
+                  <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {statusChangeError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={statusChangeSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {statusChangeSaving ? 'Guardando...' : 'Guardar estado'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     );
   }
@@ -1113,7 +1183,7 @@ function VehiculosView({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={openStatusModal}
+                onClick={() => openStatusModal()}
                 className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:text-brand-cyan"
               >
                 Cambiar estado
