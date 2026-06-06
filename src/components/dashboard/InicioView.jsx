@@ -162,11 +162,13 @@ export default function InicioView({
 
   // Últimas 7 notificaciones como "alertas"
   const alertasPanel = notificaciones.slice(0, 5);
+  const kpiGridCols = canViewDonaciones ? 'xl:grid-cols-4' : 'xl:grid-cols-3';
+  const alertasCardSpan = canViewDonaciones ? '' : 'lg:col-span-3';
 
   return (
     <div className="space-y-5 sm:space-y-6 pb-10">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${kpiGridCols} gap-3 sm:gap-4`}>
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}
           sub="Notificaciones pendientes"
           icon={<Icons.AlertTriangle />} color="#ef4444" />
@@ -513,7 +515,7 @@ export default function InicioView({
         )}
 
         {/* Alertas / Notificaciones */}
-        <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
+        <div className={`bg-dark-surface border border-dark-border rounded-xl p-6 ${alertasCardSpan}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-white font-semibold text-sm">Alertas Recientes</h3>
             {alertasCriticas > 0 && (
