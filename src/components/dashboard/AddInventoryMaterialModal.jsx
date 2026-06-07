@@ -27,6 +27,7 @@ const getDateInputLocalNoonIso = (value) => {
   const [year, month, day] = value.split('-').map(Number);
   return new Date(year, month - 1, day, 12).toISOString();
 };
+const DEFAULT_ITEM_STATUS = 'Buen Estado';
 
 const mapMaterial = (material) => ({
   id: material.idMaterial || material.id,
@@ -48,7 +49,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const [formData, setFormData] = useState({
     cantidad: 1,
     codigoUnico: '',
-    estado: 'Operativo',
+    estado: DEFAULT_ITEM_STATUS,
     motivo: '',
     talla: '',
     fechaVencimiento: ''
@@ -131,7 +132,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
       ...prev,
       cantidad: materialRequiresItem ? 1 : Math.max(1, Number(prev.cantidad) || 1),
       codigoUnico: materialRequiresItem ? prev.codigoUnico : '',
-      estado: materialRequiresItem ? prev.estado : 'Operativo',
+      estado: DEFAULT_ITEM_STATUS,
       talla: materialIsEpp ? prev.talla : '',
       fechaVencimiento: materialIsEpp ? prev.fechaVencimiento : ''
     }));

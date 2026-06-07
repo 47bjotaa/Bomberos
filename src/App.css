@@ -586,6 +586,8 @@
   .hero-logo-metal {
     position: relative;
     display: inline-block;
+    margin-inline: -0.08em;
+    padding-inline: 0.08em;
     transform: skewX(-7deg);
     color: #F8F8F3;
     background: linear-gradient(180deg, #FFFFFF 0%, #F2F2EC 28%, #AFAFAA 56%, #FFFFFF 78%, #D6D6D0 100%);
@@ -603,6 +605,7 @@
     content: attr(data-text);
     position: absolute;
     inset: 0;
+    padding-inline: 0.08em;
     color: transparent;
     background:
       linear-gradient(108deg,
@@ -627,11 +630,11 @@
     pointer-events: none;
   }
   @keyframes heroEdgeShine {
-    0%, 16% { background-position: 150% 0; opacity: 0; }
+    0%, 16% { background-position: 170% 0; opacity: 0; }
     24% { opacity: 1; }
-    62% { background-position: 15% 0; opacity: 1; }
-    82% { background-position: -65% 0; opacity: 0.2; }
-    90%, 100% { background-position: -65% 0; opacity: 0; }
+    62% { background-position: 10% 0; opacity: 1; }
+    82% { background-position: -90% 0; opacity: 0.2; }
+    90%, 100% { background-position: -90% 0; opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     .hero-logo-metal::after {
