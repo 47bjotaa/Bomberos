@@ -1,20 +1,20 @@
 import { Icons } from '../ui/Icons';
 
-const logos = [
-  { name: 'Primera Cía.', icon: <Icons.Shield /> },
-  { name: 'Rescate Norte', icon: <Icons.Truck /> },
-  { name: 'Bomba Central', icon: <Icons.Inventory /> },
-  { name: 'Guardia Activa', icon: <Icons.Report /> },
-  { name: 'Brigada Sur', icon: <Icons.User /> },
-  { name: 'Cuartel Digital', icon: <Icons.Traceability /> },
+const proofPoints = [
+  { name: 'Inventario trazable', icon: <Icons.Traceability /> },
+  { name: 'EPP con vencimiento', icon: <Icons.Shield /> },
+  { name: 'Carros y mantenciones', icon: <Icons.Truck /> },
+  { name: 'Reportes PDF', icon: <Icons.Report /> },
+  { name: 'Donaciones integradas', icon: <Icons.Finance /> },
+  { name: 'Preparado para cambios de mando', icon: <Icons.User /> },
 ];
 
 function CompanyMarquee() {
-  const row = [...logos, ...logos];
+  const row = [...proofPoints, ...proofPoints];
 
   return (
-    <section className="company-marquee" aria-label="Compañías que han implementado CuartelAmigo">
-      <p>Implementado por compañías como</p>
+    <section className="company-marquee" aria-label="Puntos de confianza de CuartelAmigo">
+      <p>Control real para el día a día del cuartel</p>
       <div className="company-marquee-track">
         {row.map((item, index) => (
           <div className="company-logo" key={`${item.name}-${index}`}>

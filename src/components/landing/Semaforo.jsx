@@ -31,8 +31,8 @@ function Semaforo() {
       <div className="semaforo-wrap reveal">
         <div className="grid-2 items-center">
           <div>
-            <span className="section-eyebrow">Estados claros</span>
-            <h2 className="section-title semaforo-title">Sistema Semáforo</h2>
+            <span className="section-eyebrow">Sello operativo</span>
+            <h2 className="section-title semaforo-title">Sistema Semáforo CuartelAmigo</h2>
             <p className="section-subtitle semaforo-subtitle">
               Cada activo comunica su condición de un vistazo. Menos interpretación, más decisiones rápidas antes y después de una emergencia.
             </p>
