@@ -699,6 +699,7 @@ function Dashboard({ setView }) {
   const [donacionesPage, setDonacionesPage] = useState(1);
   const [donacionesPageSize, setDonacionesPageSize] = useState(8);
   const [donacionesView, setDonacionesView] = useState('campanas');
+  const [reportesView, setReportesView] = useState('reportes');
   const [campanasListView, setCampanasListView] = useState('activas');
   const [filtroNombreCampana, setFiltroNombreCampana] = useState('');
   const [filtroFechaInicioCampana, setFiltroFechaInicioCampana] = useState('');
@@ -4209,6 +4210,28 @@ function Dashboard({ setView }) {
                       ))}
                     </div>
                   </>
+                ) : activeTab === 'reportes' ? (
+                  <>
+                    <h2 className="dashboard-mobile-inventory-title text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
+                      Reportes
+                    </h2>
+                    <div className="dashboard-desktop-inventory-tabs flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReportesView('reportes')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${reportesView === 'reportes' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                      >
+                        Reportes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportesView('conteos')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${reportesView === 'conteos' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                      >
+                        Conteos
+                      </button>
+                    </div>
+                  </>
                 ) : activeTab === 'donaciones' ? (
                   <>
                     <h2 className="dashboard-mobile-inventory-title text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
@@ -6099,6 +6122,7 @@ function Dashboard({ setView }) {
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'reportes' && (
             <ReportsView
               palette={palette}
+              view={reportesView}
               canViewFullReports={canViewFullReports}
               canViewBasicReports={canViewReports}
               canViewDonationReports={canViewDonaciones && hasProSubscription}

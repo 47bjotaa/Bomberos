@@ -262,8 +262,10 @@ const createEmptyEmergencyItem = () => ({
   observacion: '',
 });
 
-function ReportsView({ palette, canViewFullReports = true, canViewBasicReports = true }) {
+function ReportsView({ palette, view = 'reportes', canViewFullReports = true, canViewBasicReports = true }) {
   const canViewAdvancedReports = canViewFullReports;
+  const showingInventoryCounts = view === 'conteos';
+  const showingPdfReports = view !== 'conteos';
   const today = new Date();
   const [filters, setFilters] = useState({
     motivo: 'TODOS',
@@ -290,6 +292,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   });
   const [inventoryCounts, setInventoryCounts] = useState([]);
   const [selectedInventoryCount, setSelectedInventoryCount] = useState(null);
+  const [showInventoryCountForm, setShowInventoryCountForm] = useState(false);
   const [responsibleUsers, setResponsibleUsers] = useState([]);
   const [loadingInventoryCounts, setLoadingInventoryCounts] = useState(false);
   const [loadingInventoryCountDetail, setLoadingInventoryCountDetail] = useState(false);
@@ -358,7 +361,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
   }, []);
 
   useEffect(() => {
-    if (!canViewBasicReports) return undefined;
+    if (!canViewBasicReports || !showingInventoryCounts) return undefined;
 
     let ignore = false;
     const fetchResponsibleUsers = async () => {
@@ -384,10 +387,10 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     return () => {
       ignore = true;
     };
-  }, [canViewBasicReports]);
+  }, [canViewBasicReports, showingInventoryCounts]);
 
   useEffect(() => {
-    if (!canViewBasicReports) return undefined;
+    if (!canViewBasicReports || !showingInventoryCounts) return undefined;
 
     let ignore = false;
     const fetchInventoryCounts = async () => {
@@ -418,10 +421,10 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     return () => {
       ignore = true;
     };
-  }, [canViewBasicReports, inventoryCountFilters.idUbicacion, inventoryCountFilters.estado]);
+  }, [canViewBasicReports, showingInventoryCounts, inventoryCountFilters.idUbicacion, inventoryCountFilters.estado]);
 
   useEffect(() => {
-    if (!canViewAdvancedReports) return undefined;
+    if (!canViewAdvancedReports || !showingPdfReports) return undefined;
 
     const fetchDonationCampaigns = async () => {
       setLoadingDonationCampaigns(true);
@@ -456,10 +459,10 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
 
     fetchDonationCampaigns();
     return undefined;
-  }, [canViewAdvancedReports]);
+  }, [canViewAdvancedReports, showingPdfReports]);
 
   useEffect(() => {
-    if (!canViewAdvancedReports) return undefined;
+    if (!canViewAdvancedReports || !showingPdfReports) return undefined;
 
     let ignore = false;
     const fetchEmergencyCatalogs = async () => {
@@ -490,10 +493,10 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     return () => {
       ignore = true;
     };
-  }, [canViewAdvancedReports]);
+  }, [canViewAdvancedReports, showingPdfReports]);
 
   useEffect(() => {
-    if (!canViewAdvancedReports || !emergencyForm.idUbicacion) {
+    if (!canViewAdvancedReports || !showingPdfReports || !emergencyForm.idUbicacion) {
       return undefined;
     }
 
@@ -537,7 +540,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
     return () => {
       ignore = true;
     };
-  }, [canViewAdvancedReports, emergencyForm.idUbicacion]);
+  }, [canViewAdvancedReports, showingPdfReports, emergencyForm.idUbicacion]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -715,6 +718,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
       }));
       setSelectedInventoryCount(createdCount);
       updateInventoryCountInList(createdCount);
+      setShowInventoryCountForm(false);
       setInventoryCountNotice(`Conteo ${createdCount.idConteo} creado en estado ${createdCount.estado}.`);
       setInventoryCountForm(current => ({
         ...current,
@@ -1123,16 +1127,18 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
               <Icons.Report className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">Centro de reportes</p>
-              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">Documentos operativos listos para generar</h3>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">{showingInventoryCounts ? 'Conteos operativos' : 'Centro de reportes'}</p>
+              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">{showingInventoryCounts ? 'Conteos de inventario por ubicacion' : 'Documentos operativos listos para generar'}</h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">
-                Usa el asistente para post emergencia o descarga reportes PDF con filtros por periodo, campaña, motivo y ubicación.
+                {showingInventoryCounts
+                  ? 'Revisa conteos existentes, crea nuevos borradores y completa el conteo fisico antes de cerrar y descargar PDF.'
+                  : 'Usa el asistente para post emergencia o descarga reportes PDF con filtros por periodo, campaña, motivo y ubicación.'}
               </p>
             </div>
           </div>
         </div>
         <div className="grid auto-rows-min items-start gap-5 lg:grid-cols-2">
-        {canViewBasicReports && (
+        {canViewBasicReports && showingInventoryCounts && (
         <section className="h-fit rounded-xl border p-5 shadow-lg lg:col-span-2" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -1147,9 +1153,14 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 </p>
               </div>
             </div>
+            <button type="button" onClick={() => setShowInventoryCountForm(current => !current)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90">
+              <Icons.Inventory className="h-4 w-4" />
+              {showInventoryCountForm ? 'Ocultar formulario' : 'Nuevo conteo'}
+            </button>
           </div>
 
-          <div className="mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+          <div className={`mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 ${showInventoryCountForm ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]' : 'lg:grid-cols-1'}`}>
+            {showInventoryCountForm && (
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-muted">Nuevo conteo</p>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -1187,6 +1198,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
                 </button>
               </div>
             </div>
+            )}
 
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-muted">Conteos existentes</p>
@@ -1351,7 +1363,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           )}
         </section>
         )}
-        {canViewAdvancedReports && (
+        {canViewAdvancedReports && showingPdfReports && (
         <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -1395,7 +1407,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         </section>
         )}
-        {canViewAdvancedReports && (
+        {canViewAdvancedReports && showingPdfReports && (
         <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -1453,7 +1465,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         </section>
         )}
-        {canViewAdvancedReports && (
+        {canViewAdvancedReports && showingPdfReports && (
         <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -1529,7 +1541,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         </section>
         )}
-        {canViewBasicReports && (
+        {canViewBasicReports && showingPdfReports && (
         <section className="h-fit rounded-xl border p-5 shadow-lg" style={{ borderColor: palette.borderStrong, background: palette.card }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -1576,7 +1588,7 @@ function ReportsView({ palette, canViewFullReports = true, canViewBasicReports =
           </div>
         </section>
         )}
-        {!canViewFullReports && !canViewBasicReports && (
+        {((showingPdfReports && !canViewFullReports && !canViewBasicReports) || (showingInventoryCounts && !canViewBasicReports)) && (
           <div className="rounded-xl border border-dark-border bg-dark-surface px-6 py-12 text-center text-text-muted lg:col-span-2">
             No tienes permisos para generar reportes.
           </div>
