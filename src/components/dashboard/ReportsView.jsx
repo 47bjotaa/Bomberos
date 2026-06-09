@@ -1146,19 +1146,38 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                 <Icons.Inventory className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Conteo de inventario</h4>
-                <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>Borrador + cierre + PDF</span>
+                <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>{selectedInventoryCount ? `Detalle conteo #${selectedInventoryCount.idConteo}` : 'Conteo de inventario'}</h4>
+                <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>
+                  {selectedInventoryCount ? selectedInventoryCount.estado : 'Borrador + cierre + PDF'}
+                </span>
                 <p className="mt-3 max-w-3xl text-sm leading-relaxed" style={{ color: palette.muted }}>
-                  Crea un conteo por ubicacion, registra la cantidad fisica por material o item y cierra el proceso cuando no queden pendientes.
+                  {selectedInventoryCount
+                    ? 'Completa las cantidades fisicas, revisa diferencias y cierra el conteo cuando no queden pendientes.'
+                    : 'Crea un conteo por ubicacion, registra la cantidad fisica por material o item y cierra el proceso cuando no queden pendientes.'}
                 </p>
               </div>
             </div>
-            <button type="button" onClick={() => setShowInventoryCountForm(current => !current)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90">
-              <Icons.Inventory className="h-4 w-4" />
-              {showInventoryCountForm ? 'Ocultar formulario' : 'Nuevo conteo'}
-            </button>
+            {selectedInventoryCount ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedInventoryCount(null);
+                  setInventoryCountNotice('');
+                  setInventoryCountError('');
+                }}
+                className="rounded-lg border border-dark-border bg-dark-bg px-4 py-2 text-sm font-semibold text-text-main transition-colors hover:bg-dark-bg3"
+              >
+                Volver a conteos
+              </button>
+            ) : (
+              <button type="button" onClick={() => setShowInventoryCountForm(current => !current)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90">
+                <Icons.Inventory className="h-4 w-4" />
+                {showInventoryCountForm ? 'Ocultar formulario' : 'Nuevo conteo'}
+              </button>
+            )}
           </div>
 
+          {!selectedInventoryCount && (
           <div className={`mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 ${showInventoryCountForm ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]' : 'lg:grid-cols-1'}`}>
             {showInventoryCountForm && (
             <div>
@@ -1243,6 +1262,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               </div>
             </div>
           </div>
+          )}
 
           {inventoryCountError && (
             <p className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">{inventoryCountError}</p>
@@ -1293,14 +1313,14 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-left text-sm">
+                <table className="w-full min-w-[1120px] text-left text-sm">
                   <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
                     <tr>
                       <th className="px-4 py-3">Material/item</th>
                       <th className="px-4 py-3">Ubicacion</th>
                       <th className="px-4 py-3">Sistema</th>
                       <th className="px-4 py-3">Fisico</th>
-                      <th className="px-4 py-3">Diferencia</th>
+                      <th className="w-44 px-4 py-3">Diferencia</th>
                       <th className="px-4 py-3">Observacion</th>
                       <th className="px-4 py-3">Comentario</th>
                       <th className="px-4 py-3 text-right">Accion</th>
@@ -1327,8 +1347,8 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                           <td className="px-4 py-3 align-top">
                             <input type="number" min="0" value={detail.cantidadContada ?? ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'cantidadContada', event.target.value)} disabled={isClosed || saving} className="w-24 rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60" />
                           </td>
-                          <td className="px-4 py-3 align-top">
-                            <span className={`rounded border px-2 py-1 text-xs font-bold ${
+                          <td className="w-44 px-4 py-3 align-top">
+                            <span className={`inline-flex min-w-[9.5rem] items-center justify-center whitespace-nowrap rounded border px-2.5 py-1.5 text-xs font-bold ${
                               detail.estadoDiferencia === 'Faltante'
                                 ? 'border-brand-red/30 bg-brand-red/10 text-brand-red'
                                 : detail.estadoDiferencia === 'Sobrante'
