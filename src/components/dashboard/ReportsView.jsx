@@ -1170,55 +1170,15 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                 Volver a conteos
               </button>
             ) : (
-              <button type="button" onClick={() => setShowInventoryCountForm(current => !current)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90">
-                <Icons.Inventory className="h-4 w-4" />
-                {showInventoryCountForm ? 'Ocultar formulario' : 'Nuevo conteo'}
-              </button>
+            <button type="button" onClick={() => setShowInventoryCountForm(true)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90">
+              <Icons.Inventory className="h-4 w-4" />
+              Nuevo conteo
+            </button>
             )}
           </div>
 
           {!selectedInventoryCount && (
-          <div className={`mt-5 grid gap-4 rounded-lg border border-dark-border bg-dark-bg/60 p-4 ${showInventoryCountForm ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]' : 'lg:grid-cols-1'}`}>
-            {showInventoryCountForm && (
-            <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-muted">Nuevo conteo</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Ubicacion/bodega</span>
-                  <select name="idUbicacion" value={inventoryCountForm.idUbicacion} onChange={handleInventoryCountFormChange} disabled={loadingRootLocations || creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
-                    <option value="">{loadingRootLocations ? 'Cargando ubicaciones...' : 'Selecciona ubicacion'}</option>
-                    {rootLocations.map(location => (
-                      <option key={location.id} value={location.id}>{location.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Fecha</span>
-                  <input name="fechaConteo" type="date" value={inventoryCountForm.fechaConteo} onChange={handleInventoryCountFormChange} disabled={creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60" />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Responsable</span>
-                  <select name="idUsuarioResponsable" value={inventoryCountForm.idUsuarioResponsable} onChange={handleInventoryCountFormChange} disabled={loadingResponsibleUsers || creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
-                    <option value="">{loadingResponsibleUsers ? 'Cargando responsables...' : 'Usuario autenticado'}</option>
-                    {responsibleUsers.map(user => (
-                      <option key={user.id} value={user.id}>{user.name}{user.email ? ` - ${user.email}` : ''}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Observaciones</span>
-                  <textarea name="observaciones" rows="3" value={inventoryCountForm.observaciones} onChange={handleInventoryCountFormChange} disabled={creatingInventoryCount} placeholder="Conteo mensual de bodega principal" className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-60" />
-                </label>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <button type="button" onClick={createInventoryCount} disabled={creatingInventoryCount || loadingRootLocations || !inventoryCountForm.idUbicacion || !inventoryCountForm.fechaConteo} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-opacity hover:opacity-90 disabled:opacity-60">
-                  <Icons.Inventory className="h-4 w-4" />
-                  {creatingInventoryCount ? 'Creando...' : 'Crear conteo'}
-                </button>
-              </div>
-            </div>
-            )}
-
+          <div className="mt-5 rounded-lg border border-dark-border bg-dark-bg/60 p-4">
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-muted">Conteos existentes</p>
               <div className="mb-3 grid gap-3 sm:grid-cols-2">
@@ -1658,6 +1618,66 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                 </button>
                 <button type="button" onClick={continueEmergencyBase} disabled={loadingEmergencyCatalogs} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:opacity-50">
                   Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showInventoryCountForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-3xl overflow-hidden rounded-lg border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h4 className="rajdhani text-xl font-bold text-text-main">Nuevo conteo de inventario</h4>
+                  <p className="mt-1 text-xs text-text-muted">Selecciona ubicacion, fecha y responsable para generar el borrador.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInventoryCountForm(false)}
+                  disabled={creatingInventoryCount}
+                  className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="grid max-h-[calc(90vh-150px)] gap-4 overflow-y-auto p-6 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Ubicacion/bodega</span>
+                  <select name="idUbicacion" value={inventoryCountForm.idUbicacion} onChange={handleInventoryCountFormChange} disabled={loadingRootLocations || creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
+                    <option value="">{loadingRootLocations ? 'Cargando ubicaciones...' : 'Selecciona ubicacion'}</option>
+                    {rootLocations.map(location => (
+                      <option key={location.id} value={location.id}>{location.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Fecha</span>
+                  <input name="fechaConteo" type="date" value={inventoryCountForm.fechaConteo} onChange={handleInventoryCountFormChange} disabled={creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60" />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Responsable</span>
+                  <select name="idUsuarioResponsable" value={inventoryCountForm.idUsuarioResponsable} onChange={handleInventoryCountFormChange} disabled={loadingResponsibleUsers || creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
+                    <option value="">{loadingResponsibleUsers ? 'Cargando responsables...' : 'Usuario autenticado'}</option>
+                    {responsibleUsers.map(user => (
+                      <option key={user.id} value={user.id}>{user.name}{user.email ? ` - ${user.email}` : ''}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Observaciones</span>
+                  <textarea name="observaciones" rows="4" value={inventoryCountForm.observaciones} onChange={handleInventoryCountFormChange} disabled={creatingInventoryCount} placeholder="Conteo mensual de bodega principal" className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-60" />
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={() => setShowInventoryCountForm(false)} disabled={creatingInventoryCount} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="button" onClick={createInventoryCount} disabled={creatingInventoryCount || loadingRootLocations || !inventoryCountForm.idUbicacion || !inventoryCountForm.fechaConteo} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+                  <Icons.Inventory className="h-4 w-4" />
+                  {creatingInventoryCount ? 'Creando...' : 'Crear conteo'}
                 </button>
               </div>
             </div>
