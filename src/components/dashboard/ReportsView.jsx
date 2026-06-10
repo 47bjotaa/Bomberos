@@ -39,21 +39,21 @@ const OBSERVACIONES_CONTEO = [
   { value: '', label: 'Sin observacion' },
   { value: 'MaterialNoEncontrado', label: 'Material no encontrado' },
   { value: 'SobranteFisico', label: 'Sobrante fisico' },
-  { value: 'Danado', label: 'Danado' },
+  { value: 'Danado', label: 'Dañado' },
   { value: 'MalUbicado', label: 'Mal ubicado' },
   { value: 'RequiereBaja', label: 'Requiere baja' },
   { value: 'Otro', label: 'Otro' },
 ];
 
 const TIPOS_USO_MATERIAL = [
-  'Consumible Usado',
-  'Danado',
-  'Perdido',
-  'Retenido',
+  { value: 'Consumible Usado', label: 'Consumible usado' },
+  { value: 'Danado', label: 'Dañado' },
+  { value: 'Perdido', label: 'Perdido' },
+  { value: 'Retenido', label: 'Retenido' },
 ];
 
 const TIPOS_AFECTACION_ITEM = [
-  { value: 'Danado', estado: 'Mal Estado', label: 'Danado' },
+  { value: 'Danado', estado: 'Mal Estado', label: 'Dañado' },
   { value: 'Perdido', estado: 'Perdido', label: 'Perdido' },
   { value: 'Retenido', estado: 'Retenido', label: 'Retenido' },
 ];
@@ -1273,17 +1273,17 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1120px] text-left text-sm">
+                <table className="w-full min-w-[1040px] table-fixed text-left text-sm">
                   <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
                     <tr>
-                      <th className="px-4 py-3">Material/item</th>
-                      <th className="px-4 py-3">Ubicacion</th>
-                      <th className="px-4 py-3">Sistema</th>
-                      <th className="px-4 py-3">Fisico</th>
-                      <th className="w-44 px-4 py-3">Diferencia</th>
-                      <th className="px-4 py-3">Observacion</th>
-                      <th className="px-4 py-3">Comentario</th>
-                      <th className="px-4 py-3 text-right">Accion</th>
+                      <th className="w-44 px-4 py-3">Material/item</th>
+                      <th className="w-28 px-4 py-3">Ubicacion</th>
+                      <th className="w-20 px-4 py-3">Sistema</th>
+                      <th className="w-28 px-4 py-3">Fisico</th>
+                      <th className="w-52 px-4 py-3">Diferencia</th>
+                      <th className="w-48 px-4 py-3">Observacion</th>
+                      <th className="w-56 px-4 py-3">Comentario</th>
+                      <th className="sticky right-0 z-10 w-32 bg-dark-bg2 px-4 py-3 text-right shadow-[-12px_0_18px_rgba(3,7,18,0.65)]">Accion</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1328,7 +1328,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                           <td className="px-4 py-3 align-top">
                             <input value={detail.comentario || ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'comentario', event.target.value)} disabled={isClosed || saving} placeholder="Comentario" className="w-56 rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-60" />
                           </td>
-                          <td className="px-4 py-3 align-top text-right">
+                          <td className="sticky right-0 z-10 bg-dark-bg px-4 py-3 align-top text-right shadow-[-12px_0_18px_rgba(3,7,18,0.65)]">
                             <button type="button" onClick={() => saveInventoryCountDetail(detail)} disabled={isClosed || saving || detail.cantidadContada === '' || detail.cantidadContada === null || detail.cantidadContada === undefined} className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:opacity-50">
                               {saving ? 'Guardando...' : 'Guardar'}
                             </button>
@@ -1806,7 +1806,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Tipo uso</span>
                           <select value={material.tipoUso} onChange={(event) => updateEmergencyMaterial(index, 'tipoUso', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
-                            {TIPOS_USO_MATERIAL.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
+                            {TIPOS_USO_MATERIAL.map(tipo => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}
                           </select>
                         </label>
                         <label className="flex items-end gap-2 pb-2 text-sm text-text-main">
@@ -1825,16 +1825,12 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                     <div key={`selected-item-${item.idItem}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
                       <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Item serializado'}</p>
                       {detail?.codigo && <p className="mt-1 text-xs text-text-muted">{detail.codigo}</p>}
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="mt-3 grid gap-3">
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Afectacion</span>
                           <select value={item.tipoAfectacion} onChange={(event) => updateEmergencyItem(index, 'tipoAfectacion', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan">
                             {TIPOS_AFECTACION_ITEM.map(tipo => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}
                           </select>
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Estado aplicado</span>
-                          <input value={item.estadoAplicado} onChange={(event) => updateEmergencyItem(index, 'estadoAplicado', event.target.value)} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan" />
                         </label>
                       </div>
                       <textarea rows="2" value={item.observacion} onChange={(event) => updateEmergencyItem(index, 'observacion', event.target.value)} placeholder="Observacion del item" className="mt-3 w-full resize-none rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none placeholder-text-muted focus:border-brand-cyan" />

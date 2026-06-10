@@ -8,7 +8,7 @@ const VEHICLE_TYPES = [
   'Rescate',
 ];
 const VEHICLE_STATUS_OPTIONS = [
-  { value: 'Activo', label: 'Operativo' },
+  { value: 'Activo', label: 'Activo' },
   { value: 'En Mantencion', label: 'En Mantención' },
   { value: 'Fuera de Servicio', label: 'Fuera de Servicio' },
 ];
@@ -121,7 +121,7 @@ const mapVehiculo = (v) => ({
   tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
   modelo: v.modelo || v.descripcion || v.descripcionUbicacion || 'Sin especificar',
   descripcion: v.descripcion || v.descripcionUbicacion || v.modelo || 'Sin descripción registrada.',
-  estado: v.estadoVehiculo || v.estado || 'Operativo',
+  estado: v.estadoVehiculo || v.estado || 'Activo',
   estadoUbicacion: v.estadoUbicacion || '',
   observaciones: Array.isArray(v.observaciones) ? v.observaciones : [],
   mantenciones: Array.isArray(v.mantenciones) ? v.mantenciones : [],
@@ -147,7 +147,7 @@ function VehiculosView({
     descripcion: '',
     nomenclatura: '',
     tipoVehiculo: '',
-    estadoVehiculo: 'Operativo',
+    estadoVehiculo: 'Activo',
     patente: '',
   });
 
@@ -509,7 +509,7 @@ function VehiculosView({
       descripcion: '',
       nomenclatura: '',
       tipoVehiculo: '',
-      estadoVehiculo: 'Operativo',
+      estadoVehiculo: 'Activo',
       patente: '',
     });
     setAddError('');

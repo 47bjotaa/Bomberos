@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { apiFetch } from '../../services/api';
 
-const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
+const EPP_STATES = ['Buen Estado', 'Desgastado', 'Mal Estado'];
 const MAX_DATE_INPUT_VALUE = '9999-12-31';
 const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 const parseDateValue = (value) => {
@@ -43,18 +43,7 @@ const getChileDateTime = () => {
 };
 
 const normalizeEstado = (estadoRaw) => {
-  if (!estadoRaw) return 'Buen Estado';
-  const lower = estadoRaw.toLowerCase().trim();
-  if (lower.includes('buen') || (lower.includes('operativo') && !lower.includes('no'))) {
-    return 'Buen Estado';
-  }
-  if (lower.includes('mal') || lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
-    return 'Mal Estado';
-  }
-  if (lower.includes('desgast') || lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
-    return 'Desgastada';
-  }
-  return 'Buen Estado';
+  return estadoRaw || 'Buen Estado';
 };
 
 const getDateInputValue = (value) => {
@@ -962,7 +951,7 @@ function EppDetailView({
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
                         normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastada' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
                         normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                         'bg-dark-bg3 border-dark-border text-text-muted'
                       }`}>

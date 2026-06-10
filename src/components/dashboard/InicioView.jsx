@@ -108,10 +108,13 @@ export default function InicioView({
   const personalActivo = bomberosActivos.length;
 
   const flotaTotal   = vehiculos.length;
-  const flotaOp      = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('operativ')).length;
+  const flotaOp      = vehiculos.filter(v => {
+    const estado = (v.estadoVehiculo || v.estado || '').toLowerCase();
+    return estado.includes('activo') || estado.includes('operativ');
+  }).length;
   const flotaMant    = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('mantenc')).length;
   const flotaFuera   = flotaTotal - flotaOp - flotaMant;
-  const vehicleSummary = `${flotaOp} operativos / ${flotaMant} mant. / ${flotaFuera} fuera`;
+  const vehicleSummary = `${flotaOp} activos / ${flotaMant} mant. / ${flotaFuera} fuera`;
 
   const cargoColors = ['#38bdf8', '#10b981', '#f97316', '#eab308', '#ef4444', '#8b5cf6'];
   const cargoRows = Object.entries(
@@ -354,7 +357,7 @@ export default function InicioView({
                         let strokeColor = '#06b6d4'; // default cyan
                         let filterId = 'glow-cyan';
                         
-                        if (estado.includes('operativ')) {
+                        if (estado.includes('activo') || estado.includes('operativ')) {
                           strokeColor = '#10b981'; // green
                           filterId = 'glow-green';
                         } else if (estado.includes('mantenc')) {
