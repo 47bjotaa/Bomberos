@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icons } from '../../components/ui/Icons';
 import { apiFetch } from '../../services/api';
+import ModuleHelp from '../ui/ModuleHelp';
 
 const VEHICLE_TYPES = [
   'Carro bomba',
@@ -8,6 +9,9 @@ const VEHICLE_TYPES = [
   'Rescate',
 ];
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
+const VEHICLES_HELP = [
+  'Agrega todos los vehiculos de la compania para que el inventario pueda mostrar sus ubicaciones correspondientes.',
+];
 
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -849,11 +853,14 @@ function VehiculosView({
               <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehiculos</h3>
               <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
             </div>
-            {canManageVehicles && (
-              <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
-                Agregar vehiculo
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <ModuleHelp title="Ayuda de vehiculos" items={VEHICLES_HELP} />
+              {canManageVehicles && (
+                <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
+                  Agregar vehiculo
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

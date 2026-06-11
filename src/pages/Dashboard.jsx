@@ -18,6 +18,7 @@ import { getThemePalette } from '../utils/themePalette';
 import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
 import ReportsView from '../components/dashboard/ReportsView';
+import ModuleHelp from '../components/ui/ModuleHelp';
 
 const GENERAL_INVENTORY_ID = 'general-inventory';
 const TIPOS_PRODUCTO = [
@@ -29,6 +30,62 @@ const TIPOS_PRODUCTO = [
 ];
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const DONATION_PAGE_SIZE_OPTIONS = [8, 16, 32, 64];
+
+const MODULE_HELP = {
+  bodegas: {
+    title: 'Ayuda de inventario',
+    items: [
+      'Agrega primero los materiales en el catalogo; luego incorporalos a la ubicacion fisica donde realmente estan para que cuenten como cantidad.',
+      'Puedes configurar stock minimo de materiales por ubicacion para controlar reposiciones.',
+      'Configura el arbol de ubicaciones para definir la jerarquia y permitir ubicaciones dentro de otras.',
+      'Registra cada movimiento o material nuevo para mantener el sistema actualizado en tiempo real.',
+    ],
+  },
+  vehiculos: {
+    title: 'Ayuda de vehiculos',
+    items: [
+      'Agrega todos los vehiculos de la compania para que el inventario pueda mostrar sus ubicaciones correspondientes.',
+    ],
+  },
+  epp: {
+    title: 'Ayuda de EPP',
+    items: [
+      'El equipo de proteccion personal tambien es un material: debe existir en el catalogo y estar agregado a una ubicacion para aparecer en la tabla.',
+    ],
+  },
+  'libro-guardia': {
+    title: 'Ayuda de libros de guardia',
+    items: [
+      'Hay tres tipos de libro: diarios, semanales y mensuales.',
+      'Los libros diarios se cierran al terminar el dia.',
+      'Los libros semanales se cierran al termino de la semana.',
+      'Los libros mensuales se cierran el ultimo dia del mes.',
+    ],
+  },
+  donaciones: {
+    title: 'Ayuda de donaciones',
+    items: [
+      'Para activar esta seccion, la compania o el encargado de fondos debe tener una cuenta en Flow y proporcionar las credenciales API Key.',
+      'Al activar Flow podras crear campanas con un boton para realizar donaciones.',
+      'Cada bombero puede generar su propio link y compartirlo con quien quiera.',
+      'Las donaciones hechas con el link de un bombero quedaran asociadas a su nombre de recaudacion para identificar quien capto esa donacion.',
+    ],
+  },
+  personal: {
+    title: 'Ayuda de personal',
+    items: [
+      'Puedes importar personal completando los atributos basicos en la plantilla.',
+      'Al importar, se enviara un correo al bombero para finalizar su ingreso a la plataforma.',
+    ],
+  },
+  reportes: {
+    title: 'Ayuda de reportes',
+    items: [
+      'Los reportes se generan segun los filtros seleccionados.',
+      'El conteo sirve para hacer chequeos y confirmar perdidas o errores en registros de movimientos.',
+    ],
+  },
+};
 
 const DEFAULT_PAYMENT_CONFIG = {
   apiKey: '',
@@ -3897,7 +3954,7 @@ function Dashboard({ setView }) {
         if (showNotificationsMenu) setShowNotificationsMenu(false);
       }}>
         {/* Sub Header (Actions specific to active tab) */}
-        {activeTab !== 'vehiculos' && activeTab !== 'libro-guardia' && !materialDetailRoute && !stockMinimoDetailId && (
+        {activeTab !== 'vehiculos' && !materialDetailRoute && !stockMinimoDetailId && (
           <div className="dashboard-subheader gap-3 px-4 py-3 border-b border-dark-border bg-dark-bg2 z-10 flex-shrink-0">
             <div className="flex min-w-0 items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-dark-bg flex items-center justify-center text-brand-cyan border border-dark-border shadow-[0_0_10px_rgba(56,189,248,0.1)]">
@@ -3958,6 +4015,12 @@ function Dashboard({ setView }) {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              {MODULE_HELP[activeTab] && (
+                <ModuleHelp
+                  title={MODULE_HELP[activeTab].title}
+                  items={MODULE_HELP[activeTab].items}
+                />
+              )}
               {activeTab === 'bodegas' && inventoryView === 'ubicaciones' && canManageLocations && (
                 <button onClick={openAddUbicacionModal} className="px-3.5 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-brand-red to-brand-ember rounded-lg hover:opacity-90 transition-colors shadow-[0_4px_15px_rgba(232,55,42,0.3)]">Agregar ubicación</button>
               )}
