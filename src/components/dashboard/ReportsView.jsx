@@ -1273,17 +1273,17 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1040px] table-fixed text-left text-sm">
+                <table className="w-full min-w-[900px] table-fixed text-left text-xs xl:text-sm">
                   <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
                     <tr>
-                      <th className="w-44 px-4 py-3">Material/item</th>
-                      <th className="w-28 px-4 py-3">Ubicacion</th>
-                      <th className="w-20 px-4 py-3">Sistema</th>
-                      <th className="w-28 px-4 py-3">Fisico</th>
-                      <th className="w-52 px-4 py-3">Diferencia</th>
-                      <th className="w-48 px-4 py-3">Observacion</th>
-                      <th className="w-56 px-4 py-3">Comentario</th>
-                      <th className="sticky right-0 z-10 w-32 bg-dark-bg2 px-4 py-3 text-right shadow-[-12px_0_18px_rgba(3,7,18,0.65)]">Accion</th>
+                      <th className="w-[18%] px-3 py-3">Material/item</th>
+                      <th className="w-[10%] px-3 py-3">Ubicacion</th>
+                      <th className="w-[7%] px-3 py-3">Sistema</th>
+                      <th className="w-[9%] px-3 py-3">Fisico</th>
+                      <th className="w-[15%] px-3 py-3">Diferencia</th>
+                      <th className="w-[17%] px-3 py-3">Observacion</th>
+                      <th className="w-[15%] px-3 py-3">Comentario</th>
+                      <th className="w-[9%] px-3 py-3 text-right">Accion</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1298,17 +1298,17 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                       const saving = Boolean(savingInventoryCountDetails[String(detail.idDetalle)]);
                       return (
                         <tr key={detail.idDetalle} className="border-b border-dark-border/70 last:border-0">
-                          <td className="px-4 py-3 align-top">
+                          <td className="px-3 py-3 align-top">
                             <p className="font-semibold text-text-main">{detail.material}</p>
                             <p className="mt-1 text-xs text-text-muted">{detail.tipoRecurso}{detail.tipoMaterial ? ` - ${detail.tipoMaterial}` : ''}{detail.codigoItem ? ` - ${detail.codigoItem}` : ''}</p>
                           </td>
-                          <td className="px-4 py-3 align-top text-text-muted">{detail.ubicacion}</td>
-                          <td className="px-4 py-3 align-top font-bold text-text-main">{detail.cantidadSistema}</td>
-                          <td className="px-4 py-3 align-top">
-                            <input type="number" min="0" value={detail.cantidadContada ?? ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'cantidadContada', event.target.value)} disabled={isClosed || saving} className="w-24 rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60" />
+                          <td className="px-3 py-3 align-top text-text-muted">{detail.ubicacion}</td>
+                          <td className="px-3 py-3 align-top font-bold text-text-main">{detail.cantidadSistema}</td>
+                          <td className="px-3 py-3 align-top">
+                            <input type="number" min="0" value={detail.cantidadContada ?? ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'cantidadContada', event.target.value)} disabled={isClosed || saving} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-2 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60" />
                           </td>
-                          <td className="w-44 px-4 py-3 align-top">
-                            <span className={`inline-flex min-w-[9.5rem] items-center justify-center whitespace-nowrap rounded border px-2.5 py-1.5 text-xs font-bold ${
+                          <td className="px-3 py-3 align-top">
+                            <span className={`inline-flex w-full items-center justify-center whitespace-normal rounded border px-2 py-1.5 text-center text-xs font-bold leading-tight ${
                               detail.estadoDiferencia === 'Faltante'
                                 ? 'border-brand-red/30 bg-brand-red/10 text-brand-red'
                                 : detail.estadoDiferencia === 'Sobrante'
@@ -1320,16 +1320,16 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                               {detail.estadoDiferencia}{detail.diferencia !== null && detail.diferencia !== undefined ? ` (${detail.diferencia})` : ''}
                             </span>
                           </td>
-                          <td className="px-4 py-3 align-top">
-                            <select value={detail.observacion || ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'observacion', event.target.value)} disabled={isClosed || saving} className="w-44 rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60">
+                          <td className="px-3 py-3 align-top">
+                            <select value={detail.observacion || ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'observacion', event.target.value)} disabled={isClosed || saving} className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-2 py-2 text-sm text-text-main outline-none focus:border-brand-cyan disabled:opacity-60">
                               {OBSERVACIONES_CONTEO.map(option => <option key={option.value || 'sin'} value={option.value}>{option.label}</option>)}
                             </select>
                           </td>
-                          <td className="px-4 py-3 align-top">
-                            <input value={detail.comentario || ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'comentario', event.target.value)} disabled={isClosed || saving} placeholder="Comentario" className="w-56 rounded-lg border border-dark-border bg-dark-bg2 px-3 py-2 text-sm text-text-main outline-none placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-60" />
+                          <td className="px-3 py-3 align-top">
+                            <input value={detail.comentario || ''} onChange={(event) => updateInventoryCountDetailDraft(detail.idDetalle, 'comentario', event.target.value)} disabled={isClosed || saving} placeholder="Comentario" className="w-full rounded-lg border border-dark-border bg-dark-bg2 px-2 py-2 text-sm text-text-main outline-none placeholder:text-text-muted focus:border-brand-cyan disabled:opacity-60" />
                           </td>
-                          <td className="sticky right-0 z-10 bg-dark-bg px-4 py-3 align-top text-right shadow-[-12px_0_18px_rgba(3,7,18,0.65)]">
-                            <button type="button" onClick={() => saveInventoryCountDetail(detail)} disabled={isClosed || saving || detail.cantidadContada === '' || detail.cantidadContada === null || detail.cantidadContada === undefined} className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:opacity-50">
+                          <td className="px-3 py-3 align-top text-right">
+                            <button type="button" onClick={() => saveInventoryCountDetail(detail)} disabled={isClosed || saving || detail.cantidadContada === '' || detail.cantidadContada === null || detail.cantidadContada === undefined} className="w-full rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-2 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:opacity-50">
                               {saving ? 'Guardando...' : 'Guardar'}
                             </button>
                           </td>
