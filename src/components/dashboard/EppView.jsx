@@ -4,7 +4,16 @@ import { apiFetch } from '../../services/api';
 import EppDetailView from './EppDetailView';
 
 const EPP_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
-const EPP_STATES = ['Buen Estado', 'Desgastada', 'Mal Estado'];
+const EPP_STATES = ['Buen Estado', 'Desgastado', 'Mal Estado'];
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 const getArrayPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -18,7 +27,7 @@ const getArrayPayload = (payload) => {
 
 const formatDate = (value) => {
   if (!value) return '-';
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return new Intl.DateTimeFormat('es-CL', {
@@ -30,18 +39,7 @@ const formatDate = (value) => {
 };
 
 const normalizeEstado = (estadoRaw) => {
-  if (!estadoRaw) return 'Buen Estado';
-  const lower = estadoRaw.toLowerCase().trim();
-  if (lower.includes('buen') || (lower.includes('operativo') && !lower.includes('no'))) {
-    return 'Buen Estado';
-  }
-  if (lower.includes('mal') || lower.includes('baja') || lower.includes('fuera de servicio') || lower.includes('no operativo')) {
-    return 'Mal Estado';
-  }
-  if (lower.includes('desgast') || lower.includes('reparacion') || lower.includes('mantenimiento') || lower.includes('mantencion') || lower.includes('pendiente')) {
-    return 'Desgastada';
-  }
-  return 'Buen Estado';
+  return estadoRaw || 'Buen Estado';
 };
 
 const getInitial = (name) => (name?.trim()?.charAt(0) || '-').toUpperCase();
@@ -469,7 +467,7 @@ function EppView({
             onChange={(e) => setFiltroEstado(e.target.value)}
             className={`w-full px-4 py-2 bg-dark-surface border text-text-main rounded-lg outline-none focus:ring-1 appearance-none text-sm pl-10 transition-all ${
               filtroEstado === 'Buen Estado' ? 'border-brand-green/60 focus:border-brand-green focus:ring-brand-green' :
-              filtroEstado === 'Desgastada' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
+              filtroEstado === 'Desgastado' ? 'border-brand-gold/60 focus:border-brand-gold focus:ring-brand-gold' :
               filtroEstado === 'Mal Estado' ? 'border-brand-red/60 focus:border-brand-red focus:ring-brand-red' :
               'border-dark-border focus:border-brand-cyan focus:ring-brand-cyan'
             }`}
@@ -561,7 +559,7 @@ function EppView({
                       ) : (
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
                           item.estado === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
-                          item.estado === 'Desgastada' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                          item.estado === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
                           item.estado === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                           'bg-dark-bg3 border-dark-border text-text-muted'
                         }`}>

@@ -12,11 +12,25 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 0,
   });
 };
+const MAX_DATE_INPUT_VALUE = '9999-12-31';
+const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
+const getChileDateValue = () => (
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+);
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
 
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString('es-CL', {
@@ -172,12 +186,13 @@ const sortMaintenances = (maintenances = []) => (
     const bPending = isMaintenancePending(b);
     if (aPending !== bPending) return aPending ? -1 : 1;
 
-    return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
+    return (parseDateValue(b.fecha)?.getTime() || 0) - (parseDateValue(a.fecha)?.getTime() || 0);
   })
 );
 
 const isMaintenancePending = (maintenance) => (
   String(maintenance?.estadoMantencion || '').toLowerCase().includes('pendiente')
+  || String(maintenance?.estadoMantencion || '').toLowerCase().includes('programada')
 );
 
 function EmptyState({ children, palette }) {
@@ -528,10 +543,16 @@ function MaterialDetailView({
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
     setMaintenanceForm({
-      fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
+      fecha: mode === 'programada' ? getChileDateValue() : '',
       descripcion: '',
       tipo: 'Preventiva',
     });
+  };
+
+  const handleMaintenanceDateChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setMaintenanceForm((current) => ({ ...current, fecha: value }));
   };
 
   const closeMaintenanceModal = () => {
@@ -832,6 +853,11 @@ function MaterialDetailView({
     const isProgramada = maintenanceModalMode === 'programada';
 
     if (!descripcion || !tipo || (isProgramada && !maintenanceForm.fecha)) return;
+
+    if (isProgramada && !hasFourDigitDateYear(maintenanceForm.fecha)) {
+      setMaintenanceError('La fecha debe tener un año de 4 digitos.');
+      return;
+    }
 
     const payload = {
       ...maintenanceTargetIds,
@@ -1640,7 +1666,8 @@ function MaterialDetailView({
                   <input
                     type="date"
                     value={maintenanceForm.fecha}
-                    onChange={(event) => setMaintenanceForm((current) => ({ ...current, fecha: event.target.value }))}
+                    max={MAX_DATE_INPUT_VALUE}
+                    onChange={handleMaintenanceDateChange}
                     className="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-brand-cyan"
                     style={{ borderColor: palette.border, background: palette.bg, color: palette.text }}
                     disabled={maintenanceSaving}

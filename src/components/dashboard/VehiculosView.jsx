@@ -8,10 +8,35 @@ const VEHICLE_TYPES = [
   'Ambulancia',
   'Rescate',
 ];
+const VEHICLE_STATUS_OPTIONS = [
+  { value: 'Activo', label: 'Activo' },
+  { value: 'En Mantencion', label: 'En Mantención' },
+  { value: 'Fuera de Servicio', label: 'Fuera de Servicio' },
+];
+const normalizeVehicleStatusValue = (value) => {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('mantenc')) return 'En Mantencion';
+  if (normalized.includes('fuera')) return 'Fuera de Servicio';
+  return 'Activo';
+};
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
 const VEHICLES_HELP = [
   'Agrega todos los vehiculos de la compania para que el inventario pueda mostrar sus ubicaciones correspondientes.',
 ];
+const MAX_DATE_INPUT_VALUE = '9999-12-31';
+const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
+const getChileDateValue = () => (
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+);
 
 const getArrayPayload = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -82,7 +107,7 @@ const isMaintenancePending = (maintenance) => (
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
 
-  const date = new Date(value);
+  const date = parseDateValue(value);
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString('es-CL', {
@@ -100,7 +125,7 @@ const mapVehiculo = (v) => ({
   tipo: v.tipoVehiculo || v.tipo || 'Material Mayor',
   modelo: v.modelo || v.descripcion || v.descripcionUbicacion || 'Sin especificar',
   descripcion: v.descripcion || v.descripcionUbicacion || v.modelo || 'Sin descripción registrada.',
-  estado: v.estadoVehiculo || v.estado || 'Operativo',
+  estado: v.estadoVehiculo || v.estado || 'Activo',
   estadoUbicacion: v.estadoUbicacion || '',
   observaciones: Array.isArray(v.observaciones) ? v.observaciones : [],
   mantenciones: Array.isArray(v.mantenciones) ? v.mantenciones : [],
@@ -126,7 +151,7 @@ function VehiculosView({
     descripcion: '',
     nomenclatura: '',
     tipoVehiculo: '',
-    estadoVehiculo: 'Operativo',
+    estadoVehiculo: 'Activo',
     patente: '',
   });
 
@@ -168,6 +193,10 @@ function VehiculosView({
   const [loadingMaintenanceFiles, setLoadingMaintenanceFiles] = useState(false);
   const [maintenanceFilesError, setMaintenanceFilesError] = useState('');
   const maintenanceFilesRef = useRef([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusChangeValue, setStatusChangeValue] = useState('Activo');
+  const [statusChangeSaving, setStatusChangeSaving] = useState(false);
+  const [statusChangeError, setStatusChangeError] = useState('');
 
   const fetchVehiculos = async () => {
     setLoading(true);
@@ -220,7 +249,11 @@ function VehiculosView({
   const vehicleImageSlotsAvailable = Math.max(0, 3 - vehicleImages.length);
 
   const updateVehiculo = (updatedV) => {
-    setVehiculos((current) => current.map((v) => v.id === updatedV.id ? updatedV : v));
+    setVehiculos((current) => current.map((v) => (
+      String(v.id) === String(updatedV.id) || String(v.idVehiculo) === String(updatedV.idVehiculo || updatedV.id)
+        ? updatedV
+        : v
+    )));
     setSelectedVehiculo(updatedV);
   };
 
@@ -461,6 +494,8 @@ function VehiculosView({
     setMaintenanceError('');
     setMaintenanceNotice('');
     setSelectedMaintenance(null);
+    setShowStatusModal(false);
+    setStatusChangeError('');
     setImageUploadError('');
   };
 
@@ -478,7 +513,7 @@ function VehiculosView({
       descripcion: '',
       nomenclatura: '',
       tipoVehiculo: '',
-      estadoVehiculo: 'Operativo',
+      estadoVehiculo: 'Activo',
       patente: '',
     });
     setAddError('');
@@ -640,7 +675,7 @@ function VehiculosView({
 
     setMaintenanceModalMode(mode);
     setNewMant({
-      fecha: mode === 'programada' ? new Date().toISOString().slice(0, 10) : '',
+      fecha: mode === 'programada' ? getChileDateValue() : '',
       tipo: 'Preventiva',
       descripcion: '',
     });
@@ -658,6 +693,60 @@ function VehiculosView({
     maintenanceFiles.forEach((file) => URL.revokeObjectURL(file.preview));
     setMaintenanceFiles([]);
     setMaintenanceError('');
+  };
+
+  const openStatusModal = (vehicle = selectedVehiculo) => {
+    if (!canManageVehicles) return;
+    if (vehicle) setSelectedVehiculo(vehicle);
+    setStatusChangeValue(normalizeVehicleStatusValue(vehicle?.estado || vehicle?.estadoVehiculo));
+    setStatusChangeError('');
+    setShowStatusModal(true);
+  };
+
+  const closeStatusModal = () => {
+    if (statusChangeSaving) return;
+    setShowStatusModal(false);
+    setStatusChangeError('');
+  };
+
+  const handleUpdateVehicleStatus = async (event) => {
+    event.preventDefault();
+    if (!canManageVehicles || !selectedId || statusChangeSaving) return;
+
+    const payload = { estadoVehiculo: statusChangeValue };
+    if (!payload.estadoVehiculo) {
+      setStatusChangeError('Selecciona un estado para el vehiculo.');
+      return;
+    }
+
+    setStatusChangeSaving(true);
+    setStatusChangeError('');
+
+    try {
+      const updatedVehicle = await apiFetch(`/api/vehiculos/${selectedId}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      const nextVehicle = {
+        ...selectedVehiculo,
+        ...(updatedVehicle || {}),
+        estado: updatedVehicle?.estadoVehiculo || updatedVehicle?.estado || payload.estadoVehiculo,
+        estadoVehiculo: updatedVehicle?.estadoVehiculo || updatedVehicle?.estado || payload.estadoVehiculo,
+      };
+
+      updateVehiculo(nextVehicle);
+      setShowStatusModal(false);
+    } catch (err) {
+      setStatusChangeError(err.message || 'No se pudo cambiar el estado del vehiculo.');
+    } finally {
+      setStatusChangeSaving(false);
+    }
+  };
+
+  const handleMaintenanceDateChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setNewMant(current => ({ ...current, fecha: value }));
   };
 
   const handleCreateObservation = async (event) => {
@@ -741,6 +830,11 @@ function VehiculosView({
     const tipo = newMant.tipo.trim();
     const isProgramada = maintenanceModalMode === 'programada';
     if (!descripcion || !tipo || !selectedId || maintenanceSaving || (isProgramada && !newMant.fecha)) return;
+
+    if (isProgramada && !hasFourDigitDateYear(newMant.fecha)) {
+      setMaintenanceError('La fecha debe tener un año de 4 digitos.');
+      return;
+    }
 
     const payload = {
       idVehiculo: Number(selectedId),
@@ -876,21 +970,41 @@ function VehiculosView({
                   onClick={() => openDetail(v)}
                   className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-dark-border bg-dark-bg transition-all hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/5"
                 >
-                  <div className="flex h-48 w-full items-center justify-center overflow-hidden text-text-muted">
+                  <div className="relative flex h-44 w-full items-center justify-center overflow-hidden text-text-muted">
                     {vehiclePreviewImages[v.id] ? (
                       <img src={vehiclePreviewImages[v.id]} alt={v.nombre} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
-                      <div className="flex h-20 w-20 items-center justify-center transition-transform group-hover:scale-110">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-dark-border bg-dark-surface/70 transition-transform group-hover:scale-110">
                         <Icons.Truck />
                       </div>
                     )}
+                    <span className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${normalizeVehicleStatusValue(v.estado) === 'Activo' ? 'border-brand-green/30 bg-brand-green/15 text-brand-green' : normalizeVehicleStatusValue(v.estado) === 'En Mantencion' ? 'border-brand-gold/30 bg-brand-gold/15 text-brand-gold' : 'border-brand-red/30 bg-brand-red/15 text-brand-red'}`}>
+                      {v.estado}
+                    </span>
                   </div>
-                  <div className="w-full border-t border-dark-border bg-dark-bg2/60 px-4 py-3 text-center">
-                    <div className="mb-1 text-sm font-semibold text-text-main">{v.nombre}</div>
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 font-semibold text-brand-cyan">{v.tipo}</span>
-                      <span className="rounded-full border border-dark-border bg-dark-bg px-2 py-0.5 font-semibold text-text-muted">{v.estado}</span>
+                  <div className="w-full border-t border-dark-border bg-dark-bg2/70 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-base font-bold text-text-main">{v.nombre}</div>
+                      </div>
+                      <span className="rounded-lg border border-dark-border bg-dark-bg px-2 py-1 text-[11px] font-bold text-text-muted">{v.tipo}</span>
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-0.5 font-semibold text-brand-cyan">{v.tipo}</span>
+                      <span className="rounded-full border border-dark-border bg-dark-bg px-2 py-0.5 font-semibold text-text-muted">{v.patente}</span>
+                    </div>
+                    {canManageVehicles && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openStatusModal(v);
+                        }}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-cyan/25 bg-brand-cyan/10 px-3 py-2 text-xs font-bold text-brand-cyan transition-colors hover:bg-brand-cyan hover:text-dark-bg"
+                      >
+                        Cambiar estado
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -981,14 +1095,6 @@ function VehiculosView({
                     </select>
                   </label>
 
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
-                    <select value={formData.estadoVehiculo} onChange={(e) => setFormData({ ...formData, estadoVehiculo: e.target.value })} className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-text-main outline-none transition-all focus:border-brand-cyan">
-                      <option value="Operativo" className="bg-dark-surface text-text-main">Operativo</option>
-                      <option value="En Mantencion" className="bg-dark-surface text-text-main">En Mantención</option>
-                      <option value="Fuera de Servicio" className="bg-dark-surface text-text-main">Fuera de Servicio</option>
-                    </select>
-                  </label>
 
                   <label className="block md:col-span-2">
                     <span className="mb-2 block text-sm font-medium text-text-main">Descripción</span>
@@ -1014,6 +1120,54 @@ function VehiculosView({
             </div>
           </div>
         )}
+
+        {showStatusModal && canManageVehicles && selectedVehiculo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeStatusModal}>
+            <form onSubmit={handleUpdateVehicleStatus} className="w-full max-w-sm overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-text-main">Cambiar estado</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{selectedVehiculo.nombre}</p>
+                </div>
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
+                  <select
+                    value={statusChangeValue}
+                    onChange={(event) => setStatusChangeValue(event.target.value)}
+                    disabled={statusChangeSaving}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan disabled:opacity-60"
+                  >
+                    {VEHICLE_STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value} className="bg-dark-surface text-text-main">
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {statusChangeError && (
+                  <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {statusChangeError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={statusChangeSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {statusChangeSaving ? 'Guardando...' : 'Guardar estado'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     );
   }
@@ -1032,10 +1186,19 @@ function VehiculosView({
             <h3 className="rajdhani text-xl font-bold text-text-main">Detalle del Vehiculo</h3>
           </div>
           {canManageVehicles && (
-            <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-              Editar
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => openStatusModal()}
+                className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:border-brand-cyan/50 hover:bg-dark-bg2 hover:text-brand-cyan"
+              >
+                Cambiar estado
+              </button>
+              <button className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-bg3 px-4 py-2 text-sm font-medium text-text-main transition-colors hover:bg-dark-bg2">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                Editar
+              </button>
+            </div>
           )}
         </div>
 
@@ -1105,7 +1268,7 @@ function VehiculosView({
           <div className="flex min-w-0 flex-col justify-center">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
-                (v.estado || '').toLowerCase().includes('operativ')
+                (v.estado || '').toLowerCase().includes('operativ') || (v.estado || '').toLowerCase().includes('activo')
                   ? 'border-brand-green/20 bg-brand-green/10 text-brand-green'
                   : (v.estado || '').toLowerCase().includes('mantenc')
                   ? 'border-brand-gold/20 bg-brand-gold/10 text-brand-gold'
@@ -1494,6 +1657,54 @@ function VehiculosView({
           </div>
         )}
 
+        {showStatusModal && canManageVehicles && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeStatusModal}>
+            <form onSubmit={handleUpdateVehicleStatus} className="w-full max-w-sm overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-text-main">Cambiar estado</h3>
+                  <p className="mt-0.5 text-xs text-text-muted">{v.nombre}</p>
+                </div>
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="px-2 py-1 text-xl leading-none text-text-muted transition-colors hover:text-brand-red disabled:opacity-50">
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-main">Estado del vehiculo</span>
+                  <select
+                    value={statusChangeValue}
+                    onChange={(event) => setStatusChangeValue(event.target.value)}
+                    disabled={statusChangeSaving}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan disabled:opacity-60"
+                  >
+                    {VEHICLE_STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value} className="bg-dark-surface text-text-main">
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {statusChangeError && (
+                  <p className="rounded border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs text-brand-red">
+                    {statusChangeError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeStatusModal} disabled={statusChangeSaving} className="rounded-lg px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={statusChangeSaving} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {statusChangeSaving ? 'Guardando...' : 'Guardar estado'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {maintenanceModalMode && canManageMaintenances && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeMaintenanceModal}>
             <form onSubmit={handleCreateMaintenance} className="w-full max-w-xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
@@ -1510,7 +1721,7 @@ function VehiculosView({
               <div className="max-h-[calc(90vh-140px)] space-y-4 overflow-y-auto p-6">
                 <div className={`grid gap-3 ${maintenanceModalMode === 'programada' ? 'md:grid-cols-2' : ''}`}>
                   {maintenanceModalMode === 'programada' && (
-                    <input required type="date" value={newMant.fecha} onChange={(e) => setNewMant({ ...newMant, fecha: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
+                    <input required type="date" value={newMant.fecha} max={MAX_DATE_INPUT_VALUE} onChange={handleMaintenanceDateChange} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60" />
                   )}
                   <select value={newMant.tipo} onChange={(e) => setNewMant({ ...newMant, tipo: e.target.value })} disabled={maintenanceSaving} className="rounded-lg border border-dark-border bg-dark-bg px-3 py-2 text-sm text-text-main focus:border-brand-cyan focus:outline-none disabled:opacity-60">
                     <option value="Preventiva">Preventiva</option>

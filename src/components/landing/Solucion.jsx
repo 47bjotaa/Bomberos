@@ -12,8 +12,8 @@ function Solucion() {
   return (
     <section id="solucion" className="section container">
       <div className="section-header reveal">
-        <h2 className="section-title">Seis módulos. Una plataforma.</h2>
-        <p className="section-subtitle">SGLB centraliza todo el ciclo logístico para que te enfoques en lo que importa: salvar vidas.</p>
+        <h2 className="section-title">Todo el cuartel, en orden de servicio.</h2>
+        <p className="section-subtitle">CuartelAmigo centraliza el ciclo operativo de la compañía para que cada guardia, bodega y carro trabajen con la misma información.</p>
       </div>
       <div className="grid-3">
         {modules.map((m, i) => (

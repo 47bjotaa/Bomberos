@@ -3,6 +3,7 @@ import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import CompanyMarquee from '../components/landing/CompanyMarquee';
 import Problema from '../components/landing/Problema';
+import MarcaCuartel from '../components/landing/MarcaCuartel';
 import Solucion from '../components/landing/Solucion';
 import Semaforo from '../components/landing/Semaforo';
 import DashboardPreview from '../components/landing/DashboardPreview';
@@ -31,6 +32,7 @@ function Landing() {
       <Hero />
       <CompanyMarquee />
       <Problema />
+      <MarcaCuartel />
       <Solucion />
       <Semaforo />
       <DashboardPreview />

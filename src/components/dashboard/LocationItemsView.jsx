@@ -291,7 +291,7 @@ function LocationItemsView({
             onClick={onAddMaterial}
             disabled={Boolean(addMaterialDisabledReason)}
             title={addMaterialDisabledReason || 'Añadir material'}
-            className="w-full rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 py-2.5 text-sm font-bold text-brand-cyan shadow-[0_0_15px_rgba(56,189,248,0.05)] transition-all hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:border-dark-border disabled:bg-dark-bg3 disabled:text-text-muted disabled:shadow-none"
+            className="w-full rounded-lg border border-brand-red/30 bg-gradient-to-r from-brand-red to-brand-ember py-2.5 text-sm font-bold text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:border-dark-border disabled:bg-none disabled:bg-dark-bg3 disabled:text-text-muted disabled:opacity-100 disabled:shadow-none"
           >
             + Añadir material
           </button>

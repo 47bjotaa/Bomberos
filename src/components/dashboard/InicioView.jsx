@@ -4,12 +4,29 @@ import { Icons } from '../ui/Icons';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => `$${Number(n || 0).toLocaleString('es-CL')}`;
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
 function daysUntil(dateStr) {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
+  const date = parseDateValue(dateStr);
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const diff = date - new Date();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
+
+const formatDate = (value) => {
+  const date = parseDateValue(value);
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
 // ─── Spinner ────────────────────────────────────────────────────────────────
 function Spinner() {
@@ -23,16 +40,16 @@ function Spinner() {
 // ─── KPI Card ───────────────────────────────────────────────────────────────
 function KpiCard({ title, value, sub, icon, color, loading }) {
   return (
-    <div className="bg-dark-surface border border-dark-border rounded-xl p-5 flex items-center gap-4 hover:border-dark-border/80 transition-colors">
-      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center [&>svg]:h-10 [&>svg]:w-10">
+    <div className="bg-dark-surface border border-dark-border rounded-xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-dark-border/80 transition-colors">
+      <div className="w-11 h-11 sm:w-14 sm:h-14 flex-shrink-0 flex items-center justify-center [&>svg]:h-8 [&>svg]:w-8 sm:[&>svg]:h-10 sm:[&>svg]:w-10">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-text-muted text-xs font-semibold uppercase tracking-wide truncate">{title}</p>
+        <p className="text-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wide truncate">{title}</p>
         {loading ? (
           <div className="h-7 w-16 mt-1 bg-dark-bg3 rounded animate-pulse" />
         ) : (
-          <p className="text-2xl font-bold text-white mt-0.5 leading-none">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold text-white mt-0.5 leading-none">{value}</p>
         )}
         {sub && !loading && <p className="text-xs text-text-muted mt-1 truncate">{sub}</p>}
       </div>
@@ -91,10 +108,13 @@ export default function InicioView({
   const personalActivo = bomberosActivos.length;
 
   const flotaTotal   = vehiculos.length;
-  const flotaOp      = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('operativ')).length;
+  const flotaOp      = vehiculos.filter(v => {
+    const estado = (v.estadoVehiculo || v.estado || '').toLowerCase();
+    return estado.includes('activo') || estado.includes('operativ');
+  }).length;
   const flotaMant    = vehiculos.filter(v => (v.estadoVehiculo || v.estado || '').toLowerCase().includes('mantenc')).length;
   const flotaFuera   = flotaTotal - flotaOp - flotaMant;
-  const vehicleSummary = `${flotaOp} operativos / ${flotaMant} mant. / ${flotaFuera} fuera`;
+  const vehicleSummary = `${flotaOp} activos / ${flotaMant} mant. / ${flotaFuera} fuera`;
 
   const cargoColors = ['#38bdf8', '#10b981', '#f97316', '#eab308', '#ef4444', '#8b5cf6'];
   const cargoRows = Object.entries(
@@ -145,11 +165,13 @@ export default function InicioView({
 
   // Últimas 7 notificaciones como "alertas"
   const alertasPanel = notificaciones.slice(0, 5);
+  const kpiGridCols = canViewDonaciones ? 'xl:grid-cols-4' : 'xl:grid-cols-3';
+  const alertasCardSpan = canViewDonaciones ? '' : 'lg:col-span-3';
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-5 sm:space-y-6 pb-10">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${kpiGridCols} gap-3 sm:gap-4`}>
         <KpiCard loading={loading} title="Alertas sin leer" value={alertasCriticas}
           sub="Notificaciones pendientes"
           icon={<Icons.AlertTriangle />} color="#ef4444" />
@@ -335,7 +357,7 @@ export default function InicioView({
                         let strokeColor = '#06b6d4'; // default cyan
                         let filterId = 'glow-cyan';
                         
-                        if (estado.includes('operativ')) {
+                        if (estado.includes('activo') || estado.includes('operativ')) {
                           strokeColor = '#10b981'; // green
                           filterId = 'glow-green';
                         } else if (estado.includes('mantenc')) {
@@ -481,7 +503,7 @@ export default function InicioView({
                   <p className="text-xs text-text-muted">Cierre</p>
                   <p className="mt-1 font-bold text-white">
                     {campanaActiva.fechaFin
-                      ? new Date(campanaActiva.fechaFin).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+                      ? formatDate(campanaActiva.fechaFin)
                       : '—'}
                   </p>
                 </div>
@@ -496,7 +518,7 @@ export default function InicioView({
         )}
 
         {/* Alertas / Notificaciones */}
-        <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
+        <div className={`bg-dark-surface border border-dark-border rounded-xl p-6 ${alertasCardSpan}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-white font-semibold text-sm">Alertas Recientes</h3>
             {alertasCriticas > 0 && (

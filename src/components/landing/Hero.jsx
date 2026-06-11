@@ -70,13 +70,13 @@ function Hero() {
       </h1>
       <div className="container hero-layout">
         <div className="hero-info-card reveal is-visible delay-100" style={{ transform: cardTransform }}>
-          <h2>Orden operativo para cada guardia, bodega y compañía.</h2>
+          <h2>Todo el cuartel, en orden de servicio.</h2>
           <p>
-            Controla inventario, EPP, vehículos, personal, donaciones y reportes desde una plataforma diseñada para el ritmo real del cuartel.
+            El cuartel ordenado antes de la emergencia: inventario, EPP, vehículos, guardias, donaciones y reportes en una plataforma pensada para el ritmo real de una compañía.
           </p>
           <div className="hero-actions">
             <a href="#planes" className="btn btn-primary">Ver planes <Icons.ChevronRight /></a>
-            <a href="#plataforma" className="btn btn-secondary">Vista mini</a>
+            <a href="#plataforma" className="btn btn-secondary">Ver plataforma</a>
           </div>
         </div>
       </div>

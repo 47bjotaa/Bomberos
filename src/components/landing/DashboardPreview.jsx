@@ -8,7 +8,7 @@ const dashboardViews = {
     subtitle: 'Resumen operativo en tiempo real del cuartel.',
     kpis: [
       { label: 'Alertas sin leer', value: '0', sub: 'Notificaciones pendientes', icon: <Icons.AlertTriangle /> },
-      { label: 'VehÃ­culos', value: '4', sub: '3 operativos / 1 mant. / 0 fuera', icon: <Icons.Truck /> },
+      { label: 'Vehículos', value: '4', sub: '3 activos / 1 mant. / 0 fuera', icon: <Icons.Truck /> },
       { label: 'Recaudación', value: '68%', sub: 'Campaña activa', icon: <Icons.Finance /> },
       { label: 'Stock crítico', value: '2', sub: 'Materiales bajo mínimo', icon: <Icons.Inventory /> },
     ],
@@ -18,7 +18,7 @@ const dashboardViews = {
         title: 'Personal por Cargo',
         badge: '4 Vehículos',
         legend: [
-          ['cyan', 'Capitan', '1 (4%)'],
+          ['cyan', 'Capitán', '1 (4%)'],
           ['yellow', 'Mantención', '1 (25%)'],
           ['orange', 'Voluntarios', '18 (75%)'],
           ['yellow', 'Conductores', '2 (8%)'],
@@ -75,7 +75,7 @@ const dashboardViews = {
     subtitle: 'Listado de unidades, imágenes, observaciones y mantenciones.',
     kpis: [
       { label: 'Vehículos', value: '4', sub: 'Registrados', icon: <Icons.Truck /> },
-      { label: 'Operativos', value: '3', sub: 'Listos para despacho', icon: <Icons.Dashboard /> },
+      { label: 'Activos', value: '3', sub: 'Listos para despacho', icon: <Icons.Dashboard /> },
       { label: 'Mantenciones', value: '1', sub: 'Programada', icon: <Icons.Settings /> },
     ],
     panels: [
@@ -84,8 +84,8 @@ const dashboardViews = {
         title: 'Unidades',
         badge: 'Listado',
         rows: [
-          ['B-1', 'Bomba urbana', 'Operativo'],
-          ['RX-1', 'Rescate', 'Operativo'],
+          ['B-1', 'Bomba urbana', 'Activo'],
+          ['RX-1', 'Rescate', 'Activo'],
           ['B-2', 'Bomba cisterna', 'Mantención'],
         ],
       },
@@ -108,7 +108,7 @@ const dashboardViews = {
     kpis: [
       { label: 'Asignados', value: '24', sub: 'Con responsable', icon: <Icons.User /> },
       { label: 'No asignados', value: '6', sub: 'Disponibles', icon: <Icons.Inventory /> },
-      { label: 'Estados', value: '3', sub: 'Buen Estado / Desgastada / Mal Estado', icon: <Icons.Shield /> },
+      { label: 'Estados', value: '3', sub: 'Buen Estado / Desgastado / Mal Estado', icon: <Icons.Shield /> },
     ],
     panels: [
       {
@@ -123,7 +123,7 @@ const dashboardViews = {
         badge: 'Filtro + búsqueda',
         rows: [
           ['Casco Estructural Gallet F1', 'EPP-CAS-001', 'Juan Pérez', 'Buen Estado'],
-          ['Cota Estructural Lion', 'EPP-COT-015', 'María González', 'Desgastada'],
+          ['Cota Estructural Lion', 'EPP-COT-015', 'María González', 'Desgastado'],
           ['Botas de Rescate Haix', 'EPP-BOT-042', 'Carlos Soto', 'Buen Estado'],
         ],
       },
@@ -142,7 +142,7 @@ const dashboardViews = {
       {
         type: 'reportCards',
         title: 'Módulos de reportes',
-        badge: 'VER_REPORTES',
+        badge: 'PDF listos',
         rows: [
           ['Post emergencia', 'Vehículo + materiales + PDF', 'Registro + PDF'],
           ['Bajas de inventario', 'Motivo y periodo', 'PDF'],
@@ -313,9 +313,9 @@ function DashboardPreview() {
   return (
     <section id="plataforma" className="section container">
       <div className="section-header reveal">
-        <span className="section-eyebrow">Vista mini</span>
-        <h2 className="section-title">Un dashboard parecido al que usarás todos los días</h2>
-        <p className="section-subtitle">Una versión compacta de las pantallas reales: indicadores, inventario, vehículos, EPP y reportes.</p>
+        <span className="section-eyebrow">Vista de plataforma</span>
+        <h2 className="section-title">Una muestra del panel que usarás todos los días</h2>
+        <p className="section-subtitle">Pantallas compactas basadas en el sistema real: indicadores, inventario, vehículos, EPP y reportes.</p>
       </div>
       <div className="mini-dashboard reveal delay-100">
         <div className="mini-topbar">

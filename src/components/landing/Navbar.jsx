@@ -23,12 +23,12 @@ function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
       <div className="container nav-shell">
         <div className="nav-side nav-side-left">
           <a href="#solucion" onClick={closeMenu}>Módulos</a>
-          <a href="#plataforma" onClick={closeMenu}>Vista mini</a>
+          <a href="#plataforma" onClick={closeMenu}>Plataforma</a>
         </div>
 
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
           <a href="#solucion" onClick={closeMenu}>Módulos</a>
-          <a href="#plataforma" onClick={closeMenu}>Vista mini</a>
+          <a href="#plataforma" onClick={closeMenu}>Plataforma</a>
           <a href="#planes" onClick={closeMenu}>Planes</a>
         </div>
 

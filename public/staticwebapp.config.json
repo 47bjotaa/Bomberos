@@ -31,6 +31,16 @@
     "exclude": [
       "/api/*",
       "/assets/*",
+      "/assets/*.css",
+      "/assets/*.js",
+      "/assets/*.map",
+      "/assets/*.svg",
+      "/assets/*.png",
+      "/assets/*.jpg",
+      "/assets/*.jpeg",
+      "/assets/*.webp",
+      "/assets/*.woff",
+      "/assets/*.woff2",
       "/images/*",
       "/favicon.svg",
       "/icons.svg"

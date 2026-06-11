@@ -13,7 +13,7 @@ import MoveMaterialModal from '../components/dashboard/MoveMaterialModal';
 import LogoCuartelAmigo from '../components/ui/LogoCuartelAmigo';
 import { useTheme } from '../context/ThemeContext';
 import { apiFetch, authService } from '../services/api';
-import { APP_ORIGIN, goToPublicHome } from '../utils/constants';
+import { APP_ORIGIN, cuerposBomberos, goToPublicHome } from '../utils/constants';
 import { getThemePalette } from '../utils/themePalette';
 import { getUserPermissionSet, hasAnyPermission, hasPermission, PERMISSIONS } from '../utils/permissions';
 import InicioView from '../components/dashboard/InicioView';
@@ -23,10 +23,10 @@ import ModuleHelp from '../components/ui/ModuleHelp';
 const GENERAL_INVENTORY_ID = 'general-inventory';
 const TIPOS_PRODUCTO = [
   { id: 1, nombre: 'EPP' },
-  { id: 2, nombre: 'Material de agua' },
+  { id: 2, nombre: 'Material de Agua' },
   { id: 3, nombre: 'Material de rescate' },
-  { id: 4, nombre: 'Acceso y ventilacion' },
-  { id: 5, nombre: 'Material especifico' },
+  { id: 4, nombre: 'Apoyo bomberil' },
+  { id: 5, nombre: 'Material forestal' },
 ];
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const DONATION_PAGE_SIZE_OPTIONS = [8, 16, 32, 64];
@@ -132,6 +132,41 @@ const normalizePaymentConfig = (payload = {}) => {
 };
 
 const normalizeSubscriptionCode = (value) => String(value || '').trim().toLowerCase();
+
+const formatChileanMobilePhone = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  let localNumber = digits;
+
+  if (localNumber.startsWith('569')) {
+    localNumber = localNumber.slice(3);
+  } else if (localNumber.startsWith('56')) {
+    localNumber = localNumber.slice(2);
+    if (localNumber.startsWith('9')) localNumber = localNumber.slice(1);
+  } else if (localNumber.startsWith('9') && localNumber.length > 8) {
+    localNumber = localNumber.slice(1);
+  }
+
+  localNumber = localNumber.slice(0, 8);
+  return `+569${localNumber}`;
+};
+
+const getChileanMobileLocalNumber = (value) => (
+  formatChileanMobilePhone(value).replace('+569', '')
+);
+
+const isValidChileanMobilePhone = (value) => /^\+569\d{8}$/.test(value);
+
+const parseDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(value);
+};
 
 const getSubscriptionCodeFromObject = (source = {}) => {
   const nestedSources = [
@@ -445,6 +480,76 @@ const getLastPaymentErrorFromObject = (source = {}) => {
   return '';
 };
 
+const DEFAULT_COMPANY_FORM = {
+  nombreCompania: '',
+  idCuerpoBomberos: '',
+  direccion: '',
+  telefono: '',
+  email: '',
+};
+
+const readFirstValue = (source = {}, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+
+  return fallback;
+};
+
+const readCompanyText = (company = {}, keys = [], fallback = '') => {
+  const value = readFirstValue(company, keys, fallback);
+  return value === undefined || value === null ? '' : String(value);
+};
+
+const getCompanyName = (company = {}) => readCompanyText(company, [
+  'nombreCompania',
+  'NombreCompania',
+  'nombre',
+  'Nombre',
+]);
+
+const getCompanyFireDepartmentId = (company = {}) => {
+  const nestedCuerpo = readFirstValue(company, ['cuerpoBomberos', 'CuerpoBomberos'], null);
+  const nestedId = typeof nestedCuerpo === 'object'
+    ? readFirstValue(nestedCuerpo, ['idCuerpoBomberos', 'IdCuerpoBomberos', 'id', 'Id'], '')
+    : '';
+
+  return nestedId || readFirstValue(company, [
+    'idCuerpoBomberos',
+    'IdCuerpoBomberos',
+    'cuerpoBomberosId',
+    'CuerpoBomberosId',
+    'idCuerpo',
+    'IdCuerpo',
+  ], '');
+};
+
+const getCompanyFireDepartmentName = (company = {}) => {
+  const nestedCuerpo = readFirstValue(company, ['cuerpoBomberos', 'CuerpoBomberos'], null);
+  const nestedName = typeof nestedCuerpo === 'object'
+    ? readCompanyText(nestedCuerpo, ['nombre', 'Nombre'])
+    : '';
+  const directName = readCompanyText(company, [
+    'nombreCuerpoBomberos',
+    'NombreCuerpoBomberos',
+    'cuerpoBomberosNombre',
+    'CuerpoBomberosNombre',
+  ]);
+  const id = getCompanyFireDepartmentId(company);
+  const catalogMatch = cuerposBomberos.find(cuerpo => String(cuerpo.idCuerpoBomberos) === String(id));
+
+  return nestedName || directName || catalogMatch?.nombre || '';
+};
+
+const getCompanyFormData = (company = {}) => ({
+  nombreCompania: getCompanyName(company),
+  idCuerpoBomberos: String(getCompanyFireDepartmentId(company) || ''),
+  direccion: readCompanyText(company, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania']),
+  telefono: getChileanMobileLocalNumber(readCompanyText(company, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])),
+  email: readCompanyText(company, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo']),
+});
+
 const getMaterialDetailRoute = (pathname) => {
   const eppItemMatch = pathname.match(/^\/dashboard\/epp\/items\/([^/]+)$/);
   if (eppItemMatch) {
@@ -627,7 +732,7 @@ function Dashboard({ setView }) {
   const [showAssignEppModal, setShowAssignEppModal] = useState(false);
   const [eppData, setEppData] = useState([
     { id: 1, equipo: 'Casco Estructural Gallet F1', codigo: 'EPP-CAS-001', asignadoA: 'Juan Pérez', inicial: 'J', fecha: '12 Oct 2023', estado: 'Buen Estado' },
-    { id: 2, equipo: 'Cota Estructural Lion', codigo: 'EPP-COT-015', asignadoA: 'María González', inicial: 'M', fecha: '05 Nov 2023', estado: 'Desgastada' },
+    { id: 2, equipo: 'Cota Estructural Lion', codigo: 'EPP-COT-015', asignadoA: 'María González', inicial: 'M', fecha: '05 Nov 2023', estado: 'Desgastado' },
     { id: 3, equipo: 'Botas de Rescate Haix', codigo: 'EPP-BOT-042', asignadoA: 'Carlos Soto', inicial: 'C', fecha: '10 Ene 2024', estado: 'Buen Estado' },
     { id: 4, equipo: 'Guantes Estructurales Seiz', codigo: 'EPP-GUA-088', asignadoA: 'Ana Rojas', inicial: 'A', fecha: '22 Feb 2024', estado: 'Buen Estado' },
     { id: 5, equipo: 'Esclavina (Monja)', codigo: 'EPP-ESC-102', asignadoA: 'Luis Méndez', inicial: 'L', fecha: '01 Mar 2024', estado: 'Buen Estado' }
@@ -651,6 +756,7 @@ function Dashboard({ setView }) {
   const [donacionesPage, setDonacionesPage] = useState(1);
   const [donacionesPageSize, setDonacionesPageSize] = useState(8);
   const [donacionesView, setDonacionesView] = useState('campanas');
+  const [reportesView, setReportesView] = useState('reportes');
   const [campanasListView, setCampanasListView] = useState('activas');
   const [filtroNombreCampana, setFiltroNombreCampana] = useState('');
   const [filtroFechaInicioCampana, setFiltroFechaInicioCampana] = useState('');
@@ -668,7 +774,9 @@ function Dashboard({ setView }) {
   const [showCreateLibroGuardiaModal, setShowCreateLibroGuardiaModal] = useState(false);
   const [savingLibroGuardia, setSavingLibroGuardia] = useState(false);
   const [createLibroGuardiaError, setCreateLibroGuardiaError] = useState('');
-  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+  const [newLibroGuardiaData, setNewLibroGuardiaData] = useState({ nombre: '', duracion: 'Diario' });
+  const [closingLibroGuardiaId, setClosingLibroGuardiaId] = useState(null);
+  const [closeLibroGuardiaError, setCloseLibroGuardiaError] = useState('');
   const [activeLibrosGuardiaTab, setActiveLibrosGuardiaTab] = useState('abiertos');
   const [librosGuardiaMonthFilter, setLibrosGuardiaMonthFilter] = useState('');
   const [librosGuardiaYearFilter, setLibrosGuardiaYearFilter] = useState('');
@@ -694,9 +802,15 @@ function Dashboard({ setView }) {
     fechaFin: '',
     imagenUrl: '',
   });
+  const [newCampanaImage, setNewCampanaImage] = useState(null);
+  const [newCampanaImagePreview, setNewCampanaImagePreview] = useState('');
   const [hasDonationFeature, setHasDonationFeature] = useState(() => getCurrentDonationFeature());
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [currentCompany, setCurrentCompany] = useState(null);
+  const [showEditCompanyModal, setShowEditCompanyModal] = useState(false);
+  const [companyFormData, setCompanyFormData] = useState(DEFAULT_COMPANY_FORM);
+  const [savingCompanyData, setSavingCompanyData] = useState(false);
+  const [companyFormError, setCompanyFormError] = useState('');
   const [currentSubscriptionStatus, setCurrentSubscriptionStatus] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
   const [showUpgradePlanModal, setShowUpgradePlanModal] = useState(false);
@@ -760,7 +874,7 @@ function Dashboard({ setView }) {
   useEffect(() => {
     fetchNotifications();
 
-    const intervalId = window.setInterval(fetchNotifications, 60000);
+    const intervalId = window.setInterval(fetchNotifications, 300000);
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -919,6 +1033,11 @@ function Dashboard({ setView }) {
   };
 
   const formatCurrency = (value) => `$${parseCurrencyValue(value).toLocaleString('es-CL')}`;
+  const MAX_MATERIAL_PRICE = 100000000;
+  const formatLimitedMaterialPrice = (value) => {
+    const numericValue = Math.min(parseCurrencyValue(value), MAX_MATERIAL_PRICE);
+    return numericValue > 0 ? formatCurrency(numericValue) : '';
+  };
 
   const parseJwtPayload = (token) => {
     if (!token) return {};
@@ -1291,7 +1410,7 @@ function Dashboard({ setView }) {
 
   const formatDateChile = (value) => {
     if (!value) return '';
-    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+    const date = parseDateValue(value);
     if (Number.isNaN(date.getTime())) return value;
 
     return new Intl.DateTimeFormat('es-CL', {
@@ -1370,6 +1489,8 @@ function Dashboard({ setView }) {
   const getChileDateValue = () => (
     new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
   );
+  const MAX_DATE_INPUT_VALUE = '9999-12-31';
+  const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   const getCurrentTimeValue = () => (
     new Intl.DateTimeFormat('es-CL', {
@@ -1399,7 +1520,7 @@ function Dashboard({ setView }) {
   const openCreateLibroGuardiaModal = () => {
     if (!canCreateLibroGuardia) return;
 
-    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+    setNewLibroGuardiaData({ nombre: '', duracion: 'Diario' });
     setCreateLibroGuardiaError('');
     setShowCreateLibroGuardiaModal(true);
   };
@@ -1417,12 +1538,12 @@ function Dashboard({ setView }) {
     const payload = {
       nombre: newLibroGuardiaData.nombre.trim(),
       duracion: newLibroGuardiaData.duracion.trim(),
-      estado: newLibroGuardiaData.estado,
+      estado: 'Abierto',
       fechaCreacion: new Date().toISOString(),
     };
 
-    if (!payload.nombre || !payload.duracion || !payload.estado) {
-      setCreateLibroGuardiaError('Completa nombre, duracion y estado.');
+    if (!payload.nombre || !payload.duracion) {
+      setCreateLibroGuardiaError('Completa nombre y duracion.');
       return;
     }
 
@@ -1437,12 +1558,38 @@ function Dashboard({ setView }) {
       const mappedLibro = mapLibroGuardia({ ...payload, ...(createdLibro || {}) });
       setLibrosGuardia(current => (mappedLibro.id ? [mappedLibro, ...current] : current));
       setShowCreateLibroGuardiaModal(false);
-      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario', estado: 'Abierto' });
+      setNewLibroGuardiaData({ nombre: '', duracion: 'Diario' });
       await fetchLibrosGuardia();
     } catch (error) {
       setCreateLibroGuardiaError(error.message || 'No se pudo crear el libro de guardia.');
     } finally {
       setSavingLibroGuardia(false);
+    }
+  };
+
+  const handleCloseLibroGuardia = async (event, libro) => {
+    event.stopPropagation();
+    if (!canCreateLibroGuardia || !libro?.id || closingLibroGuardiaId) return;
+
+    setClosingLibroGuardiaId(libro.id);
+    setCloseLibroGuardiaError('');
+
+    try {
+      const closedLibro = await apiFetch(`/api/librosguardia/${libro.id}/cerrar`, {
+        method: 'PATCH',
+      });
+      const mappedLibro = mapLibroGuardia({ ...libro, estado: 'Cerrado', ...(closedLibro || {}) });
+      setLibrosGuardia(current => current.map(item => (
+        String(item.id) === String(libro.id) ? { ...item, ...mappedLibro } : item
+      )));
+      if (selectedLibroGuardia && String(selectedLibroGuardia.id) === String(libro.id)) {
+        setSelectedLibroGuardia(current => ({ ...current, ...mappedLibro }));
+      }
+      setActiveLibrosGuardiaTab('cerrados');
+    } catch (error) {
+      setCloseLibroGuardiaError(error.message || 'No se pudo cerrar el libro de guardia.');
+    } finally {
+      setClosingLibroGuardiaId(null);
     }
   };
 
@@ -1459,6 +1606,11 @@ function Dashboard({ setView }) {
       idTipo: u.idTipo || u.idTipoUbicacion,
       nombreTipo: u.nombreTipo || u.tipo || u.tipoUbicacion || ''
     };
+  };
+
+  const isVehiculoUbicacion = (ubicacion) => {
+    const tipo = String(ubicacion?.nombreTipo || ubicacion?.tipoUbicacion || ubicacion?.tipo || '').toLowerCase();
+    return Boolean(ubicacion?.idVehiculo) || tipo.includes('vehiculo');
   };
 
   const getMaterialesPayload = (payload) => {
@@ -2068,7 +2220,7 @@ function Dashboard({ setView }) {
 
     setContactProfileData({
       email: bomberoProfile?.email || '',
-      telefono: bomberoProfile?.telefono || '',
+      telefono: getChileanMobileLocalNumber(bomberoProfile?.telefono || ''),
       genero: bomberoProfile?.genero || '',
     });
     setContactProfileError('');
@@ -2087,12 +2239,17 @@ function Dashboard({ setView }) {
 
     const payload = {
       email: contactProfileData.email.trim(),
-      telefono: contactProfileData.telefono.trim(),
+      telefono: formatChileanMobilePhone(contactProfileData.telefono),
       genero: contactProfileData.genero,
     };
 
     if (!payload.email || !payload.telefono || !payload.genero) {
       setContactProfileError('Completa email, telefono y genero.');
+      return;
+    }
+
+    if (!isValidChileanMobilePhone(payload.telefono)) {
+      setContactProfileError('El telefono debe tener el formato +56912345678.');
       return;
     }
 
@@ -2111,6 +2268,77 @@ function Dashboard({ setView }) {
       setContactProfileError(error.message || 'No se pudieron actualizar los datos de contacto.');
     } finally {
       setSavingContactProfile(false);
+    }
+  };
+
+  const openEditCompanyModal = () => {
+    if (!userCanRegisterSubscriptionCard) return;
+
+    setCompanyFormData(getCompanyFormData(currentCompany || {}));
+    setCompanyFormError('');
+    setShowEditCompanyModal(true);
+  };
+
+  const closeEditCompanyModal = () => {
+    if (savingCompanyData) return;
+    setShowEditCompanyModal(false);
+    setCompanyFormError('');
+  };
+
+  const handleUpdateCompanyData = async (event) => {
+    event.preventDefault();
+    if (!userCanRegisterSubscriptionCard) return;
+
+    const payload = {
+      nombreCompania: companyFormData.nombreCompania.trim(),
+      direccion: companyFormData.direccion.trim(),
+      telefono: companyFormData.telefono ? formatChileanMobilePhone(companyFormData.telefono) : '',
+      email: companyFormData.email.trim(),
+    };
+
+    if (companyFormData.idCuerpoBomberos) {
+      payload.idCuerpoBomberos = Number(companyFormData.idCuerpoBomberos);
+    }
+
+    if (!payload.nombreCompania) {
+      setCompanyFormError('Completa el nombre de la compania.');
+      return;
+    }
+
+    if (companyFormData.idCuerpoBomberos && Number.isNaN(payload.idCuerpoBomberos)) {
+      setCompanyFormError('Selecciona un cuerpo de bomberos valido.');
+      return;
+    }
+
+    if (companyFormData.telefono && !isValidChileanMobilePhone(payload.telefono)) {
+      setCompanyFormError('El telefono debe tener 8 numeros despues de +569.');
+      return;
+    }
+
+    setSavingCompanyData(true);
+    setCompanyFormError('');
+
+    try {
+      const response = await apiFetch('/api/Companias/mi-compania', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      const updatedCompany = response && typeof response === 'object'
+        ? { ...currentCompany, ...response }
+        : { ...currentCompany, ...payload };
+      const currentUser = getSessionUser();
+
+      setCurrentCompany(updatedCompany);
+      localStorage.setItem('user', JSON.stringify({
+        ...currentUser,
+        compania: updatedCompany,
+        Compania: updatedCompany,
+      }));
+      setShowEditCompanyModal(false);
+    } catch (error) {
+      setCompanyFormError(error.message || 'No se pudieron actualizar los datos de la compania.');
+    } finally {
+      setSavingCompanyData(false);
     }
   };
 
@@ -2286,6 +2514,12 @@ function Dashboard({ setView }) {
     setCreateRegistroError('');
   };
 
+  const handleRegistroFechaChange = (event) => {
+    const { value } = event.target;
+    if (!hasFourDigitDateYear(value)) return;
+    setNewRegistroData(current => ({ ...current, fecha: value }));
+  };
+
   const handleCreateRegistroLibroGuardia = async (event) => {
     event.preventDefault();
     if (!canRegisterLibroGuardia || !selectedLibroGuardia?.id) return;
@@ -2298,6 +2532,11 @@ function Dashboard({ setView }) {
 
     if (!payload.fecha || !newRegistroData.hora || !payload.detalle) {
       setCreateRegistroError('Completa fecha, hora y detalle del registro.');
+      return;
+    }
+
+    if (!hasFourDigitDateYear(payload.fecha)) {
+      setCreateRegistroError('La fecha debe tener un año de 4 digitos.');
       return;
     }
 
@@ -2427,15 +2666,52 @@ function Dashboard({ setView }) {
   };
 
   const resetNewCampanaData = () => {
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
     setNewCampanaData({
       nombre: '',
       descripcion: '',
       metaMonto: '',
-      fechaInicio: '',
+      fechaInicio: getChileDateValue(),
       fechaFin: '',
       imagenUrl: '',
     });
+    setNewCampanaImage(null);
+    setNewCampanaImagePreview('');
     setCreateCampanaError('');
+  };
+
+  const handleNewCampanaImageChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setCreateCampanaError('Selecciona un archivo de imagen valido.');
+      event.target.value = '';
+      return;
+    }
+
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
+    setNewCampanaImage(selectedFile);
+    setNewCampanaImagePreview(URL.createObjectURL(selectedFile));
+    setCreateCampanaError('');
+    event.target.value = '';
+  };
+
+  const removeNewCampanaImage = () => {
+    if (savingCampana) return;
+
+    if (newCampanaImagePreview) {
+      URL.revokeObjectURL(newCampanaImagePreview);
+    }
+
+    setNewCampanaImage(null);
+    setNewCampanaImagePreview('');
   };
 
   const openCreateCampanaModal = () => {
@@ -2480,12 +2756,26 @@ function Dashboard({ setView }) {
       return;
     }
 
+    const requestBody = newCampanaImage
+      ? (() => {
+          const formData = new FormData();
+          formData.append('nombre', payload.nombre);
+          formData.append('descripcion', payload.descripcion);
+          formData.append('metaMonto', String(payload.metaMonto));
+          formData.append('fechaInicio', payload.fechaInicio);
+          formData.append('fechaFin', payload.fechaFin);
+          formData.append('estado', payload.estado);
+          formData.append('imagen', newCampanaImage);
+          return formData;
+        })()
+      : JSON.stringify(payload);
+
     setSavingCampana(true);
 
     try {
       await apiFetch('/api/campanasdonaciones', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: requestBody,
       });
       setShowCreateCampanaModal(false);
       resetNewCampanaData();
@@ -2532,14 +2822,7 @@ function Dashboard({ setView }) {
   };
 
   const handleValueUpdateChange = (event) => {
-    const rawValue = event.target.value.replace(/\D/g, '');
-
-    if (rawValue === '') {
-      setValueUpdateInput('');
-      return;
-    }
-
-    setValueUpdateInput(formatCurrency(rawValue));
+    setValueUpdateInput(formatLimitedMaterialPrice(event.target.value));
   };
 
   const handleUpdateMaterialValue = async (event) => {
@@ -2547,6 +2830,11 @@ function Dashboard({ setView }) {
     if (!canEditMaterial || !valueUpdateMaterial?.id) return;
 
     const nextValue = parseCurrencyValue(valueUpdateInput);
+    if (nextValue > MAX_MATERIAL_PRICE) {
+      setValueUpdateError('El valor unitario no puede superar $100.000.000.');
+      return;
+    }
+
     setSavingValueUpdate(true);
     setValueUpdateError('');
 
@@ -2589,6 +2877,11 @@ function Dashboard({ setView }) {
 
     if (!payload.idTipoProducto || !payload.nombre || !payload.descripcion) {
       setAddMaterialError('Completa tipo, nombre y descripción para crear el material.');
+      return;
+    }
+
+    if (payload.valorUnitario > MAX_MATERIAL_PRICE) {
+      setAddMaterialError('El valor unitario no puede superar $100.000.000.');
       return;
     }
 
@@ -3482,7 +3775,7 @@ function Dashboard({ setView }) {
   const filtroCampanaNormalizado = filtroNombreCampana.trim().toLowerCase();
   const getDateOnlyTime = (value, endOfDay = false) => {
     if (!value) return null;
-    const date = value instanceof Date ? value : new Date(value);
+    const date = parseDateValue(value);
     if (Number.isNaN(date.getTime())) return null;
     date.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
     return date.getTime();
@@ -3546,7 +3839,7 @@ function Dashboard({ setView }) {
   ];
   const getLibroGuardiaDate = (value) => {
     if (!value) return null;
-    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+    const date = parseDateValue(value);
     return Number.isNaN(date.getTime()) ? null : date;
   };
   const getLibroGuardiaDates = (libro) => (
@@ -3710,30 +4003,30 @@ function Dashboard({ setView }) {
         </div>
 
         {/* Center: Navigation Icons */}
-        <nav className="dashboard-desktop-nav flex-1 items-center justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Dashboard /> <span className="hidden lg:inline">Inicio</span>
+        <nav className="dashboard-desktop-nav flex-1 items-center justify-start xl:justify-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <button title="Inicio" onClick={() => selectDashboardTab('inicio')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'inicio' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Dashboard /> <span className="hidden 2xl:inline">Inicio</span>
           </button>
-          <button style={{ display: canAccessTab('bodegas') ? undefined : 'none' }} onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Inventory /> <span className="hidden lg:inline">Inventario</span>
+          <button title="Inventario" style={{ display: canAccessTab('bodegas') ? undefined : 'none' }} onClick={() => selectDashboardTab('bodegas')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'bodegas' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Inventory /> <span className="hidden 2xl:inline">Inventario</span>
           </button>
-          <button style={{ display: canAccessTab('vehiculos') ? undefined : 'none' }} onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Truck /> <span className="hidden lg:inline">Vehículos</span>
+          <button title="Vehículos" style={{ display: canAccessTab('vehiculos') ? undefined : 'none' }} onClick={() => selectDashboardTab('vehiculos')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'vehiculos' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Truck /> <span className="hidden 2xl:inline">Vehículos</span>
           </button>
-          <button style={{ display: canAccessTab('epp') ? undefined : 'none' }} onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Shield /> <span className="hidden lg:inline">EPP</span>
+          <button title="EPP" style={{ display: canAccessTab('epp') ? undefined : 'none' }} onClick={() => selectDashboardTab('epp')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'epp' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Shield /> <span className="hidden 2xl:inline">EPP</span>
           </button>
-          <button style={{ display: canAccessTab('libro-guardia') ? undefined : 'none' }} onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Traceability /> <span className="hidden lg:inline">Libro Guardia</span>
+          <button title="Libro Guardia" style={{ display: canAccessTab('libro-guardia') ? undefined : 'none' }} onClick={() => selectDashboardTab('libro-guardia')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'libro-guardia' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Traceability /> <span className="hidden 2xl:inline">Libro Guardia</span>
           </button>
-          <button style={{ display: canAccessTab('donaciones') ? undefined : 'none' }} onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Finance /> <span className="hidden lg:inline">Donaciones</span>
+          <button title="Donaciones" style={{ display: canAccessTab('donaciones') ? undefined : 'none' }} onClick={() => selectDashboardTab('donaciones')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'donaciones' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Finance /> <span className="hidden 2xl:inline">Donaciones</span>
           </button>
-          <button style={{ display: canAccessTab('personal') ? undefined : 'none' }} onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.User /> <span className="hidden lg:inline">Personal</span>
+          <button title="Personal" style={{ display: canAccessTab('personal') ? undefined : 'none' }} onClick={() => selectDashboardTab('personal')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'personal' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.User /> <span className="hidden 2xl:inline">Personal</span>
           </button>
-          <button style={{ display: canAccessTab('reportes') ? undefined : 'none' }} onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
-            <Icons.Report /> <span className="hidden lg:inline">Reportes</span>
+          <button title="Reportes" style={{ display: canAccessTab('reportes') ? undefined : 'none' }} onClick={() => selectDashboardTab('reportes')} className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${activeTab === 'reportes' ? 'bg-gradient-to-r from-brand-red/10 to-brand-ember/10 text-brand-red border border-brand-red/30 shadow-[0_0_10px_rgba(232,55,42,0.1)]' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}>
+            <Icons.Report /> <span className="hidden 2xl:inline">Reportes</span>
           </button>
         </nav>
 
@@ -3870,7 +4163,7 @@ function Dashboard({ setView }) {
         onClick={() => setMobileSidebarOpen(false)}
       />
       <aside
-        className={`dashboard-mobile-drawer fixed left-0 top-0 z-50 h-full w-[min(84vw,320px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`dashboard-mobile-drawer fixed left-0 top-0 z-50 h-full w-[min(88vw,340px)] flex-col border-r border-dark-border bg-dark-surface shadow-2xl transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         aria-label="Menu lateral movil"
       >
         <div className="flex items-center justify-between border-b border-dark-border px-4 py-4">
@@ -3888,7 +4181,7 @@ function Dashboard({ setView }) {
           <p className="text-sm font-bold text-white">{headerProfileName}</p>
           <p className="text-xs text-brand-cyan">{headerProfileCargo}</p>
         </div>
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <nav className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-4">
           <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted">Navegacion</p>
           <div className="space-y-1">
             {dashboardNavItems.map((item) => {
@@ -3899,7 +4192,7 @@ function Dashboard({ setView }) {
                   <button
                     type="button"
                     onClick={() => handleMobileTabSelect(item.id)}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${isActive ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${isActive ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
                   >
                     <Icon />
                     <span>{item.label}</span>
@@ -3911,7 +4204,7 @@ function Dashboard({ setView }) {
                           key={view.id}
                           type="button"
                           onClick={() => handleMobileInventoryViewSelect(view.id)}
-                          className={`block w-full rounded-md px-3 py-2 text-left text-xs font-bold transition-colors ${activeTab === 'bodegas' && inventoryView === view.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                          className={`block w-full rounded-md px-3 py-1.5 text-left text-xs font-bold transition-colors ${activeTab === 'bodegas' && inventoryView === view.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
                         >
                           {view.label}
                         </button>
@@ -3925,7 +4218,7 @@ function Dashboard({ setView }) {
               <button
                 type="button"
                 onClick={() => handleMobileTabSelect('mis-datos')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors ${activeTab === 'mis-datos' ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${activeTab === 'mis-datos' ? 'border border-brand-red/30 bg-brand-red/10 text-brand-red' : 'text-text-muted hover:bg-dark-bg3 hover:text-white'}`}
               >
                 <Icons.User />
                 <span>Mis Datos</span>
@@ -3977,6 +4270,28 @@ function Dashboard({ setView }) {
                           {view.label}
                         </button>
                       ))}
+                    </div>
+                  </>
+                ) : activeTab === 'reportes' ? (
+                  <>
+                    <h2 className="dashboard-mobile-inventory-title text-lg font-bold rajdhani tracking-wide leading-tight" style={{ color: palette.text }}>
+                      Reportes
+                    </h2>
+                    <div className="dashboard-desktop-inventory-tabs flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReportesView('reportes')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${reportesView === 'reportes' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                      >
+                        Reportes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportesView('conteos')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold rajdhani tracking-wide transition-colors ${reportesView === 'conteos' ? 'bg-brand-red/10 text-brand-red border border-brand-red/30' : 'text-text-muted border border-transparent hover:bg-brand-red/10 hover:text-brand-red'}`}
+                      >
+                        Conteos
+                      </button>
                     </div>
                   </>
                 ) : activeTab === 'donaciones' ? (
@@ -4374,7 +4689,7 @@ function Dashboard({ setView }) {
                           fontWeight: 700
                         }}
                       >
-                        <div style={{ marginBottom: '8px', color: palette.cyan }}>General</div>
+                        <Icons.Inventory className="mx-auto mb-3 h-6 w-6 text-brand-cyan" />
                         Todos los materiales
                       </button>
                     )}
@@ -4396,7 +4711,9 @@ function Dashboard({ setView }) {
                       </button>
                     )}
 
-                    {visibleUbicaciones.length > 0 ? visibleUbicaciones.map(ubi => (
+                    {visibleUbicaciones.length > 0 ? visibleUbicaciones.map(ubi => {
+                      const LocationIcon = isVehiculoUbicacion(ubi) ? Icons.Truck : Icons.Traceability;
+                      return (
                       <button
                         key={ubi.id}
                         onClick={() => openUbicacion(ubi)}
@@ -4413,10 +4730,11 @@ function Dashboard({ setView }) {
                           fontWeight: 700
                         }}
                       >
-                        <div style={{ marginBottom: '8px', color: palette.cyan }}>▣</div>
+                        <LocationIcon className="mx-auto mb-3 h-6 w-6 text-brand-cyan" />
                         {ubi.name}
                       </button>
-                    )) : (
+                      );
+                    }) : (
                       <div style={{ gridColumn: '1 / -1', border: `1px dashed ${palette.borderStrong}`, borderRadius: '14px', padding: '56px 24px', textAlign: 'center', color: palette.muted }}>
                         {currentUbicacion ? 'Esta ubicación no tiene sububicaciones.' : 'No se encontraron ubicaciones registradas.'}
                       </div>
@@ -4623,21 +4941,21 @@ function Dashboard({ setView }) {
                         className="group rounded-xl border p-5 transition-all hover:border-brand-cyan/40 hover:shadow-[0_0_18px_rgba(56,189,248,0.08)]"
                         style={{ borderColor: palette.borderStrong, background: palette.bg, color: palette.text }}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div>
                           <div>
                             <p className="rajdhani text-lg font-bold transition-colors group-hover:text-brand-cyan" style={{ color: palette.text }}>{stock.nombre}</p>
                             <p className="mt-1 text-sm" style={{ color: palette.muted }}>{stock.nombreUbicacion}</p>
                           </div>
+                        </div>
+                        <div className="mt-5 flex flex-wrap justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => openStockMinimoDetail(stock)}
-                            className="rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-2.5 py-1 text-xs font-semibold text-brand-cyan transition-colors hover:border-brand-cyan/50 hover:bg-brand-cyan/20"
+                            className="flex-shrink-0 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20"
                           >
                             Ver detalle
                           </button>
-                        </div>
-                        {canAddStock && (
-                          <div className="mt-5 flex justify-end">
+                          {canAddStock && (
                             <button
                               type="button"
                               onClick={(event) => openDeleteStockMinimoModal(event, stock)}
@@ -4648,8 +4966,8 @@ function Dashboard({ setView }) {
                             >
                               {String(deletingStockMinimoId) === String(stock.id) ? 'Eliminando...' : 'Eliminar'}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -5631,6 +5949,12 @@ function Dashboard({ setView }) {
                       </div>
                     </div>
 
+                    {closeLibroGuardiaError && (
+                      <p className="mb-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
+                        {closeLibroGuardiaError}
+                      </p>
+                    )}
+
                     {currentLibrosGuardia.length > 0 ? (
                       <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                       {currentLibrosGuardia.map((libro) => {
@@ -5671,6 +5995,16 @@ function Dashboard({ setView }) {
                               <button type="button" onClick={() => openRegistrosLibroGuardia(libro)} className="flex w-full items-center justify-between rounded-lg border border-brand-cyan/20 bg-brand-cyan/10 px-4 py-3 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15">
                                 Ver registros →
                               </button>
+                              {isActive && canCreateLibroGuardia && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleCloseLibroGuardia(event, libro)}
+                                  disabled={String(closingLibroGuardiaId) === String(libro.id)}
+                                  className="mt-3 flex w-full items-center justify-center rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm font-semibold text-brand-red transition-colors hover:bg-brand-red/15 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {String(closingLibroGuardiaId) === String(libro.id) ? 'Cerrando...' : 'Cerrar libro'}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </article>
@@ -5859,6 +6193,7 @@ function Dashboard({ setView }) {
           {!materialDetailRoute && !stockMinimoDetailId && activeTab === 'reportes' && (
             <ReportsView
               palette={palette}
+              view={reportesView}
               canViewFullReports={canViewFullReports}
               canViewBasicReports={canViewReports}
               canViewDonationReports={canViewDonaciones && hasProSubscription}
@@ -5946,6 +6281,54 @@ function Dashboard({ setView }) {
                         </div>
                       ))}
                     </section>
+
+                    {userCanRegisterSubscriptionCard && (
+                      <section className="rounded-xl border border-dark-border bg-dark-surface p-6">
+                        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Datos de la compania</p>
+                            <h3 className="rajdhani mt-1 text-2xl font-bold text-white">
+                              {getCompanyName(currentCompany || {}) || 'Compania sin nombre registrado'}
+                            </h3>
+                            <p className="mt-1 text-sm text-text-muted">
+                              Visible para Capitanes y Directores.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openEditCompanyModal}
+                            disabled={loadingSubscription || !currentCompany}
+                            className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Editar compania
+                          </button>
+                        </div>
+
+                        {loadingSubscription ? (
+                          <div className="rounded-xl border border-dark-border bg-dark-bg px-5 py-8 text-center text-sm text-text-muted">
+                            Cargando datos de la compania...
+                          </div>
+                        ) : !currentCompany ? (
+                          <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-sm text-brand-red">
+                            No se pudieron cargar los datos de la compania.
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {[
+                              ['Cuerpo de Bomberos', getCompanyFireDepartmentName(currentCompany) || getCompanyFireDepartmentId(currentCompany)],
+                              ['Direccion', readCompanyText(currentCompany, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania'])],
+                              ['Telefono', readCompanyText(currentCompany, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])],
+                              ['Email', readCompanyText(currentCompany, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo'])],
+                            ].map(([label, value]) => (
+                              <div key={label} className="rounded-xl border border-dark-border bg-dark-bg p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{label}</p>
+                                <p className="mt-2 break-words text-base font-semibold text-white">{value || '-'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    )}
                   </div>
                 )}
               </div>
@@ -5986,14 +6369,21 @@ function Dashboard({ setView }) {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
-                  <input
-                    type="tel"
-                    value={contactProfileData.telefono}
-                    onChange={(event) => setContactProfileData(current => ({ ...current, telefono: event.target.value }))}
-                    disabled={savingContactProfile}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                    placeholder="+56912345678"
-                  />
+                  <div className="flex overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
+                    <span className="flex items-center border-r border-dark-border bg-dark-bg2 px-4 text-sm font-semibold text-text-muted">
+                      +569
+                    </span>
+                    <input
+                      type="tel"
+                      value={contactProfileData.telefono}
+                      inputMode="numeric"
+                      maxLength={8}
+                      onChange={(event) => setContactProfileData(current => ({ ...current, telefono: event.target.value.replace(/\D/g, '').slice(0, 8) }))}
+                      disabled={savingContactProfile}
+                      className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-sm text-white outline-none placeholder-text-muted disabled:opacity-50"
+                      placeholder="12345678"
+                    />
+                  </div>
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-text-muted">Genero</span>
@@ -6022,6 +6412,111 @@ function Dashboard({ setView }) {
                 </button>
                 <button type="submit" disabled={savingContactProfile} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                   {savingContactProfile ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showEditCompanyModal && userCanRegisterSubscriptionCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <form onSubmit={handleUpdateCompanyData} className="w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
+              <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
+                <div>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de la compania</h3>
+                  <p className="mt-1 text-xs text-text-muted">Actualiza la informacion general del cuartel.</p>
+                </div>
+                <button type="button" onClick={closeEditCompanyModal} disabled={savingCompanyData} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="max-h-[72vh] space-y-4 overflow-y-auto p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Nombre de la compania</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={companyFormData.nombreCompania}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, nombreCompania: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Ej. Primera Compania"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Cuerpo de Bomberos</span>
+                  <select
+                    value={companyFormData.idCuerpoBomberos}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, idCuerpoBomberos: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                  >
+                    <option value="">Selecciona un cuerpo</option>
+                    {cuerposBomberos.map(cuerpo => (
+                      <option key={cuerpo.idCuerpoBomberos} value={cuerpo.idCuerpoBomberos}>
+                        {cuerpo.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
+                    <div className="flex overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
+                      <span className="flex items-center border-r border-dark-border bg-dark-bg2 px-4 text-sm font-semibold text-text-muted">
+                        +569
+                      </span>
+                      <input
+                        type="tel"
+                        value={companyFormData.telefono}
+                        inputMode="numeric"
+                        maxLength={8}
+                        onChange={(event) => setCompanyFormData(current => ({ ...current, telefono: event.target.value.replace(/\D/g, '').slice(0, 8) }))}
+                        disabled={savingCompanyData}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-sm text-white outline-none placeholder-text-muted disabled:opacity-50"
+                        placeholder="12345678"
+                      />
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Email</span>
+                    <input
+                      type="email"
+                      value={companyFormData.email}
+                      onChange={(event) => setCompanyFormData(current => ({ ...current, email: event.target.value }))}
+                      disabled={savingCompanyData}
+                      className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                      placeholder="contacto@compania.cl"
+                    />
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Direccion</span>
+                  <textarea
+                    rows="3"
+                    value={companyFormData.direccion}
+                    onChange={(event) => setCompanyFormData(current => ({ ...current, direccion: event.target.value }))}
+                    disabled={savingCompanyData}
+                    className="w-full resize-none rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
+                    placeholder="Direccion del cuartel"
+                  />
+                </label>
+
+                {companyFormError && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {companyFormError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3 border-t border-dark-border bg-dark-bg2 px-6 py-4">
+                <button type="button" onClick={closeEditCompanyModal} disabled={savingCompanyData} className="px-4 py-2 text-sm font-medium text-text-main transition-colors hover:text-white disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={savingCompanyData} className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {savingCompanyData ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
@@ -6200,15 +6695,36 @@ function Dashboard({ setView }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-muted mb-2">Imagen URL</label>
-                  <input
-                    type="text"
-                    value={newCampanaData.imagenUrl}
-                    onChange={(e) => setNewCampanaData({ ...newCampanaData, imagenUrl: e.target.value })}
-                    disabled={savingCampana}
-                    className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50"
-                    placeholder="Opcional"
-                  />
+                  <span className="block text-sm font-medium text-text-muted mb-2">Imagen</span>
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-dark-border bg-dark-bg px-4 py-6 text-center transition-colors hover:border-brand-cyan/60">
+                    <span className="mb-2 text-2xl">&#128247;</span>
+                    <span className="text-sm font-semibold text-text-main">Seleccionar imagen</span>
+                    <span className="mt-1 text-xs text-text-muted">PNG, JPG, JPEG o WEBP</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={handleNewCampanaImageChange}
+                      disabled={savingCampana}
+                    />
+                  </label>
+
+                  {newCampanaImagePreview && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
+                      <div className="relative">
+                        <img src={newCampanaImagePreview} alt={newCampanaImage?.name || 'Vista previa'} className="h-40 w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={removeNewCampanaImage}
+                          disabled={savingCampana}
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                        >
+                          x
+                        </button>
+                      </div>
+                      <p className="truncate px-3 py-2 text-xs text-text-muted">{newCampanaImage?.name}</p>
+                    </div>
+                  )}
                 </div>
 
                 {createCampanaError && (
@@ -6636,7 +7152,7 @@ function Dashboard({ setView }) {
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
                   <h3 className="rajdhani text-lg font-semibold text-text-main">Crear libro de guardia</h3>
-                  <p className="mt-1 text-xs text-text-muted">Define el periodo y estado inicial del libro.</p>
+                  <p className="mt-1 text-xs text-text-muted">Define el periodo del libro.</p>
                 </div>
                 <button type="button" onClick={closeCreateLibroGuardiaModal} disabled={savingLibroGuardia} className="text-text-muted transition-colors hover:text-text-main disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -6666,18 +7182,6 @@ function Dashboard({ setView }) {
                     <option value="Diario" className="bg-dark-surface text-text-main">Diario</option>
                     <option value="Semanal" className="bg-dark-surface text-text-main">Semanal</option>
                     <option value="Mensual" className="bg-dark-surface text-text-main">Mensual</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-text-muted">Estado</label>
-                  <select
-                    value={newLibroGuardiaData.estado}
-                    onChange={(event) => setNewLibroGuardiaData(current => ({ ...current, estado: event.target.value }))}
-                    disabled={savingLibroGuardia}
-                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                  >
-                    <option value="Abierto" className="bg-dark-surface text-text-main">Abierto</option>
-                    <option value="Cerrado" className="bg-dark-surface text-text-main">Cerrado</option>
                   </select>
                 </div>
                 {createLibroGuardiaError && (
@@ -6726,7 +7230,8 @@ function Dashboard({ setView }) {
                     <input
                       type="date"
                       value={newRegistroData.fecha}
-                      onChange={(event) => setNewRegistroData(current => ({ ...current, fecha: event.target.value }))}
+                      max={MAX_DATE_INPUT_VALUE}
+                      onChange={handleRegistroFechaChange}
                       disabled={savingRegistroLibroGuardia}
                       className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-text-main outline-none transition-all focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
                     />
@@ -7135,17 +7640,11 @@ function Dashboard({ setView }) {
                   <input
                     type="text"
                     className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-text-main placeholder-text-muted focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-all"
-                    placeholder="Ej. $15.000"
+                    placeholder="Max. $100.000.000"
                     value={newMaterialData.valorUnitario}
                     disabled={savingMaterial}
                     onChange={(e) => {
-                      let rawValue = e.target.value.replace(/\D/g, '');
-                      if (rawValue === '') {
-                        setNewMaterialData({...newMaterialData, valorUnitario: ''});
-                      } else {
-                        const numValue = parseInt(rawValue, 10);
-                        setNewMaterialData({...newMaterialData, valorUnitario: '$' + numValue.toLocaleString('es-CL')});
-                      }
+                      setNewMaterialData({...newMaterialData, valorUnitario: formatLimitedMaterialPrice(e.target.value)});
                     }}
                   />
                 </div>
@@ -7319,3 +7818,4 @@ function Dashboard({ setView }) {
 }
 
 export default Dashboard;
+
