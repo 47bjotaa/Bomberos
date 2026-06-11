@@ -601,7 +601,7 @@ function EppDetailView({
 
       if (observationImages.length > 0) {
         if (!idObservacion) {
-          imageUploadError = new Error('La respuesta no incluyo idObservacion para subir imagenes.');
+          imageUploadError = new Error('La respuesta no incluyó idObservacion para subir imágenes.');
         } else {
           const formData = new FormData();
           observationImages.forEach(({ file }) => formData.append('imagenes', file));
@@ -697,7 +697,7 @@ function EppDetailView({
 
       if (maintenanceFiles.length > 0) {
         if (!idMantencion) {
-          fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
+          fileUploadError = new Error('La respuesta no incluyó idMantencion para subir archivos.');
         } else {
           try {
             await Promise.all(maintenanceFiles.map(({ file }) => {

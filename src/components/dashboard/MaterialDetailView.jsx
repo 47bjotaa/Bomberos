@@ -704,7 +704,7 @@ function MaterialDetailView({
 
       if (observationImages.length > 0) {
         if (!idObservacion) {
-          imageUploadError = new Error('La respuesta no incluyo idObservacion para subir la imagen.');
+          imageUploadError = new Error('La respuesta no incluyó idObservacion para subir la imagen.');
         } else {
           const imageFormData = new FormData();
           observationImages.forEach(({ file }) => {
@@ -880,7 +880,7 @@ function MaterialDetailView({
 
       if (maintenanceFiles.length > 0) {
         if (!idMantencion) {
-          fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
+          fileUploadError = new Error('La respuesta no incluyó idMantencion para subir archivos.');
         } else {
           try {
             await Promise.all(maintenanceFiles.map(({ file }) => {
@@ -1106,7 +1106,7 @@ function MaterialDetailView({
                       }}
                     >
                       <span className="text-base leading-none">&#128247;</span>
-                      Anadir foto
+                      Añadir foto
                     </button>
                   )}
                   {materialImagesError && (
@@ -1339,7 +1339,7 @@ function MaterialDetailView({
           >
             <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
               <div>
-                <h3 className="text-lg font-bold" style={{ color: palette.text }}>Anadir fotos</h3>
+                <h3 className="text-lg font-bold" style={{ color: palette.text }}>Añadir fotos</h3>
                 <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{material.nombre}</p>
               </div>
               <button

@@ -94,7 +94,7 @@ const getInventoryPayload = (payload) => {
 
 const mapLocationName = (location) => ({
   id: location.idUbicacion || location.id,
-  name: location.nombre || location.name || location.nombreUbicacion || location.descripcion || 'Sin ubicacion',
+  name: location.nombre || location.name || location.nombreUbicacion || location.descripcion || 'Sin ubicación',
 });
 
 const triggerPdfDownload = (pdf, filename) => {
@@ -133,7 +133,7 @@ const mapCountDetail = (detail) => ({
   tipoMaterial: detail.tipoMaterial || detail.nombreTipoMaterial || '',
   codigoItem: detail.codigoItem || detail.codigoUnico || detail.codigo || '',
   idUbicacion: detail.idUbicacion || '',
-  ubicacion: detail.ubicacion || detail.nombreUbicacion || 'Sin ubicacion',
+  ubicacion: detail.ubicacion || detail.nombreUbicacion || 'Sin ubicación',
   cantidadSistema: Number(detail.cantidadSistema ?? detail.stockSistema ?? detail.cantidad ?? 0),
   cantidadContada: detail.cantidadContada ?? null,
   diferencia: detail.diferencia ?? null,
@@ -173,7 +173,7 @@ const mapInventoryCount = (count) => {
     idConteo: count.idConteo || count.id,
     idCompania: count.idCompania || getSessionCompanyId(),
     idUbicacion: count.idUbicacion || '',
-    ubicacion: count.ubicacion || count.nombreUbicacion || 'Sin ubicacion',
+    ubicacion: count.ubicacion || count.nombreUbicacion || 'Sin ubicación',
     fechaConteo: count.fechaConteo || '',
     idUsuarioResponsable: count.idUsuarioResponsable || null,
     responsable: count.responsable || count.nombreResponsable || count.emailResponsable || 'Sin responsable',
@@ -211,7 +211,7 @@ const mapMaterial = (material) => ({
   nombre: material.nombre || material.nombreMaterial || material.name || 'Material sin nombre',
   stock: material.cantidadDisponible ?? material.stock ?? material.cantidad ?? null,
   idUbicacion: material.idUbicacion || material.idUbicacionActual || material.ubicacionId || '',
-  ubicacionNombre: material.nombreUbicacion || material.ubicacion || material.nombreUbicacionActual || material.nombreUbicacionPadre || material.nombrePadre || 'Sin ubicacion',
+  ubicacionNombre: material.nombreUbicacion || material.ubicacion || material.nombreUbicacionActual || material.nombreUbicacionPadre || material.nombrePadre || 'Sin ubicación',
   serializado: Boolean(material.idItem || material.idInventarioItem || material.codigoUnico || material.codigo || material.esSerializacion || material.esSerializado || material.serializado),
 });
 
@@ -221,7 +221,7 @@ const mapItem = (item) => ({
   nombre: item.nombreMaterial || item.equipo || item.nombre || 'Item sin nombre',
   codigo: item.codigoUnico || item.codigo || '',
   idUbicacion: item.idUbicacion || item.idUbicacionActual || item.ubicacionId || '',
-  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicacion',
+  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicación',
 });
 
 const mapInventoryItem = (item) => ({
@@ -233,7 +233,7 @@ const mapInventoryItem = (item) => ({
   codigo: item.codigoUnico || item.codigo || '',
   stock: item.cantidadDisponible ?? item.stock ?? item.cantidad ?? 1,
   idUbicacion: item.idUbicacion || item.idUbicacionActual || item.ubicacionId || '',
-  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicacion',
+  ubicacionNombre: item.nombreUbicacion || item.ubicacion || item.nombreUbicacionActual || item.nombreUbicacionPadre || item.nombrePadre || 'Sin ubicación',
   serializado: Boolean(item.idItem || item.idInventarioItem || item.idDetalleEpp || item.codigoUnico || item.codigo || item.esSerializacion || item.esSerializado || item.serializado),
 });
 
@@ -351,7 +351,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
           .filter(location => location.id);
         setRootLocations(locations);
       } catch (locationsError) {
-        setStockError(locationsError.message || 'No se pudieron cargar las ubicaciones raiz.');
+        setStockError(locationsError.message || 'No se pudieron cargar las ubicaciones raíz.');
       } finally {
         setLoadingRootLocations(false);
       }
@@ -528,7 +528,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
         setEmergencyLocationNames(locationNameMap);
       } catch (inventoryError) {
         if (!ignore) {
-          setEmergencyError(inventoryError.message || 'No se pudo cargar el inventario de la ubicacion seleccionada.');
+          setEmergencyError(inventoryError.message || 'No se pudo cargar el inventario de la ubicación seleccionada.');
         }
       } finally {
         if (!ignore) setLoadingEmergencyInventory(false);
@@ -640,8 +640,8 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
   const emergencyInventoryGroups = emergencyInventoryRows.reduce((groups, row) => {
     const key = row.idUbicacion ? String(row.idUbicacion) : row.ubicacionNombre;
     const resolvedName = row.idUbicacion
-      ? (emergencyLocationNames[String(row.idUbicacion)] || row.ubicacionNombre || 'Sin ubicacion')
-      : (row.ubicacionNombre || 'Sin ubicacion');
+      ? (emergencyLocationNames[String(row.idUbicacion)] || row.ubicacionNombre || 'Sin ubicación')
+      : (row.ubicacionNombre || 'Sin ubicación');
     const existingGroup = groups.find(group => group.key === key);
     if (existingGroup) {
       existingGroup.rows.push(row);
@@ -696,7 +696,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
 
   const createInventoryCount = async () => {
     if (!inventoryCountForm.idUbicacion || !inventoryCountForm.fechaConteo) {
-      setInventoryCountError('Selecciona ubicacion y fecha para crear el conteo.');
+      setInventoryCountError('Selecciona ubicación y fecha para crear el conteo.');
       return;
     }
 
@@ -773,7 +773,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
     if (!selectedInventoryCount?.idConteo || !detail?.idDetalle) return;
 
     if (detail.cantidadContada === '' || detail.cantidadContada === null || detail.cantidadContada === undefined) {
-      setInventoryCountError('Ingresa la cantidad fisica antes de guardar la fila.');
+      setInventoryCountError('Ingresa la cantidad física antes de guardar la fila.');
       return;
     }
 
@@ -1128,10 +1128,10 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">{showingInventoryCounts ? 'Conteos operativos' : 'Centro de reportes'}</p>
-              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">{showingInventoryCounts ? 'Conteos de inventario por ubicacion' : 'Documentos operativos listos para generar'}</h3>
+              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">{showingInventoryCounts ? 'Conteos de inventario por ubicación' : 'Documentos operativos listos para generar'}</h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">
                 {showingInventoryCounts
-                  ? 'Revisa conteos existentes, crea nuevos borradores y completa el conteo fisico antes de cerrar y descargar PDF.'
+                  ? 'Revisa conteos existentes, crea nuevos borradores y completa el conteo físico antes de cerrar y descargar PDF.'
                   : 'Usa el asistente para post emergencia o descarga reportes PDF con filtros por periodo, campaña, motivo y ubicación.'}
               </p>
             </div>
@@ -1152,8 +1152,8 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                 </span>
                 <p className="mt-3 max-w-3xl text-sm leading-relaxed" style={{ color: palette.muted }}>
                   {selectedInventoryCount
-                    ? 'Completa las cantidades fisicas, revisa diferencias y cierra el conteo cuando no queden pendientes.'
-                    : 'Crea un conteo por ubicacion, registra la cantidad fisica por material o item y cierra el proceso cuando no queden pendientes.'}
+                    ? 'Completa las cantidades físicas, revisa diferencias y cierra el conteo cuando no queden pendientes.'
+                    : 'Crea un conteo por ubicación, registra la cantidad física por material o item y cierra el proceso cuando no queden pendientes.'}
                 </p>
               </div>
             </div>
@@ -1277,9 +1277,9 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                   <thead className="border-b border-dark-border bg-dark-bg2 text-xs uppercase text-text-muted">
                     <tr>
                       <th className="w-[18%] px-3 py-3">Material/item</th>
-                      <th className="w-[10%] px-3 py-3">Ubicacion</th>
+                      <th className="w-[10%] px-3 py-3">Ubicación</th>
                       <th className="w-[7%] px-3 py-3">Sistema</th>
-                      <th className="w-[9%] px-3 py-3">Fisico</th>
+                      <th className="w-[9%] px-3 py-3">Físico</th>
                       <th className="w-[15%] px-3 py-3">Diferencia</th>
                       <th className="w-[17%] px-3 py-3">Observacion</th>
                       <th className="w-[15%] px-3 py-3">Comentario</th>
@@ -1531,7 +1531,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Stock por cantidad valorizado</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
-                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Genera inventario valorizado de toda la compania o una ubicacion raiz.</p>
+                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Genera inventario valorizado de toda la compañía o una ubicación raíz.</p>
               </div>
             </div>
           </div>
@@ -1630,7 +1630,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               <div className="flex items-start justify-between gap-4 border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
                   <h4 className="rajdhani text-xl font-bold text-text-main">Nuevo conteo de inventario</h4>
-                  <p className="mt-1 text-xs text-text-muted">Selecciona ubicacion, fecha y responsable para generar el borrador.</p>
+                  <p className="mt-1 text-xs text-text-muted">Selecciona ubicación, fecha y responsable para generar el borrador.</p>
                 </div>
                 <button
                   type="button"
@@ -1644,9 +1644,9 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
 
               <div className="grid max-h-[calc(90vh-150px)] gap-4 overflow-y-auto p-6 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Ubicacion/bodega</span>
+                  <span className="mb-2 block text-xs font-semibold uppercase" style={{ color: palette.muted }}>Ubicación/bodega</span>
                   <select name="idUbicacion" value={inventoryCountForm.idUbicacion} onChange={handleInventoryCountFormChange} disabled={loadingRootLocations || creatingInventoryCount} className="w-full rounded-lg border border-dark-border bg-dark-bg px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60">
-                    <option value="">{loadingRootLocations ? 'Cargando ubicaciones...' : 'Selecciona ubicacion'}</option>
+                    <option value="">{loadingRootLocations ? 'Cargando ubicaciones...' : 'Selecciona ubicación'}</option>
                     {rootLocations.map(location => (
                       <option key={location.id} value={location.id}>{location.name}</option>
                     ))}
@@ -1797,7 +1797,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                   return (
                     <div key={`selected-material-${material.idInventario}`} className="rounded-lg border border-dark-border bg-dark-bg p-4">
                       <p className="text-sm font-bold text-text-main">{detail?.nombre || 'Material'}</p>
-                      <p className="mt-1 text-xs text-text-muted">{locationName || 'Sin ubicacion'}</p>
+                      <p className="mt-1 text-xs text-text-muted">{locationName || 'Sin ubicación'}</p>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-semibold uppercase text-text-muted">Cantidad</span>

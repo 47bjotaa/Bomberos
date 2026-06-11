@@ -21,7 +21,7 @@ const normalizeVehicleStatusValue = (value) => {
 };
 const VEHICLE_PAGE_SIZE_OPTIONS = [8, 12, 16, 24];
 const VEHICLES_HELP = [
-  'Agrega todos los vehiculos de la compania para que el inventario pueda mostrar sus ubicaciones correspondientes.',
+  'Agrega todos los vehículos de la compañía para que el inventario pueda mostrar sus ubicaciones correspondientes.',
 ];
 const MAX_DATE_INPUT_VALUE = '9999-12-31';
 const hasFourDigitDateYear = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -221,7 +221,7 @@ function VehiculosView({
         }
       });
     } catch (error) {
-      console.error('Error al cargar vehiculos:', error);
+      console.error('Error al cargar vehículos:', error);
     } finally {
       setLoading(false);
     }
@@ -776,7 +776,7 @@ function VehiculosView({
 
       if (observationImages.length > 0) {
         if (!idObservacion) {
-          imageUploadError = new Error('La respuesta no incluyo idObservacion para subir imagenes.');
+          imageUploadError = new Error('La respuesta no incluyó idObservacion para subir imágenes.');
         } else {
           const imageFormData = new FormData();
           observationImages.forEach(({ file }) => {
@@ -858,7 +858,7 @@ function VehiculosView({
 
       if (maintenanceFiles.length > 0) {
         if (!idMantencion) {
-          fileUploadError = new Error('La respuesta no incluyo idMantencion para subir archivos.');
+          fileUploadError = new Error('La respuesta no incluyó idMantencion para subir archivos.');
         } else {
           try {
             await Promise.all(maintenanceFiles.map(({ file }) => {
@@ -944,11 +944,11 @@ function VehiculosView({
         <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg lg:p-8">
           <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-dark-border pb-6">
             <div>
-              <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehiculos</h3>
-              <p className="text-sm text-text-muted">Gestiona los vehiculos, carros y ambulancias de la compania.</p>
+              <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehículos</h3>
+              <p className="text-sm text-text-muted">Gestiona los vehículos, carros y ambulancias de la compañía.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <ModuleHelp title="Ayuda de vehiculos" items={VEHICLES_HELP} />
+              <ModuleHelp title="Ayuda de vehículos" items={VEHICLES_HELP} />
               {canManageVehicles && (
                 <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
                   Agregar vehiculo
@@ -961,7 +961,7 @@ function VehiculosView({
             {loading ? (
               <div className="col-span-full flex flex-col items-center justify-center py-20">
                 <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-red/20 border-t-brand-red"></div>
-                <p className="rajdhani text-lg text-text-muted">Cargando vehiculos...</p>
+                <p className="rajdhani text-lg text-text-muted">Cargando vehículos...</p>
               </div>
             ) : vehiculos.length > 0 ? (
               vehicleRows.map((v) => (
@@ -1011,7 +1011,7 @@ function VehiculosView({
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-dark-border bg-dark-bg py-20">
                 <Icons.Truck size={48} className="mb-4 text-text-muted opacity-20" />
-                <p className="rajdhani text-lg text-text-muted">No hay vehiculos registrados.</p>
+                <p className="rajdhani text-lg text-text-muted">No hay vehículos registrados.</p>
                 {canManageVehicles && (
                   <button onClick={() => setShowAddModal(true)} className="mt-4 text-brand-cyan hover:underline">Registrar el primer vehiculo</button>
                 )}
@@ -1036,7 +1036,7 @@ function VehiculosView({
                 <span>por pagina</span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <span>{vehiculos.length} vehiculos - Pagina {vehiclePage} de {vehiclePageCount}</span>
+                <span>{vehiculos.length} vehículos - Página {vehiclePage} de {vehiclePageCount}</span>
                 <button
                   type="button"
                   onClick={() => setVehiclePage(current => Math.max(1, current - 1))}
@@ -1230,7 +1230,7 @@ function VehiculosView({
               {canManageImages && (
                 <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dark-border bg-dark-bg3 px-3 py-1.5 text-xs font-medium transition-colors hover:text-white ${vehicleImageSlotsAvailable === 0 ? 'cursor-not-allowed opacity-60' : ''} ${primaryVehicleImage ? 'absolute bottom-4 opacity-0 group-hover:opacity-100' : 'relative'}`}>
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  {uploadingVehicleImage ? 'Subiendo...' : vehicleImageSlotsAvailable === 0 ? 'Limite 3/3' : primaryVehicleImage ? 'Agregar imagen' : 'Anadir imagen'}
+                  {uploadingVehicleImage ? 'Subiendo...' : vehicleImageSlotsAvailable === 0 ? 'Límite 3/3' : primaryVehicleImage ? 'Agregar imagen' : 'Añadir imagen'}
                   <input type="file" hidden multiple accept="image/*" onChange={handleVehicleImageChange} disabled={uploadingVehicleImage || vehicleImageSlotsAvailable === 0} />
                 </label>
               )}

@@ -14,7 +14,7 @@ const authPathByMode = {
 };
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-const FREE_PLAN_SUCCESS_MESSAGE = 'Cuenta creada con exito. Ya puedes iniciar sesion.';
+const FREE_PLAN_SUCCESS_MESSAGE = 'Cuenta creada con éxito. Ya puedes iniciar sesión.';
 const CHILE_MOBILE_PREFIX = '+569';
 
 const consumeStoredSuccessMessage = () => {
@@ -83,7 +83,7 @@ const getLoginErrorMessage = (error) => {
   const isGenericServerError = !message || /^error interno$/i.test(message) || /^error api: 500$/i.test(message);
 
   if (isGenericServerError) {
-    return 'No se pudo iniciar sesion. Revisa que la verificacion este completa e intenta nuevamente. Si el problema continua, revisa la configuracion de Turnstile en el servidor.';
+    return 'No se pudo iniciar sesión. Revisa que la verificación esté completa e intenta nuevamente. Si el problema continúa, revisa la configuración de Turnstile en el servidor.';
   }
 
   return message;
@@ -261,7 +261,7 @@ function AuthView({ initialMode = 'register' }) {
     const isGenericServerError = !message || /^error interno$/i.test(message.trim()) || /^error api: 500$/i.test(message.trim());
 
     if (isGenericServerError && selectedPlan?.precioMensual > 0) {
-      return 'No se pudo iniciar el registro de tarjeta en Flow. Revisa la configuracion de FlowSubscriptions o el Flow_Plan_Id del plan.';
+      return 'No se pudo iniciar el registro de tarjeta en Flow. Revisa la configuración de FlowSubscriptions o el Flow_Plan_Id del plan.';
     }
 
     return message || 'Error al intentar crear la cuenta en la base de datos.';
@@ -412,20 +412,20 @@ function AuthView({ initialMode = 'register' }) {
             }
 
             setFlowRegistration(nextFlowRegistration);
-            setSuccessMessage("Cuenta creada. No se recibio la URL de Flow para registrar la tarjeta.");
+            setSuccessMessage("Cuenta creada. No se recibió la URL de Flow para registrar la tarjeta.");
             return;
           }
 
           if (selectedPlan?.precioMensual > 0) {
             setErrors(prev => ({
               ...prev,
-              api: 'La cuenta fue enviada con un plan pagado, pero no se recibio el registro de tarjeta de Flow. Revisa la configuracion del plan o intenta con otro plan.',
+              api: 'La cuenta fue enviada con un plan pagado, pero no se recibió el registro de tarjeta de Flow. Revisa la configuración del plan o intenta con otro plan.',
             }));
             return;
           }
 
           setRegistrationComplete(true);
-          setSuccessMessage("Registro creado correctamente. Inicia sesion para continuar.");
+          setSuccessMessage("Registro creado correctamente. Inicia sesión para continuar.");
         } catch (error) {
           setErrors(prev => ({ ...prev, api: getRegisterErrorMessage(error) }));
           console.error("Error API Registro:", error);
@@ -596,7 +596,7 @@ function AuthView({ initialMode = 'register' }) {
               onClick={() => navigateToMode('login')}
               className="rounded-lg border border-dark-border bg-dark-bg2 px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:border-brand-cyan/40 hover:text-text-main"
             >
-              Iniciar sesion
+              Iniciar sesión
             </button>
           </div>
         </div>
@@ -637,7 +637,7 @@ function AuthView({ initialMode = 'register' }) {
                   </div>
                 )}
                 <div className="rounded-lg border border-brand-red/30 bg-brand-red/10 p-5 text-sm text-brand-red">
-                  Flow no permite cargar el registro de tarjeta dentro de esta pagina. La redireccion debe hacerse con FlowRegisterUrl.
+                  Flow no permite cargar el registro de tarjeta dentro de esta página. La redirección debe hacerse con FlowRegisterUrl.
                 </div>
               </div>
             </div>
@@ -649,7 +649,7 @@ function AuthView({ initialMode = 'register' }) {
                 </a>
               )}
               <button type="button" onClick={() => navigateToMode('login')} className="rounded-lg border border-dark-border bg-dark-bg px-5 py-2.5 text-sm font-semibold text-text-main transition-colors hover:border-brand-cyan/40">
-                Ir a iniciar sesion
+                Ir a iniciar sesión
               </button>
             </div>
           </section>
@@ -841,7 +841,7 @@ function AuthView({ initialMode = 'register' }) {
                   {successMessage}
                   {registrationComplete && (
                     <button type="button" onClick={() => navigateToMode('login')} className="mt-3 block w-full rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90">
-                      Ir a iniciar sesion
+                      Ir a iniciar sesión
                     </button>
                   )}
                 </div>
@@ -909,7 +909,7 @@ function AuthView({ initialMode = 'register' }) {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                       </div>
-                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} placeholder="Ej: 1ra Compania" className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
+                      <input type="text" name="cuartel" value={formData.cuartel} onChange={handleChange} placeholder="Ej: 1ra Compañía" className="w-full pl-12 pr-4 py-3 rounded-lg bg-dark-bg2 border border-dark-border text-inherit placeholder:text-text-muted text-base focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan outline-none transition-all" />
                     </div>
                     {errors.cuartel && <p className="text-brand-red text-sm mt-1">{errors.cuartel}</p>}
                   </div>

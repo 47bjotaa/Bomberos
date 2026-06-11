@@ -35,22 +35,22 @@ const MODULE_HELP = {
   bodegas: {
     title: 'Ayuda de inventario',
     items: [
-      'Agrega primero los materiales en el catalogo; luego incorporalos a la ubicacion fisica donde realmente estan para que cuenten como cantidad.',
-      'Puedes configurar stock minimo de materiales por ubicacion para controlar reposiciones.',
-      'Configura el arbol de ubicaciones para definir la jerarquia y permitir ubicaciones dentro de otras.',
+      'Agrega primero los materiales en el catálogo; luego incorpóralos a la ubicación física donde realmente están para que cuenten como cantidad.',
+      'Puedes configurar stock mínimo de materiales por ubicación para controlar reposiciones.',
+      'Configura el árbol de ubicaciones para definir la jerarquía y permitir ubicaciones dentro de otras.',
       'Registra cada movimiento o material nuevo para mantener el sistema actualizado en tiempo real.',
     ],
   },
   vehiculos: {
-    title: 'Ayuda de vehiculos',
+    title: 'Ayuda de vehículos',
     items: [
-      'Agrega todos los vehiculos de la compania para que el inventario pueda mostrar sus ubicaciones correspondientes.',
+      'Agrega todos los vehículos de la compañía para que el inventario pueda mostrar sus ubicaciones correspondientes.',
     ],
   },
   epp: {
     title: 'Ayuda de EPP',
     items: [
-      'El equipo de proteccion personal tambien es un material: debe existir en el catalogo y estar agregado a una ubicacion para aparecer en la tabla.',
+      'El equipo de protección personal también es un material: debe existir en el catálogo y estar agregado a una ubicación para aparecer en la tabla.',
     ],
   },
   'libro-guardia': {
@@ -58,24 +58,24 @@ const MODULE_HELP = {
     items: [
       'Hay tres tipos de libro: diarios, semanales y mensuales.',
       'Los libros diarios se cierran al terminar el dia.',
-      'Los libros semanales se cierran al termino de la semana.',
+      'Los libros semanales se cierran al término de la semana.',
       'Los libros mensuales se cierran el ultimo dia del mes.',
     ],
   },
   donaciones: {
     title: 'Ayuda de donaciones',
     items: [
-      'Para activar esta seccion, la compania o el encargado de fondos debe tener una cuenta en Flow y proporcionar las credenciales API Key.',
-      'Al activar Flow podras crear campanas con un boton para realizar donaciones.',
+      'Para activar esta sección, la compañía o el encargado de fondos debe tener una cuenta en Flow y proporcionar las credenciales API Key.',
+      'Al activar Flow podrás crear campañas con un botón para realizar donaciones.',
       'Cada bombero puede generar su propio link y compartirlo con quien quiera.',
-      'Las donaciones hechas con el link de un bombero quedaran asociadas a su nombre de recaudacion para identificar quien capto esa donacion.',
+      'Las donaciones hechas con el link de un bombero quedarán asociadas a su nombre de recaudación para identificar quién captó esa donación.',
     ],
   },
   personal: {
     title: 'Ayuda de personal',
     items: [
-      'Puedes importar personal completando los atributos basicos en la plantilla.',
-      'Al importar, se enviara un correo al bombero para finalizar su ingreso a la plataforma.',
+      'Puedes importar personal completando los atributos básicos en la plantilla.',
+      'Al importar, se enviará un correo al bombero para finalizar su ingreso a la plataforma.',
     ],
   },
   reportes: {
@@ -1151,10 +1151,10 @@ function Dashboard({ setView }) {
       }));
       return data;
     } catch (error) {
-      console.error('No se pudo cargar la suscripcion de la compania:', error);
+      console.error('No se pudo cargar la suscripcion de la compañía:', error);
       setHasDonationFeature(getCurrentDonationFeature());
       setCurrentSubscriptionStatus('');
-      setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compania.');
+      setSubscriptionError(error.message || 'No se pudo verificar la suscripcion de la compañía.');
       return null;
     } finally {
       setLoadingSubscription(false);
@@ -1230,7 +1230,7 @@ function Dashboard({ setView }) {
       }
 
       setUpgradeFlowUrl('');
-      setUpgradePlanError('No se pudo iniciar el cambio de plan porque no se recibio la URL de Flow para registrar la tarjeta. El cambio no debe considerarse confirmado hasta completar Flow.');
+      setUpgradePlanError('No se pudo iniciar el cambio de plan porque no se recibió la URL de Flow para registrar la tarjeta. El cambio no debe considerarse confirmado hasta completar Flow.');
     } catch (error) {
       setUpgradePlanError(error.message || 'No se pudo actualizar el plan.');
     } finally {
@@ -2301,17 +2301,17 @@ function Dashboard({ setView }) {
     }
 
     if (!payload.nombreCompania) {
-      setCompanyFormError('Completa el nombre de la compania.');
+      setCompanyFormError('Completa el nombre de la compañía.');
       return;
     }
 
     if (companyFormData.idCuerpoBomberos && Number.isNaN(payload.idCuerpoBomberos)) {
-      setCompanyFormError('Selecciona un cuerpo de bomberos valido.');
+      setCompanyFormError('Selecciona un cuerpo de bomberos válido.');
       return;
     }
 
     if (companyFormData.telefono && !isValidChileanMobilePhone(payload.telefono)) {
-      setCompanyFormError('El telefono debe tener 8 numeros despues de +569.');
+      setCompanyFormError('El teléfono debe tener 8 números después de +569.');
       return;
     }
 
@@ -2336,7 +2336,7 @@ function Dashboard({ setView }) {
       }));
       setShowEditCompanyModal(false);
     } catch (error) {
-      setCompanyFormError(error.message || 'No se pudieron actualizar los datos de la compania.');
+      setCompanyFormError(error.message || 'No se pudieron actualizar los datos de la compañía.');
     } finally {
       setSavingCompanyData(false);
     }
@@ -2405,7 +2405,7 @@ function Dashboard({ setView }) {
       const data = await apiFetch(`/api/companias/${campana.idCompania}/donaciones?idCampaniaDonacion=${campana.idCampanaDonacion}&estadoPago=Pagada`);
       setDonacionesCampana(getArrayPayload(data));
     } catch (error) {
-      console.error('Error al cargar donaciones de campana:', error);
+      console.error('Error al cargar donaciones de campaña:', error);
       setDonacionesCampanaError(error.message || 'No se pudieron cargar las donaciones.');
       setDonacionesCampana([]);
     } finally {
@@ -2585,7 +2585,7 @@ function Dashboard({ setView }) {
     } catch (error) {
       setPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
       setSavedPaymentConfigData(DEFAULT_PAYMENT_CONFIG);
-      setPaymentConfigError('No esta configurada la configuracion de pago.');
+      setPaymentConfigError('No está configurada la configuración de pago.');
     } finally {
       setLoadingPaymentConfig(false);
     }
@@ -2635,7 +2635,7 @@ function Dashboard({ setView }) {
     };
 
     if (!payload.apiKey || !payload.secretKey || !payload.urlApi || !payload.urlConfirmacion || !payload.urlRetorno) {
-      setPaymentConfigError('Completa API Key, Secret Key y URLs para guardar la configuracion.');
+      setPaymentConfigError('Completa API Key, Secret Key y URLs para guardar la configuración.');
       return;
     }
 
@@ -2688,7 +2688,7 @@ function Dashboard({ setView }) {
     if (!selectedFile) return;
 
     if (!selectedFile.type.startsWith('image/')) {
-      setCreateCampanaError('Selecciona un archivo de imagen valido.');
+      setCreateCampanaError('Selecciona un archivo de imagen válido.');
       event.target.value = '';
       return;
     }
@@ -2717,7 +2717,7 @@ function Dashboard({ setView }) {
   const openCreateCampanaModal = () => {
     if (!hasProSubscription || !canManageDonaciones) return;
     if (!hasCompletePaymentConfig) {
-      setCampanasError('Configura API Key y Secret Key de Flow antes de crear campanas.');
+      setCampanasError('Configura API Key y Secret Key de Flow antes de crear campañas.');
       return;
     }
 
@@ -2735,7 +2735,7 @@ function Dashboard({ setView }) {
     event.preventDefault();
     if (!hasProSubscription || !canManageDonaciones) return;
     if (!hasCompletePaymentConfig) {
-      setCreateCampanaError('Configura API Key y Secret Key de Flow antes de crear campanas.');
+      setCreateCampanaError('Configura API Key y Secret Key de Flow antes de crear campañas.');
       return;
     }
 
@@ -3096,7 +3096,7 @@ function Dashboard({ setView }) {
   const dashboardNavItems = [
     { id: 'inicio', label: 'Inicio', icon: Icons.Dashboard },
     { id: 'bodegas', label: 'Inventario', icon: Icons.Inventory },
-    { id: 'vehiculos', label: 'Vehiculos', icon: Icons.Truck },
+    { id: 'vehiculos', label: 'Vehículos', icon: Icons.Truck },
     { id: 'epp', label: 'EPP', icon: Icons.Shield },
     { id: 'libro-guardia', label: 'Libro Guardia', icon: Icons.Traceability },
     { id: 'donaciones', label: 'Donaciones', icon: Icons.Finance },
@@ -3964,12 +3964,12 @@ function Dashboard({ setView }) {
         </div>
         {pendingCardRegistration && !userCanRegisterSubscriptionCard && (
           <p className="mt-5 rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-3 text-sm text-brand-cyan">
-            Solo Capitanes y Directores pueden registrar la tarjeta de la compania. Contacta a uno de ellos para completar este paso.
+            Solo Capitanes y Directores pueden registrar la tarjeta de la compañía. Contacta a uno de ellos para completar este paso.
           </p>
         )}
         {pendingCardRegistration && userCanRegisterSubscriptionCard && !flowRegisterUrl && (
           <p className="mt-5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-4 py-3 text-sm text-brand-red">
-            No se recibio la URL de Flow para registrar la tarjeta. Reintenta en unos segundos o revisa la configuracion del plan.
+            No se recibió la URL de Flow para registrar la tarjeta. Reintenta en unos segundos o revisa la configuración del plan.
           </p>
         )}
         {pendingCardRegistration && subscriptionPaymentError && (
@@ -4236,7 +4236,7 @@ function Dashboard({ setView }) {
             className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold text-brand-red transition-colors hover:bg-dark-bg3"
           >
             <span className="text-lg leading-none">-&gt;</span>
-            <span>Cerrar Sesion</span>
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </aside>
@@ -4374,7 +4374,7 @@ function Dashboard({ setView }) {
                 <button
                   onClick={openCreateCampanaModal}
                   disabled={loadingPaymentConfig || !hasCompletePaymentConfig}
-                  title={!hasCompletePaymentConfig ? 'Configura API Key y Secret Key de Flow antes de crear campanas.' : undefined}
+                  title={!hasCompletePaymentConfig ? 'Configura API Key y Secret Key de Flow antes de crear campañas.' : undefined}
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 shadow-[0_4px_15px_rgba(59,130,246,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="text-base leading-none">+</span>
@@ -5269,8 +5269,8 @@ function Dashboard({ setView }) {
                     <h3 className="rajdhani text-3xl font-bold text-white">{loadingSubscription ? 'Verificando plan' : 'Donaciones bloqueadas'}</h3>
                     <p className="mt-2 text-sm text-text-muted">
                       {loadingSubscription
-                        ? 'Estamos validando la suscripcion actual de tu compania.'
-                        : 'Esta funcion requiere un plan con donaciones activadas para gestionar campanas y enlaces de pago.'}
+                        ? 'Estamos validando la suscripción actual de tu compañía.'
+                        : 'Esta función requiere un plan con donaciones activadas para gestionar campañas y enlaces de pago.'}
                     </p>
                     {loadingSubscription ? (
                       <div className="mx-auto mt-6 h-8 w-8 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500"></div>
@@ -5545,15 +5545,15 @@ function Dashboard({ setView }) {
                 <>
               {canManageDonaciones && !loadingPaymentConfig && !hasCompletePaymentConfig && (
                 <div className="mb-5 rounded-xl border border-brand-red/30 bg-brand-red/10 px-5 py-4 text-sm text-brand-red">
-                  <p className="font-semibold">Falta configurar Flow para crear campanas.</p>
-                  <p className="mt-1 text-text-muted">Agrega API Key y Secret Key en Configuracion de pago antes de crear campanas de donaciones.</p>
+                  <p className="font-semibold">Falta configurar Flow para crear campañas.</p>
+                  <p className="mt-1 text-text-muted">Agrega API Key y Secret Key en Configuración de pago antes de crear campañas de donaciones.</p>
                   {(canViewPaymentConfig || canManagePaymentConfig) && (
                     <button
                       type="button"
                       onClick={() => selectDonacionesView('configuracion')}
                       className="mt-3 rounded-lg border border-brand-red/40 bg-brand-red/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-red/20"
                     >
-                      Ir a configuracion de pago
+                      Ir a configuración de pago
                     </button>
                   )}
                 </div>
@@ -6286,9 +6286,9 @@ function Dashboard({ setView }) {
                       <section className="rounded-xl border border-dark-border bg-dark-surface p-6">
                         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Datos de la compania</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-brand-cyan">Datos de la compañía</p>
                             <h3 className="rajdhani mt-1 text-2xl font-bold text-white">
-                              {getCompanyName(currentCompany || {}) || 'Compania sin nombre registrado'}
+                              {getCompanyName(currentCompany || {}) || 'Compañía sin nombre registrado'}
                             </h3>
                             <p className="mt-1 text-sm text-text-muted">
                               Visible para Capitanes y Directores.
@@ -6300,24 +6300,24 @@ function Dashboard({ setView }) {
                             disabled={loadingSubscription || !currentCompany}
                             className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-4 py-2 text-sm font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/15 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Editar compania
+                            Editar compañía
                           </button>
                         </div>
 
                         {loadingSubscription ? (
                           <div className="rounded-xl border border-dark-border bg-dark-bg px-5 py-8 text-center text-sm text-text-muted">
-                            Cargando datos de la compania...
+                            Cargando datos de la compañía...
                           </div>
                         ) : !currentCompany ? (
                           <div className="rounded-xl border border-brand-red/30 bg-brand-red/10 p-5 text-sm text-brand-red">
-                            No se pudieron cargar los datos de la compania.
+                            No se pudieron cargar los datos de la compañía.
                           </div>
                         ) : (
                           <div className="grid gap-4 md:grid-cols-2">
                             {[
                               ['Cuerpo de Bomberos', getCompanyFireDepartmentName(currentCompany) || getCompanyFireDepartmentId(currentCompany)],
-                              ['Direccion', readCompanyText(currentCompany, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania'])],
-                              ['Telefono', readCompanyText(currentCompany, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])],
+                              ['Dirección', readCompanyText(currentCompany, ['direccion', 'Direccion', 'direccionCompania', 'DireccionCompania'])],
+                              ['Teléfono', readCompanyText(currentCompany, ['telefono', 'Telefono', 'telefonoCompania', 'TelefonoCompania'])],
                               ['Email', readCompanyText(currentCompany, ['email', 'Email', 'emailCompania', 'EmailCompania', 'correo', 'Correo'])],
                             ].map(([label, value]) => (
                               <div key={label} className="rounded-xl border border-dark-border bg-dark-bg p-5">
@@ -6423,8 +6423,8 @@ function Dashboard({ setView }) {
             <form onSubmit={handleUpdateCompanyData} className="w-full max-w-2xl overflow-hidden rounded-xl border border-dark-border bg-dark-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-dark-border bg-dark-bg2 px-6 py-4">
                 <div>
-                  <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de la compania</h3>
-                  <p className="mt-1 text-xs text-text-muted">Actualiza la informacion general del cuartel.</p>
+                  <h3 className="rajdhani text-lg font-semibold text-white">Editar datos de la compañía</h3>
+                  <p className="mt-1 text-xs text-text-muted">Actualiza la información general del cuartel.</p>
                 </div>
                 <button type="button" onClick={closeEditCompanyModal} disabled={savingCompanyData} className="text-text-muted transition-colors hover:text-white disabled:opacity-50">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -6432,7 +6432,7 @@ function Dashboard({ setView }) {
               </div>
               <div className="max-h-[72vh] space-y-4 overflow-y-auto p-6">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-text-muted">Nombre de la compania</span>
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Nombre de la compañía</span>
                   <input
                     autoFocus
                     type="text"
@@ -6440,7 +6440,7 @@ function Dashboard({ setView }) {
                     onChange={(event) => setCompanyFormData(current => ({ ...current, nombreCompania: event.target.value }))}
                     disabled={savingCompanyData}
                     className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-2.5 text-sm text-white outline-none transition-all placeholder-text-muted focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan disabled:opacity-50"
-                    placeholder="Ej. Primera Compania"
+                    placeholder="Ej. Primera Compañía"
                   />
                 </label>
 
@@ -6463,7 +6463,7 @@ function Dashboard({ setView }) {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-text-muted">Telefono</span>
+                    <span className="mb-2 block text-sm font-medium text-text-muted">Teléfono</span>
                     <div className="flex overflow-hidden rounded-lg border border-dark-border bg-dark-bg transition-all focus-within:border-brand-cyan focus-within:ring-1 focus-within:ring-brand-cyan">
                       <span className="flex items-center border-r border-dark-border bg-dark-bg2 px-4 text-sm font-semibold text-text-muted">
                         +569
@@ -6494,7 +6494,7 @@ function Dashboard({ setView }) {
                 </div>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-text-muted">Direccion</span>
+                  <span className="mb-2 block text-sm font-medium text-text-muted">Dirección</span>
                   <textarea
                     rows="3"
                     value={companyFormData.direccion}
@@ -7799,16 +7799,16 @@ function Dashboard({ setView }) {
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 px-6 py-10 backdrop-blur-sm">
           {subscriptionError ? (
             renderSubscriptionGate({
-              title: 'No se pudo verificar la suscripcion',
+              title: 'No se pudo verificar la suscripción',
               message: subscriptionError,
               tone: 'error',
             })
           ) : (
             renderSubscriptionGate({
-              title: userCanRegisterSubscriptionCard ? 'Registra la tarjeta para continuar' : 'Suscripcion pendiente',
+              title: userCanRegisterSubscriptionCard ? 'Registra la tarjeta para continuar' : 'Suscripción pendiente',
               message: userCanRegisterSubscriptionCard
-                ? 'Tu compania tiene la suscripcion pendiente de registro de tarjeta. Completa este paso en Flow para usar el panel.'
-                : 'Tu compania tiene la suscripcion pendiente de registro de tarjeta. El panel quedara bloqueado hasta que un Capitan o Director complete este paso.',
+                ? 'Tu compañía tiene la suscripción pendiente de registro de tarjeta. Completa este paso en Flow para usar el panel.'
+                : 'Tu compañía tiene la suscripción pendiente de registro de tarjeta. El panel quedará bloqueado hasta que un Capitán o Director complete este paso.',
             })
           )}
         </div>

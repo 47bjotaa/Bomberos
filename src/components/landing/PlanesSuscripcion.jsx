@@ -5,7 +5,7 @@ const STATIC_SUBSCRIPTION_PLANS = [
   {
     codigo: 'trial',
     nombre: 'Prueba',
-    descripcion: 'Plan de prueba inicial para nuevas companias.',
+    descripcion: 'Plan de prueba inicial para nuevas compañías.',
     precioMensual: 0,
     duracionDias: 7,
     donaciones: false,
@@ -42,7 +42,7 @@ function PlanesSuscripcion() {
       <div className="section-header">
         <span className="section-eyebrow reveal">Planes por suscripcion</span>
         <h2 className="section-title reveal">Elige el plan para tu cuartel</h2>
-        <p className="section-subtitle reveal delay-100">No vendemos una caja cerrada: habilitamos una operacion digital con soporte, mejoras y modulos que crecen junto a tu compania.</p>
+        <p className="section-subtitle reveal delay-100">No vendemos una caja cerrada: habilitamos una operación digital con soporte, mejoras y módulos que crecen junto a tu compañía.</p>
       </div>
 
       <div className="pricing-grid">
@@ -53,7 +53,7 @@ function PlanesSuscripcion() {
               <Icons.Finance />
             </div>
             <h3 className="pricing-title">{plan.nombre}</h3>
-            <p className="pricing-desc">{plan.descripcion || 'Gestiona tu compania con herramientas digitales para el dia a dia.'}</p>
+            <p className="pricing-desc">{plan.descripcion || 'Gestiona tu compañía con herramientas digitales para el día a día.'}</p>
             <div className="pricing-price">
               {plan.precioMensual > 0 ? formatCurrency(plan.precioMensual) : 'Gratis'}
               <span>{plan.precioMensual > 0 ? '/mes' : ''}</span>

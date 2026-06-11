@@ -182,7 +182,7 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
         const idItem = getCreatedItemId(createdItem);
 
         if (!idItem) {
-          throw new Error('El material fue creado, pero no se recibio el idItem para guardar el detalle EPP.');
+          throw new Error('El material fue creado, pero no se recibió el idItem para guardar el detalle EPP.');
         }
 
         await apiFetch(`/api/materiales/items/${idItem}/detalle-epp`, {
