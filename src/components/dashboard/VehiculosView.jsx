@@ -944,11 +944,10 @@ function VehiculosView({
         <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg lg:p-8">
           <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-dark-border pb-6">
             <div>
-              <h3 className="rajdhani mb-1 text-2xl font-semibold tracking-wide text-text-main">Vehículos</h3>
-              <p className="text-sm text-text-muted">Gestiona los vehículos, carros y ambulancias de la compañía.</p>
+              <h3 className="rajdhani text-2xl font-semibold tracking-wide text-text-main">Vehiculos</h3>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <ModuleHelp title="Ayuda de vehículos" items={VEHICLES_HELP} />
+              <ModuleHelp title="Ayuda de vehiculos" items={VEHICLES_HELP} />
               {canManageVehicles && (
                 <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-gradient-to-r from-brand-red to-brand-ember px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_15px_rgba(232,55,42,0.3)] transition-colors hover:opacity-90">
                   Agregar vehiculo

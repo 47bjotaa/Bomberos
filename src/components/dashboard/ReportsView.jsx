@@ -58,6 +58,8 @@ const TIPOS_AFECTACION_ITEM = [
   { value: 'Retenido', estado: 'Retenido', label: 'Retenido' },
 ];
 
+const INVENTORY_COUNTS_PAGE_SIZE = 5;
+
 const getTodayDateValue = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -291,6 +293,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
     observaciones: '',
   });
   const [inventoryCounts, setInventoryCounts] = useState([]);
+  const [inventoryCountPage, setInventoryCountPage] = useState(1);
   const [selectedInventoryCount, setSelectedInventoryCount] = useState(null);
   const [showInventoryCountForm, setShowInventoryCountForm] = useState(false);
   const [responsibleUsers, setResponsibleUsers] = useState([]);
@@ -665,6 +668,22 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
     && selectedInventorySummary.totalRevisados > 0
     && selectedInventorySummary.totalPendientes === 0
   );
+  const inventoryCountPageCount = Math.max(1, Math.ceil(inventoryCounts.length / INVENTORY_COUNTS_PAGE_SIZE));
+  const inventoryCountPageStart = (inventoryCountPage - 1) * INVENTORY_COUNTS_PAGE_SIZE;
+  const paginatedInventoryCounts = inventoryCounts.slice(
+    inventoryCountPageStart,
+    inventoryCountPageStart + INVENTORY_COUNTS_PAGE_SIZE
+  );
+  const inventoryCountVisibleStart = inventoryCounts.length === 0 ? 0 : inventoryCountPageStart + 1;
+  const inventoryCountVisibleEnd = Math.min(inventoryCountPageStart + INVENTORY_COUNTS_PAGE_SIZE, inventoryCounts.length);
+
+  useEffect(() => {
+    setInventoryCountPage(1);
+  }, [inventoryCountFilters.idUbicacion, inventoryCountFilters.estado]);
+
+  useEffect(() => {
+    setInventoryCountPage(current => Math.min(Math.max(current, 1), inventoryCountPageCount));
+  }, [inventoryCountPageCount]);
 
   const updateInventoryCountInList = (nextCount) => {
     setInventoryCounts(current => {
@@ -1128,12 +1147,7 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-cyan">{showingInventoryCounts ? 'Conteos operativos' : 'Centro de reportes'}</p>
-              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">{showingInventoryCounts ? 'Conteos de inventario por ubicación' : 'Documentos operativos listos para generar'}</h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">
-                {showingInventoryCounts
-                  ? 'Revisa conteos existentes, crea nuevos borradores y completa el conteo físico antes de cerrar y descargar PDF.'
-                  : 'Usa el asistente para post emergencia o descarga reportes PDF con filtros por periodo, campaña, motivo y ubicación.'}
-              </p>
+              <h3 className="rajdhani mt-1 text-2xl font-bold text-text-main">{showingInventoryCounts ? 'Conteos de inventario por ubicacion' : 'Documentos operativos listos para generar'}</h3>
             </div>
           </div>
         </div>
@@ -1150,11 +1164,6 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>
                   {selectedInventoryCount ? selectedInventoryCount.estado : 'Borrador + cierre + PDF'}
                 </span>
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed" style={{ color: palette.muted }}>
-                  {selectedInventoryCount
-                    ? 'Completa las cantidades físicas, revisa diferencias y cierra el conteo cuando no queden pendientes.'
-                    : 'Crea un conteo por ubicación, registra la cantidad física por material o item y cierra el proceso cuando no queden pendientes.'}
-                </p>
               </div>
             </div>
             {selectedInventoryCount ? (
@@ -1192,32 +1201,60 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
                   {ESTADOS_CONTEO.map(option => <option key={option.value || 'todos'} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
-              <div className="max-h-80 overflow-y-auto rounded-lg border border-dark-border bg-dark-bg">
+              <div className="overflow-hidden rounded-lg border border-dark-border bg-dark-bg">
                 {loadingInventoryCounts ? (
                   <div className="px-4 py-10 text-center text-sm text-text-muted">Cargando conteos...</div>
                 ) : inventoryCounts.length === 0 ? (
                   <div className="px-4 py-10 text-center text-sm text-text-muted">No hay conteos registrados.</div>
                 ) : (
-                  <div className="divide-y divide-dark-border">
-                    {inventoryCounts.map(count => (
-                      <button key={count.idConteo} type="button" onClick={() => openInventoryCount(count.idConteo)} className={`block w-full px-4 py-3 text-left transition-colors hover:bg-dark-bg2 ${String(selectedInventoryCount?.idConteo) === String(count.idConteo) ? 'bg-brand-cyan/10' : ''}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-text-main">#{count.idConteo} - {count.ubicacion}</p>
-                            <p className="mt-1 text-xs text-text-muted">{count.fechaConteo || 'Sin fecha'} - {count.responsable}</p>
+                  <>
+                    <div className="divide-y divide-dark-border">
+                      {paginatedInventoryCounts.map(count => (
+                        <button key={count.idConteo} type="button" onClick={() => openInventoryCount(count.idConteo)} className={`block w-full px-4 py-3 text-left transition-colors hover:bg-dark-bg2 ${String(selectedInventoryCount?.idConteo) === String(count.idConteo) ? 'bg-brand-cyan/10' : ''}`}>
+                          <div className="grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-text-main">#{count.idConteo} - {count.ubicacion}</p>
+                              <p className="mt-1 truncate text-xs text-text-muted">{count.fechaConteo || 'Sin fecha'} - {count.responsable}</p>
+                            </div>
+                            {count.resumen && (
+                              <p className="text-xs text-text-muted">
+                                Pendientes: <span className="font-bold text-text-main">{count.resumen.totalPendientes ?? 0}</span> / Diferencias: <span className="font-bold text-text-main">{count.resumen.totalConDiferencias ?? 0}</span>
+                              </p>
+                            )}
+                            <span className={`w-fit rounded border px-2 py-1 text-[11px] font-bold md:justify-self-end ${count.estado === 'Cerrado' ? 'border-brand-green/30 bg-brand-green/10 text-brand-green' : 'border-brand-ember/30 bg-brand-ember/10 text-brand-ember'}`}>
+                              {count.estado}
+                            </span>
                           </div>
-                          <span className={`shrink-0 rounded border px-2 py-1 text-[11px] font-bold ${count.estado === 'Cerrado' ? 'border-brand-green/30 bg-brand-green/10 text-brand-green' : 'border-brand-ember/30 bg-brand-ember/10 text-brand-ember'}`}>
-                            {count.estado}
-                          </span>
-                        </div>
-                        {count.resumen && (
-                          <p className="mt-2 text-xs text-text-muted">
-                            Pendientes: <span className="font-bold text-text-main">{count.resumen.totalPendientes ?? 0}</span> / Diferencias: <span className="font-bold text-text-main">{count.resumen.totalConDiferencias ?? 0}</span>
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-border bg-dark-bg2 px-4 py-3 text-xs text-text-muted">
+                      <span>
+                        Mostrando <span className="font-bold text-text-main">{inventoryCountVisibleStart}</span>-<span className="font-bold text-text-main">{inventoryCountVisibleEnd}</span> de <span className="font-bold text-text-main">{inventoryCounts.length}</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInventoryCountPage(current => Math.max(1, current - 1))}
+                          disabled={inventoryCountPage <= 1}
+                          className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 font-semibold text-text-main transition-colors hover:bg-dark-bg3 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <span className="min-w-20 text-center font-semibold text-text-main">
+                          {inventoryCountPage} / {inventoryCountPageCount}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setInventoryCountPage(current => Math.min(inventoryCountPageCount, current + 1))}
+                          disabled={inventoryCountPage >= inventoryCountPageCount}
+                          className="rounded-lg border border-dark-border bg-dark-bg px-3 py-1.5 font-semibold text-text-main transition-colors hover:bg-dark-bg3 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1353,7 +1390,6 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Post emergencia</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>Registro + PDF</span>
-                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Asistente guiado para documentar salida, materiales usados y observaciones.</p>
               </div>
             </div>
           </div>
@@ -1531,7 +1567,6 @@ function ReportsView({ palette, view = 'reportes', canViewFullReports = true, ca
               <div>
                 <h4 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Stock por cantidad valorizado</h4>
                 <span className="mt-2 inline-flex rounded border px-2 py-1 text-xs font-semibold" style={{ borderColor: palette.borderStrong, color: palette.muted }}>PDF</span>
-                <p className="mt-3 max-w-md text-sm leading-relaxed" style={{ color: palette.muted }}>Genera inventario valorizado de toda la compañía o una ubicación raíz.</p>
               </div>
             </div>
           </div>

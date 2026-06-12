@@ -4323,10 +4323,6 @@ function Dashboard({ setView }) {
                     {activeTab === 'mis-datos' ? 'Mis Datos' : activeTab === 'personal' ? (personalView === 'importar' ? 'Importar personal' : 'Personal del Cuartel') : activeTab === 'reportes' ? 'Reportes' : activeTab === 'donaciones' ? 'Donaciones y Campañas' : activeTab === 'catalogo' ? 'Catálogo de Materiales' : activeTab === 'epp' ? 'Equipos de Protección Personal (EPP)' : activeTab === 'inicio' ? 'Panel de Control' : 'Dashboard'}
                   </h2>
                 )}
-                {activeTab === 'inicio' && <span className="text-xs text-text-muted mt-0.5">Visión general del estado del cuartel y recursos</span>}
-                {activeTab === 'epp' && <span className="text-xs text-text-muted mt-0.5">Controla la asignación y estado del equipamiento de los voluntarios</span>}
-                {activeTab === 'personal' && <span className="text-xs text-text-muted mt-0.5">Gestiona bomberos, cargos y datos de contacto</span>}
-                {activeTab === 'mis-datos' && <span className="text-xs text-text-muted mt-0.5">Información del bombero asociado a tu sesión</span>}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -4650,9 +4646,6 @@ function Dashboard({ setView }) {
                     <h3 style={{ color: palette.text, fontSize: '21px', fontWeight: 700, margin: 0 }}>
                       {currentUbicacion ? currentUbicacion.name : 'Ubicaciones principales'}
                     </h3>
-                    <p style={{ color: palette.muted, fontSize: '13px', margin: '6px 0 0' }}>
-                      {currentUbicacion ? 'Selecciona General para ver la ubicación actual o abre una sububicación.' : 'Selecciona una ubicación principal para cargar sus materiales y sububicaciones.'}
-                    </p>
                   </div>
                   {currentUbicacion && (
                     <button onClick={() => goToPathIndex(locationPath.length - 2)} style={{ height: '40px', padding: '0 16px', borderRadius: '8px', border: `1px solid ${palette.borderStrong}`, background: palette.card, color: palette.text, cursor: 'pointer' }}>
@@ -4984,7 +4977,6 @@ function Dashboard({ setView }) {
             <div className="h-full overflow-auto p-8 custom-scrollbar">
               <div className="mb-6 flex-shrink-0">
                 <h3 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Catálogo de Materiales</h3>
-                <p className="mt-2 text-sm" style={{ color: palette.muted }}>Administra los materiales base disponibles para el inventario.</p>
               </div>
               <div className="mb-6 flex flex-shrink-0 gap-4">
                 <div className="flex-1 relative">
@@ -5737,7 +5729,6 @@ function Dashboard({ setView }) {
                     </div>
                     <div>
                       <h2 className="rajdhani text-2xl font-bold" style={{ color: palette.text }}>Libros de Guardia</h2>
-                      <p className="mt-1 text-sm" style={{ color: palette.muted }}>Gestiona los registros de novedades y servicio de guardia</p>
                     </div>
                   </div>
                   {((selectedLibroGuardia && canRegisterLibroGuardia) || (!selectedLibroGuardia && canCreateLibroGuardia)) && (
@@ -5879,7 +5870,6 @@ function Dashboard({ setView }) {
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b pb-5" style={{ borderColor: palette.border }}>
                       <div>
                         <h3 className="rajdhani text-xl font-bold" style={{ color: palette.text }}>Libros disponibles</h3>
-                        <p className="mt-1 text-sm" style={{ color: palette.muted }}>Consulta las novedades registradas o agrega un nuevo evento de guardia.</p>
                       </div>
                       <div className="flex gap-3">
                         <div className="rounded-lg border px-4 py-2 text-center" style={{ borderColor: palette.border, background: palette.bg }}>

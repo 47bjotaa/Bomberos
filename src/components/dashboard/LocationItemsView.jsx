@@ -122,9 +122,6 @@ function LocationItemsView({
           </div>
           <div>
             <h3 className="rajdhani text-lg font-bold tracking-wide" style={{ color: palette.text }}>Materiales</h3>
-            <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>
-              {hasSelection ? `Contenido de ${locationName}` : 'Selecciona una ubicación para cargar su inventario'}
-            </p>
           </div>
         </div>
       </div>
