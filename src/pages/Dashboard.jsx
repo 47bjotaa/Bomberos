@@ -621,8 +621,14 @@ function Dashboard({ setView }) {
   const [bomberosPersonalError, setBomberosPersonalError] = useState('');
   const [inactivatingUsuarioId, setInactivatingUsuarioId] = useState(null);
   const [activatingUsuarioId, setActivatingUsuarioId] = useState(null);
+  const [changingRoleUsuarioId, setChangingRoleUsuarioId] = useState(null);
   const [personalActionError, setPersonalActionError] = useState('');
   const [bomberoPendingInactivation, setBomberoPendingInactivation] = useState(null);
+  const [bomberoPendingRoleChange, setBomberoPendingRoleChange] = useState(null);
+  const [roleChangeValue, setRoleChangeValue] = useState('');
+  const [personalRoles, setPersonalRoles] = useState([]);
+  const [loadingPersonalRoles, setLoadingPersonalRoles] = useState(false);
+  const [personalRolesError, setPersonalRolesError] = useState('');
   const [showAddBomberoModal, setShowAddBomberoModal] = useState(false);
   const [activePersonalTab, setActivePersonalTab] = useState('activos');
   const [personalImportFile, setPersonalImportFile] = useState(null);
@@ -924,6 +930,7 @@ function Dashboard({ setView }) {
   useEffect(() => {
     if (activeTab === 'personal') {
       fetchBomberosPersonal();
+      if (canManageUsers) fetchPersonalRoles();
     }
   }, [activeTab]);
 
@@ -2016,14 +2023,20 @@ function Dashboard({ setView }) {
 
   const mapBomberoPersonal = (bombero) => ({
     id: bombero.idBombero || bombero.id,
-    idUsuario: bombero.idUsuario,
+    idUsuario: bombero.idUsuario || bombero.usuario?.idUsuario || bombero.usuario?.id,
     nombre: bombero.nombre || 'Bombero',
     rut: bombero.rut || '',
     email: bombero.email || '',
     telefono: bombero.telefono || '',
     genero: bombero.genero || '',
-    cargo: bombero.cargo || 'Voluntario',
+    idRol: bombero.idRol || bombero.rolId || bombero.idRole || bombero.idCargo || bombero.usuario?.idRol || bombero.usuario?.rolId || '',
+    cargo: bombero.cargo || bombero.nombreRol || bombero.rol || bombero.usuario?.cargo || bombero.usuario?.nombreRol || 'Voluntario',
     estado: bombero.estadoUsuario || bombero.estado || 'Sin estado',
+  });
+
+  const mapPersonalRole = (role) => ({
+    idRol: role.idRol || role.rolId || role.id || '',
+    nombre: role.nombre || role.nombreRol || role.rol || role.name || '',
   });
 
   const getBomberoInitials = (nombre = '') => {
@@ -2045,6 +2058,27 @@ function Dashboard({ setView }) {
       setBomberosPersonal([]);
     } finally {
       setLoadingBomberosPersonal(false);
+    }
+  };
+
+  const fetchPersonalRoles = async () => {
+    if (!canManageUsers || loadingPersonalRoles) return;
+
+    setLoadingPersonalRoles(true);
+    setPersonalRolesError('');
+
+    try {
+      const data = await apiFetch('/api/Usuarios/roles');
+      setPersonalRoles(
+        getArrayPayload(data)
+          .map(mapPersonalRole)
+          .filter(role => role.idRol && role.nombre)
+      );
+    } catch (error) {
+      setPersonalRoles([]);
+      setPersonalRolesError(error.message || 'No se pudieron cargar los cargos.');
+    } finally {
+      setLoadingPersonalRoles(false);
     }
   };
 
@@ -2212,6 +2246,64 @@ function Dashboard({ setView }) {
       setPersonalActionError(error.message || 'No se pudo activar al usuario.');
     } finally {
       setActivatingUsuarioId(null);
+    }
+  };
+
+  const openChangeRoleModal = (bombero) => {
+    if (!canManageUsers) return;
+
+    if (!bombero?.idUsuario || changingRoleUsuarioId) {
+      if (!bombero?.idUsuario) setPersonalActionError('No se pudo identificar el usuario al que deseas cambiar el rol.');
+      return;
+    }
+
+    if (personalRoles.length === 0 && !loadingPersonalRoles) {
+      fetchPersonalRoles();
+    }
+
+    setPersonalActionError('');
+    setBomberoPendingRoleChange(bombero);
+    setRoleChangeValue(bombero.idRol ? String(bombero.idRol) : '');
+  };
+
+  const closeChangeRoleModal = () => {
+    if (changingRoleUsuarioId) return;
+    setBomberoPendingRoleChange(null);
+    setRoleChangeValue('');
+    setPersonalActionError('');
+  };
+
+  const handleChangeUsuarioRole = async () => {
+    const bombero = bomberoPendingRoleChange;
+    if (!canManageUsers || !bombero?.idUsuario || changingRoleUsuarioId) return;
+
+    const idRol = Number(roleChangeValue);
+    if (!idRol) {
+      setPersonalActionError('Selecciona un cargo valido.');
+      return;
+    }
+
+    setChangingRoleUsuarioId(bombero.idUsuario);
+    setPersonalActionError('');
+
+    try {
+      await apiFetch(`/api/Usuarios/${bombero.idUsuario}/cargo`, {
+        method: 'PATCH',
+        body: JSON.stringify({ idRol }),
+      });
+
+      const nextRole = personalRoles.find(role => String(role.idRol) === String(idRol));
+      setBomberosPersonal(current => current.map(item => (
+        String(item.idUsuario) === String(bombero.idUsuario)
+          ? { ...item, idRol, cargo: nextRole?.nombre || item.cargo }
+          : item
+      )));
+      setBomberoPendingRoleChange(null);
+      setRoleChangeValue('');
+    } catch (error) {
+      setPersonalActionError(error.message || 'No se pudo cambiar el cargo del usuario.');
+    } finally {
+      setChangingRoleUsuarioId(null);
     }
   };
 
@@ -3053,14 +3145,24 @@ function Dashboard({ setView }) {
               </td>
               <td className="px-5 py-4 text-right">
                 {canInactivate ? (
-                  <button
-                    type="button"
-                    onClick={() => openInactivateUsuarioModal(bombero)}
-                    disabled={String(inactivatingUsuarioId) === String(bombero.idUsuario)}
-                    className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {String(inactivatingUsuarioId) === String(bombero.idUsuario) ? 'Procesando...' : 'Dar Baja'}
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openChangeRoleModal(bombero)}
+                      disabled={!bombero.idUsuario || String(changingRoleUsuarioId) === String(bombero.idUsuario)}
+                      className="rounded-lg border border-brand-cyan/30 bg-brand-cyan/10 px-3 py-2 text-xs font-semibold text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {String(changingRoleUsuarioId) === String(bombero.idUsuario) ? 'Guardando...' : 'Cambiar rol'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openInactivateUsuarioModal(bombero)}
+                      disabled={String(inactivatingUsuarioId) === String(bombero.idUsuario)}
+                      className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-semibold text-brand-red transition-colors hover:bg-brand-red/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {String(inactivatingUsuarioId) === String(bombero.idUsuario) ? 'Procesando...' : 'Dar Baja'}
+                    </button>
+                  </div>
                 ) : canManageUsers && bombero.idUsuario ? (
                   <button
                     type="button"
@@ -7703,6 +7805,83 @@ function Dashboard({ setView }) {
             onClose={() => setShowAddBomberoModal(false)}
             onAdded={fetchBomberosPersonal}
           />
+        )}
+
+        {bomberoPendingRoleChange && canManageUsers && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ background: palette.overlay }}
+            onClick={closeChangeRoleModal}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-xl border shadow-2xl"
+              style={{ borderColor: palette.border, background: palette.surface }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: palette.text }}>Cambiar rol</h3>
+                  <p className="mt-0.5 text-xs" style={{ color: palette.muted }}>{bomberoPendingRoleChange.nombre}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeChangeRoleModal}
+                  disabled={Boolean(changingRoleUsuarioId)}
+                  className="rounded-lg px-2 py-1 text-xl leading-none transition-colors hover:text-brand-red disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                  aria-label="Cerrar"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold" style={{ color: palette.text }}>Nuevo cargo</span>
+                  <select
+                    value={roleChangeValue}
+                    onChange={(event) => {
+                      setRoleChangeValue(event.target.value);
+                      setPersonalActionError('');
+                    }}
+                    disabled={loadingPersonalRoles || Boolean(changingRoleUsuarioId)}
+                    className="w-full rounded-lg border border-dark-border bg-dark-bg px-4 py-3 text-sm text-text-main outline-none transition-colors focus:border-brand-cyan disabled:opacity-60"
+                  >
+                    <option value="">{loadingPersonalRoles ? 'Cargando cargos...' : 'Selecciona un cargo'}</option>
+                    {personalRoles.map(role => (
+                      <option key={role.idRol} value={role.idRol}>{role.nombre}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {(personalRolesError || personalActionError) && (
+                  <p className="rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-sm text-brand-red">
+                    {personalRolesError || personalActionError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t px-6 py-4" style={{ borderColor: palette.border, background: palette.bg2 }}>
+                <button
+                  type="button"
+                  onClick={closeChangeRoleModal}
+                  disabled={Boolean(changingRoleUsuarioId)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:text-brand-cyan disabled:opacity-50"
+                  style={{ color: palette.muted }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleChangeUsuarioRole}
+                  disabled={Boolean(changingRoleUsuarioId) || loadingPersonalRoles || !roleChangeValue}
+                  className="rounded-lg bg-brand-cyan px-4 py-2 text-sm font-bold text-dark-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {changingRoleUsuarioId ? 'Guardando...' : 'Guardar rol'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {bomberoPendingInactivation && canManageUsers && (
