@@ -46,6 +46,11 @@ const normalizeEstado = (estadoRaw) => {
   return estadoRaw || 'Buen Estado';
 };
 
+const resolveEppEstado = (...values) => {
+  const validState = values.find(value => EPP_STATES.includes(value));
+  return validState || 'Buen Estado';
+};
+
 const getDateInputValue = (value) => {
   if (!value) return '';
   const date = parseDateValue(value);
@@ -244,7 +249,7 @@ function EppDetailView({
 
     setEditForm({
       talla: detail?.talla || '',
-      estadoEpp: normalizeEstado(detail?.estadoEpp || detail?.estadoInventario || 'Buen Estado'),
+      estadoEpp: resolveEppEstado(detail?.estadoEpp, detail?.estado, detail?.estadoInventario),
       fechaVencimiento: getDateInputValue(detail?.fechaVencimiento),
     });
     setEditError('');
@@ -357,7 +362,7 @@ function EppDetailView({
             ...generalData,
             ...eppData,
             idItem: eppData?.idItem || generalData?.idItem || itemId,
-            estadoEpp: normalizeEstado(eppData?.estadoEpp || generalData?.estadoInventario || generalData?.estado),
+            estadoEpp: resolveEppEstado(eppData?.estadoEpp, generalData?.estadoEpp, generalData?.estado, generalData?.estadoInventario),
           };
           setDetail(normalizedEppData);
           setHistory({
@@ -969,12 +974,12 @@ function EppDetailView({
                     <p className="mt-2 max-w-3xl text-sm leading-relaxed text-text-muted">{detail.descripcionMaterial || 'Sin descripción registrada.'}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
-                        normalizeEstado(detail.estadoEpp || detail.estadoInventario) === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
+                        resolveEppEstado(detail.estadoEpp, detail.estado, detail.estadoInventario) === 'Buen Estado' ? 'bg-brand-green border-brand-green/20 text-white' :
+                        resolveEppEstado(detail.estadoEpp, detail.estado, detail.estadoInventario) === 'Desgastado' ? 'bg-brand-gold border-brand-gold/20 text-white' :
+                        resolveEppEstado(detail.estadoEpp, detail.estado, detail.estadoInventario) === 'Mal Estado' ? 'bg-brand-red border-brand-red/20 text-white' :
                         'bg-dark-bg3 border-dark-border text-text-muted'
                       }`}>
-                        {normalizeEstado(detail.estadoEpp || detail.estadoInventario)}
+                        {resolveEppEstado(detail.estadoEpp, detail.estado, detail.estadoInventario)}
                       </span>
                       {detail.nombreTipoProducto && (
                         <span className="inline-flex rounded-full border border-brand-cyan/20 bg-brand-cyan/10 px-3 py-1 text-xs font-bold text-brand-cyan">
@@ -999,8 +1004,8 @@ function EppDetailView({
                     <p className="mt-1 text-lg font-bold text-white">{formatDate(detail.fechaVencimiento)}</p>
                   </div>
                   <div className="rounded-xl border border-dark-border bg-dark-bg px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Inventario</p>
-                    <p className="mt-1 text-lg font-bold text-white">{normalizeEstado(detail.estadoInventario || detail.estadoEpp) || '-'}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Estado EPP</p>
+                    <p className="mt-1 text-lg font-bold text-white">{resolveEppEstado(detail.estadoEpp, detail.estado, detail.estadoInventario)}</p>
                   </div>
                 </div>
               </div>

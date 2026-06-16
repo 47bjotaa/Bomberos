@@ -42,6 +42,11 @@ const normalizeEstado = (estadoRaw) => {
   return estadoRaw || 'Buen Estado';
 };
 
+const resolveEppEstado = (...values) => {
+  const validState = values.find(value => EPP_STATES.includes(value));
+  return validState || 'Buen Estado';
+};
+
 const getInitial = (name) => (name?.trim()?.charAt(0) || '-').toUpperCase();
 const isAssigned = (item) => Boolean(item.idBomberoAsignado || item.nombreBomberoAsignado || item.asignadoA);
 
@@ -88,7 +93,7 @@ const mapEppItem = (item) => {
     inicial: getInitial(assignedName),
     fecha: formatDate(item.fechaAsignacion || item.fecha),
     fechaVencimientoFormateada: formatDate(item.fechaVencimiento),
-    estado: normalizeEstado(item.estadoInventario || item.estadoEpp || item.estado),
+    estado: resolveEppEstado(item.estadoEpp, item.estado, item.estadoInventario),
   };
 };
 
@@ -383,10 +388,10 @@ function EppView({
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
-      const updatedState = normalizeEstado(updatedDetail?.estado || updatedDetail?.estadoEpp || updatedDetail?.estadoInventario || payload.estado);
+      const updatedState = resolveEppEstado(updatedDetail?.estadoEpp, updatedDetail?.estado, updatedDetail?.estadoInventario, payload.estado);
       const applyUpdate = item => (
         String(item.idItem || item.id) === String(itemId)
-          ? { ...item, ...(updatedDetail || {}), estadoInventario: payload.estado, estado: updatedState }
+          ? { ...item, ...(updatedDetail || {}), estadoEpp: payload.estado, estado: updatedState }
           : item
       );
 
