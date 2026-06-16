@@ -34,16 +34,20 @@ const formatDateChile = (value) => {
   }).format(date);
 };
 
-const getCampaignCompanyName = (campaign = {}) => (
-  campaign.nombreCompania
-  || campaign.compania?.nombreCompania
-  || campaign.compania?.nombre
-  || campaign.Compania?.nombreCompania
-  || campaign.Compania?.nombre
-  || campaign.nombreCuerpoBomberos
-  || campaign.cuerpoBomberos
-  || ''
-);
+const getCampaignCompanyName = (campaign) => {
+  const safeCampaign = campaign || {};
+
+  return (
+    safeCampaign.nombreCompania
+    || safeCampaign.compania?.nombreCompania
+    || safeCampaign.compania?.nombre
+    || safeCampaign.Compania?.nombreCompania
+    || safeCampaign.Compania?.nombre
+    || safeCampaign.nombreCuerpoBomberos
+    || safeCampaign.cuerpoBomberos
+    || ''
+  );
+};
 
 function PaginaDonacion() {
   const [campana, setCampana] = useState(null);
