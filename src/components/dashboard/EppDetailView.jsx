@@ -186,6 +186,7 @@ function EppDetailView({
   const [history, setHistory] = useState({ observaciones: [], mantenciones: [], requiereMantencion: true });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [detailWarning, setDetailWarning] = useState('');
 
   const [materialImages, setMaterialImages] = useState([]);
   const [loadingMaterialImages, setLoadingMaterialImages] = useState(false);
@@ -337,17 +338,26 @@ function EppDetailView({
 
       setLoading(true);
       setError('');
+      setDetailWarning('');
 
       try {
-        const [eppData, generalData] = await Promise.all([
+        const [eppResult, generalResult] = await Promise.allSettled([
           apiFetch(`/api/materiales/items/${itemId}/detalle-epp`),
           apiFetch(`/api/materiales/items/${itemId}`).catch(() => null),
         ]);
+        const eppData = eppResult.status === 'fulfilled' ? eppResult.value : null;
+        const generalData = generalResult.status === 'fulfilled' ? generalResult.value : null;
+
+        if (!eppData && !generalData) {
+          throw eppResult.reason || new Error('No se pudo cargar el detalle EPP.');
+        }
 
         if (!ignore) {
           const normalizedEppData = {
+            ...generalData,
             ...eppData,
-            estadoEpp: normalizeEstado(eppData.estadoEpp || eppData.estadoInventario),
+            idItem: eppData?.idItem || generalData?.idItem || itemId,
+            estadoEpp: normalizeEstado(eppData?.estadoEpp || generalData?.estadoInventario || generalData?.estado),
           };
           setDetail(normalizedEppData);
           setHistory({
@@ -355,6 +365,9 @@ function EppDetailView({
             mantenciones: Array.isArray(generalData?.mantenciones) ? generalData.mantenciones : [],
             requiereMantencion: generalData?.requiereMantencion !== false,
           });
+          if (!eppData) {
+            setDetailWarning('Este item existe, pero todavia no tiene detalle EPP registrado. Puedes completar talla, estado y vencimiento desde Editar.');
+          }
         }
       } catch (fetchError) {
         console.error('Error al cargar detalle EPP:', fetchError);
@@ -789,7 +802,7 @@ function EppDetailView({
 
     try {
       const updatedDetail = await apiFetch(`/api/materiales/items/${itemId}/detalle-epp`, {
-        method: 'PATCH',
+        method: detailWarning ? 'POST' : 'PATCH',
         body: JSON.stringify(payload),
       });
 
@@ -799,6 +812,7 @@ function EppDetailView({
         ...payload,
         estadoEpp: normalizeEstado(payload.estadoEpp),
       }));
+      setDetailWarning('');
       setShowEditModal(false);
     } catch (saveError) {
       setEditError(saveError.message || 'No se pudo editar el EPP.');
@@ -882,6 +896,11 @@ function EppDetailView({
         </div>
       ) : (
         <div className="space-y-6">
+          {detailWarning && (
+            <div className="rounded-xl border border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-sm font-semibold text-brand-gold">
+              {detailWarning}
+            </div>
+          )}
           <section className="rounded-xl border border-dark-border bg-dark-surface p-6 shadow-lg">
             <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:items-stretch">
               <div className="rounded-xl border border-dark-border bg-dark-bg p-3">

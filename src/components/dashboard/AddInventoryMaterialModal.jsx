@@ -97,7 +97,11 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
   const todayDateInputValue = useMemo(() => getTodayDateInputValue(), []);
 
   const openDatePicker = (event) => {
-    event.currentTarget.showPicker?.();
+    try {
+      event.currentTarget.showPicker?.();
+    } catch {
+      // Chrome only allows showPicker from a direct user gesture.
+    }
   };
 
   const handleFechaVencimientoChange = (event) => {
@@ -110,8 +114,8 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     if (typeof payload === 'number' || typeof payload === 'string') return payload;
     if (!payload || typeof payload !== 'object') return null;
 
-    if (payload.idItem || payload.idInventarioItem || payload.id) {
-      return payload.idItem || payload.idInventarioItem || payload.id;
+    if (payload.idItem || payload.idInventarioItem || payload.idInventarioMaterial || payload.itemId) {
+      return payload.idItem || payload.idInventarioItem || payload.idInventarioMaterial || payload.itemId;
     }
 
     if (Array.isArray(payload)) return getCreatedItemId(payload[0]);
@@ -120,6 +124,22 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
     if (payload.result && typeof payload.result === 'object') return getCreatedItemId(payload.result);
 
     return null;
+  };
+
+  const findCreatedItemIdByCode = async (codigoUnico) => {
+    const normalizedCode = codigoUnico.trim().toLowerCase();
+    if (!normalizedCode || !idUbicacion) return null;
+
+    const data = await apiFetch(`/api/materiales?idUbicacion=${idUbicacion}`);
+    const items = getArrayPayload(data);
+    const match = items.find(item => (
+      String(item.codigoUnico || item.codigo || '').trim().toLowerCase() === normalizedCode
+      && String(item.idMaterial || '') === String(selectedMaterial?.id || '')
+    )) || items.find(item => (
+      String(item.codigoUnico || item.codigo || '').trim().toLowerCase() === normalizedCode
+    ));
+
+    return match?.idItem || match?.idInventarioItem || match?.idInventarioMaterial || null;
   };
 
   const selectMaterial = (material) => {
@@ -173,16 +193,25 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
         };
 
     try {
-      const createdItem = await apiFetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
+      let createdItem = null;
+      let addItemError = null;
+
+      try {
+        createdItem = await apiFetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        addItemError = err;
+        if (!isEpp) throw err;
+      }
 
       if (isEpp) {
-        const idItem = getCreatedItemId(createdItem);
+        const idItem = getCreatedItemId(createdItem) || await findCreatedItemIdByCode(formData.codigoUnico);
 
         if (!idItem) {
-          throw new Error('El material fue creado, pero no se recibió el idItem para guardar el detalle EPP.');
+          if (addItemError) throw addItemError;
+          throw new Error('El material fue creado, pero no se recibio el idItem para guardar el detalle EPP.');
         }
 
         await apiFetch(`/api/materiales/items/${idItem}/detalle-epp`, {
@@ -323,7 +352,6 @@ function AddInventoryMaterialModal({ idUbicacion, onClose, onAdded }) {
                           min={todayDateInputValue}
                           max={MAX_DATE_INPUT_VALUE}
                           inputMode="none"
-                          onFocus={openDatePicker}
                           onClick={openDatePicker}
                           onKeyDown={(event) => {
                             if (!['Tab', 'Enter', 'Escape'].includes(event.key)) {

@@ -215,7 +215,7 @@ function PaginaDonacion() {
         ) : (
           <>
             <section className="min-w-0">
-              <div className="mb-5 flex flex-col items-stretch gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="mb-5 flex flex-col items-start justify-start gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
                 {companyName && (
                   <div className="inline-flex min-w-0 items-center gap-3 rounded-xl border border-brand-cyan/25 bg-brand-cyan/10 px-3 py-3 sm:px-4">
                     <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-cyan/30 bg-dark-bg text-brand-cyan">
@@ -227,7 +227,7 @@ function PaginaDonacion() {
                     </div>
                   </div>
                 )}
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-green">
+                <div className="inline-flex w-fit self-start items-center gap-2 rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-green">
                   <span className="h-2 w-2 rounded-full bg-brand-green"></span>
                   {campana.estado}
                 </div>
